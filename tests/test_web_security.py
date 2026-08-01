@@ -56,3 +56,39 @@ class WebSecurityTest(unittest.TestCase):
             self.assertEqual(len(tokens), len(findings))
             self.assertTrue(all("…" in finding.excerpt for finding in findings))
             self.assertTrue(all("0123456789" not in finding.excerpt for finding in findings))
+
+    def test_rejects_utf16_content_that_contains_an_unsafe_url(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "index.html").write_bytes(
+                '<a href="javascript:alert(1)">unsafe</a>'.encode("utf-16")
+            )
+
+            findings = scan_public_tree(root)
+
+            self.assertTrue(any(item.rule == "unsupported-file-encoding" for item in findings))
+            with self.assertRaises(PublicTreeUnsafe):
+                assert_public_tree_safe(root)
+
+    def test_rejects_files_outside_the_public_build_contract(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "index.html").write_text("safe", encoding="utf-8")
+            (root / "unexpected.html").write_text("safe", encoding="utf-8")
+
+            findings = scan_public_tree(root)
+
+            self.assertTrue(any(item.rule == "unexpected-public-file" for item in findings))
+
+    def test_rejects_a_symlink_used_as_the_public_root(self):
+        with TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            real_root = parent / "real"
+            real_root.mkdir()
+            (real_root / "index.html").write_text("safe", encoding="utf-8")
+            linked_root = parent / "linked"
+            linked_root.symlink_to(real_root, target_is_directory=True)
+
+            findings = scan_public_tree(linked_root)
+
+            self.assertTrue(any(item.rule == "symlink" for item in findings))

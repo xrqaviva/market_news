@@ -26,15 +26,15 @@ _PRIVATE_FILE_NAMES = {
     ".planning",
 }
 _CONTENT_RULES = (
-    ("absolute-local-path", re.compile(r"/Users/")),
-    ("local-file-url", re.compile(r"file://", re.IGNORECASE)),
-    ("private-key", re.compile(r"BEGIN OPENSSH PRIVATE KEY")),
-    ("credential-token", re.compile(r"ghp_", re.IGNORECASE)),
-    ("credential-token", re.compile(r"github_pat_", re.IGNORECASE)),
-    ("authorization-header", re.compile(r"Authorization:\s*Bearer", re.IGNORECASE)),
-    ("cookie-header", re.compile(r"Cookie:", re.IGNORECASE)),
-    ("local-storage", re.compile(r"Local Storage", re.IGNORECASE)),
-    ("unsafe-url-scheme", re.compile(r"\b(?:javascript|data):", re.IGNORECASE)),
+    ("absolute-local-path", re.compile(rb"/Users/")),
+    ("local-file-url", re.compile(rb"file://", re.IGNORECASE)),
+    ("private-key", re.compile(rb"BEGIN OPENSSH PRIVATE KEY")),
+    ("credential-token", re.compile(rb"ghp_", re.IGNORECASE)),
+    ("credential-token", re.compile(rb"github_pat_", re.IGNORECASE)),
+    ("authorization-header", re.compile(rb"Authorization:\s*Bearer", re.IGNORECASE)),
+    ("cookie-header", re.compile(rb"Cookie:", re.IGNORECASE)),
+    ("local-storage", re.compile(rb"Local Storage", re.IGNORECASE)),
+    ("unsafe-url-scheme", re.compile(rb"\b(?:javascript|data):", re.IGNORECASE)),
 )
 
 
@@ -48,23 +48,39 @@ def _private_file_name(name: str) -> bool:
     )
 
 
-def _redact(match: re.Match) -> str:
-    return "{}…".format(match.group(0)[:4])
+def _redact(match: re.Match[bytes]) -> str:
+    return "{}…".format(match.group(0)[:4].decode("ascii", errors="replace"))
 
 
 def _find_content(root: Path, path: Path) -> list[SecurityFinding]:
-    text = path.read_bytes().decode("utf-8", errors="replace")
+    content = path.read_bytes()
     relative = path.relative_to(root).as_posix()
+    try:
+        content.decode("utf-8")
+    except UnicodeDecodeError:
+        return [SecurityFinding(relative, "unsupported-file-encoding", "bina…")]
     findings = []
     for rule, pattern in _CONTENT_RULES:
-        for match in pattern.finditer(text):
+        for match in pattern.finditer(content):
             findings.append(SecurityFinding(relative, rule, _redact(match)))
     return findings
 
 
+def _allowed_public_path(relative: str, is_directory: bool) -> bool:
+    if is_directory:
+        return relative in {"assets", "reports"}
+    return (
+        relative in {"index.html", "reports.json", "assets/app.css", "assets/app.js"}
+        or re.fullmatch(r"reports/[^/]+\.html", relative) is not None
+    )
+
+
 def scan_public_tree(root: Path) -> list[SecurityFinding]:
     """Scan only regular files below resolved root; never follow symlinks."""
-    resolved_root = root.expanduser().resolve()
+    unresolved_root = root.expanduser()
+    if unresolved_root.is_symlink():
+        return [SecurityFinding(".", "symlink", "syml…")]
+    resolved_root = unresolved_root.resolve()
     if not resolved_root.is_dir():
         raise ValueError("public tree root must be a directory: {}".format(root))
 
@@ -80,8 +96,14 @@ def scan_public_tree(root: Path) -> list[SecurityFinding]:
                 findings.append(SecurityFinding(relative, "private-file-name", "{}…".format(path.name[:4])))
                 continue
             if path.is_dir():
+                if not _allowed_public_path(relative, is_directory=True):
+                    findings.append(SecurityFinding(relative, "unexpected-public-file", "path…"))
+                    continue
                 visit(path)
             elif path.is_file():
+                if not _allowed_public_path(relative, is_directory=False):
+                    findings.append(SecurityFinding(relative, "unexpected-public-file", "path…"))
+                    continue
                 findings.extend(_find_content(resolved_root, path))
 
     visit(resolved_root)
