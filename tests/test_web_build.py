@@ -125,6 +125,16 @@ class WebBuildTest(unittest.TestCase):
             self.assertIn('data-category="地缘"', middle_east)
             self.assertIn("中东冲突", middle_east)
 
+    def test_compact_rows_ignore_markdown_urls_when_classifying(self):
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            postclose = (output / "reports/2026-07-30-1500.html").read_text(encoding="utf-8")
+
+            for rank in (11, 13, 16):
+                article = self._article(postclose, rank)
+                self.assertIn('data-category="其他"', article)
+                self.assertIn("https://www.cls.cn/detail/", article)
+
     def test_rendered_sources_follow_core_before_analysis_details(self):
         with TemporaryDirectory() as tmp:
             output = build_site(ROOT, Path(tmp) / "dist").output_dir

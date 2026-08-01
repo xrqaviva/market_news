@@ -180,10 +180,11 @@ def _make_top_item(rank: int, title: str, block: str) -> NewsItem:
 def _compact_items(text: str) -> Iterable[NewsItem]:
     for match in _COMPACT.finditer(text):
         rank, title, score, core = match.groups()
-        core = core or ""
+        visible_title = _plain(title)
+        visible_core = _plain(core or "")
         yield NewsItem(
-            rank=int(rank), title=_plain(title), core=_plain(core), score=int(score),
-            category=_category(title, core), sources=_inline_sources(core),
+            rank=int(rank), title=visible_title, core=visible_core, score=int(score),
+            category=_category(visible_title, visible_core), sources=_inline_sources(core or ""),
         )
 
 
