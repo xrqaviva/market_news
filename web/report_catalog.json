@@ -1,0 +1,6 @@
+[
+  {"report_id":"20260729-1800","path":"reports/2026-07-29-pure-news-hot-ranking-v4.md","date":"2026-07-29","slot":"1800","label":"收盘"},
+  {"report_id":"20260730-0800","path":"reports/2026-07-30-premarket-news-ranking-v6-depth-test.md","date":"2026-07-30","slot":"0800","label":"盘前"},
+  {"report_id":"20260730-1500","path":"reports/2026-07-30-1500-next-trading-day-news-baseline.md","date":"2026-07-30","slot":"1500","label":"盘后"},
+  {"report_id":"20260731-0800","path":"reports/2026-07-31-0800-premarket-news-ranking.md","date":"2026-07-31","slot":"0800","label":"盘前"}
+]
