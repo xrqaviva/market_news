@@ -4,17 +4,41 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{PAGE_TITLE}}</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../assets/app.css">
 </head>
 <body data-report-id="{{REPORT_ID}}">
-  <header class="topbar">{{TOPBAR}}</header>
+  <header class="topbar">
+    <div class="brand" aria-label="A股新闻雷达">NEWS RADAR</div>
+    <div class="report-heading">{{TOPBAR}}</div>
+    <label class="mobile-report-control">
+      <span>切换报告</span>
+      <select class="mobile-report-select" aria-label="切换报告"></select>
+    </label>
+  </header>
   <div class="terminal-layout">
-    <aside data-component="report-archive">{{REPORT_ARCHIVE}}</aside>
-    <main>
-      <nav data-component="filters">{{FILTERS}}</nav>
+    <aside class="report-sidebar" data-component="report-archive">
+      <p class="sidebar-label">报告归档</p>
+      {{REPORT_ARCHIVE}}
+    </aside>
+    <main class="report-main">
+      <nav class="filter-bar" data-component="filters" aria-label="新闻类别筛选">
+        <div class="filter-meta"><span>数据截止</span>{{FILTERS}}</div>
+        <div class="filter-actions">
+          <button class="filter-button is-active" type="button" data-category="all" aria-pressed="true">全部</button>
+          <button class="filter-button" type="button" data-category="政策" aria-pressed="false">政策</button>
+          <button class="filter-button" type="button" data-category="财报" aria-pressed="false">财报</button>
+          <button class="filter-button" type="button" data-category="产业" aria-pressed="false">产业</button>
+          <button class="filter-button" type="button" data-category="地缘" aria-pressed="false">地缘</button>
+          <button class="filter-button" type="button" data-category="其他" aria-pressed="false">其他</button>
+        </div>
+      </nav>
       <section data-component="news-list">{{NEWS_ITEMS}}</section>
     </main>
   </div>
+  <template id="news-toggle-template">
+    <button class="news-toggle" type="button" aria-expanded="false" aria-controls="">展开详情</button>
+  </template>
   <script src="../assets/app.js" defer></script>
 </body>
 </html>

@@ -85,6 +85,22 @@ class WebBuildTest(unittest.TestCase):
             self.assertIn('href="2026-07-31-0800.html"', page)
             self.assertNotIn('href="reports/2026-07-31-0800.html"', page)
 
+    def test_page_has_accessible_interaction_contract(self):
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            page = (output / "reports/2026-07-31-0800.html").read_text(encoding="utf-8")
+            self.assertIn('class="news-toggle"', page)
+            self.assertIn('aria-expanded="false"', page)
+            self.assertIn('class="mobile-report-select"', page)
+            self.assertIn('class="filter-button is-active"', page)
+            self.assertIn('data-category=', page)
+
+    def test_page_uses_embedded_icon_without_local_asset_request(self):
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            page = (output / "reports/2026-07-31-0800.html").read_text(encoding="utf-8")
+            self.assertIn('<link rel="icon" href="data:,">', page)
+
     def test_build_rejects_report_paths_that_escape_next_output(self):
         document = ReportDocument(
             meta=ReportMeta(
