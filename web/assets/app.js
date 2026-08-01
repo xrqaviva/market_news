@@ -1,21 +1,6 @@
 (function () {
   "use strict";
 
-  const categoryRules = [
-    ["政策", ["政策", "政治局", "央行", "利率", "监管", "国务院", "部委", "规划"]],
-    ["财报", ["财报", "业绩", "营收", "收入", "利润", "eps", "季度"]],
-    ["产业", ["芯片", "半导体", "人工智能", "ai", "储能", "能源", "汽车", "机器人", "订单"]],
-    ["地缘", ["伊朗", "美国", "中东", "航运", "战争", "关税", "出口", "制裁"]]
-  ];
-
-  function categoryFor(row) {
-    const text = row.textContent.toLowerCase();
-    const match = categoryRules.find((rule) =>
-      rule[1].some((keyword) => text.includes(keyword.toLowerCase()))
-    );
-    return match ? match[0] : "其他";
-  }
-
   function decoratePricingLabels(detail) {
     detail.querySelectorAll("strong").forEach((label) => {
       if (label.textContent !== "即时市场定价") return;
@@ -42,7 +27,6 @@
     const toggle = toggleTemplate.content.firstElementChild.cloneNode(true);
 
     row.classList.add("news-row");
-    row.dataset.category = categoryFor(row);
     content.className = "news-content";
     rankCell.className = "news-rank";
     rankCell.textContent = rank.padStart(2, "0");
@@ -56,8 +40,8 @@
     summary.className = "news-summary";
     const score = scoreLine.textContent.match(/(\d+)\/100/);
     scoreCell.innerHTML = `<strong>${score ? score[1] : "—"}</strong><span>热点权重</span>`;
-    paragraphs.forEach((paragraph) => detail.appendChild(paragraph));
     if (sources) detail.appendChild(sources);
+    paragraphs.forEach((paragraph) => detail.appendChild(paragraph));
     decoratePricingLabels(detail);
 
     content.append(heading, summary, toggle, detail);

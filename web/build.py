@@ -83,16 +83,17 @@ def _news_item(item: NewsItem) -> str:
         if value
     )
     return (
-        '<article data-component="news-detail" data-rank="{}">'
-        '<h2>{}. {}</h2><p>{}</p><p>热点权重：{}/100</p>{}{}</article>'
+        '<article data-component="news-detail" data-rank="{}" data-category="{}">'
+        '<h2>{}. {}</h2><p>{}</p>{}<p>热点权重：{}/100</p>{}</article>'
     ).format(
         _escape(item.rank),
+        _escape(item.category),
         _escape(item.rank),
         _escape(item.title),
         _escape(item.core),
+        _source_links(item),
         _escape(item.score),
         details,
-        _source_links(item),
     )
 
 

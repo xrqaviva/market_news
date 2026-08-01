@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
@@ -12,6 +13,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class WebBuildTest(unittest.TestCase):
+    def _article(self, page: str, rank: int) -> str:
+        match = re.search(
+            r'<article data-component="news-detail" data-rank="{}".*?</article>'.format(rank),
+            page,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(match, "missing rendered news row for rank {}".format(rank))
+        return match.group(0)
+
     def test_renderer_preserves_mustache_literals_in_report_text(self):
         document = ReportDocument(
             meta=ReportMeta(
@@ -100,6 +110,35 @@ class WebBuildTest(unittest.TestCase):
             output = build_site(ROOT, Path(tmp) / "dist").output_dir
             page = (output / "reports/2026-07-31-0800.html").read_text(encoding="utf-8")
             self.assertIn('<link rel="icon" href="data:,">', page)
+
+    def test_rendered_rows_keep_title_and_core_categories_for_filtering(self):
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            latest = (output / "reports/2026-07-31-0800.html").read_text(encoding="utf-8")
+            premarket = (output / "reports/2026-07-30-0800.html").read_text(encoding="utf-8")
+
+            energy = self._article(latest, 8)
+            middle_east = self._article(premarket, 3)
+
+            self.assertIn('data-category="产业"', energy)
+            self.assertIn("设备企业收入", energy)
+            self.assertIn('data-category="地缘"', middle_east)
+            self.assertIn("中东冲突", middle_east)
+
+    def test_rendered_sources_follow_core_before_analysis_details(self):
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            page = (output / "reports/2026-07-31-0800.html").read_text(encoding="utf-8")
+            microsoft = self._article(page, 2)
+
+            self.assertLess(
+                microsoft.index("微软FY26第四财季Azure收入增长43%"),
+                microsoft.index('data-component="sources"'),
+            )
+            self.assertLess(
+                microsoft.index('data-component="sources"'),
+                microsoft.index("关键信号/预期差"),
+            )
 
     def test_build_rejects_report_paths_that_escape_next_output(self):
         document = ReportDocument(
