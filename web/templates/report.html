@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{PAGE_TITLE}}</title>
+  <link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-report-id="{{REPORT_ID}}">
+  <header class="topbar">{{TOPBAR}}</header>
+  <div class="terminal-layout">
+    <aside data-component="report-archive">{{REPORT_ARCHIVE}}</aside>
+    <main>
+      <nav data-component="filters">{{FILTERS}}</nav>
+      <section data-component="news-list">{{NEWS_ITEMS}}</section>
+    </main>
+  </div>
+  <script src="../assets/app.js" defer></script>
+</body>
+</html>
