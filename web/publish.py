@@ -3,6 +3,7 @@
 import argparse
 from dataclasses import dataclass
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -73,12 +74,22 @@ def _tracked_paths(site_repo: Path) -> set:
     return {path for path in completed.stdout.split("\0") if path}
 
 
+def _resolved_path_without_symlinks(path: Path, label: str) -> Path:
+    expanded = path.expanduser()
+    if ".." in expanded.parts:
+        raise PublishBoundaryError("{} path must not contain parent traversal".format(label))
+    absolute = Path(os.path.abspath(str(expanded)))
+    current = Path(absolute.anchor)
+    for part in absolute.parts[1:]:
+        current /= part
+        if current.is_symlink():
+            raise PublishBoundaryError("{} path must not contain symlinks".format(label))
+    return absolute.resolve()
+
+
 def validate_site_repo(site_repo: Path, expected_name: str = _DEFAULT_SITE_REPO_NAME) -> None:
     """Require a standalone, named Git repository with a matching origin."""
-    unresolved = site_repo.expanduser()
-    if unresolved.is_symlink():
-        raise PublishBoundaryError("site repository must not be a symlink")
-    resolved = unresolved.resolve()
+    resolved = _resolved_path_without_symlinks(site_repo, "site repository")
     if resolved in {Path("/").resolve(), Path.home().resolve(), _PROJECT_ROOT.resolve()}:
         raise PublishBoundaryError("site repository points at a protected directory")
     if resolved.name != expected_name or not resolved.is_dir():
@@ -105,10 +116,7 @@ def validate_site_repo(site_repo: Path, expected_name: str = _DEFAULT_SITE_REPO_
 
 
 def _validate_dist(dist_dir: Path, site_repo: Path) -> Path:
-    unresolved = dist_dir.expanduser()
-    if unresolved.is_symlink():
-        raise PublishBoundaryError("dist directory must not be a symlink")
-    resolved = unresolved.resolve()
+    resolved = _resolved_path_without_symlinks(dist_dir, "dist directory")
     if resolved.name != "dist" or not resolved.is_dir():
         raise PublishBoundaryError("publication input must be a directory named dist")
     if resolved == site_repo:
@@ -164,7 +172,6 @@ def sync_dist(dist_dir: Path, site_repo: Path, dry_run: bool = True) -> PublishR
         for relative, source in source_files.items()
         if not _same_public_file(source, resolved_repo / relative)
     }
-    changed.update(relative for relative in destination_files if relative not in source_files)
     changed.update(relative for relative in tracked_paths if relative not in source_files)
     changed_paths = sorted(changed)
 
@@ -172,7 +179,7 @@ def sync_dist(dist_dir: Path, site_repo: Path, dry_run: bool = True) -> PublishR
         return PublishResult(resolved_repo, changed_paths, applied=False)
 
     for relative, path in destination_files.items():
-        if relative not in source_files or not (resolved_repo / relative).is_file():
+        if relative in tracked_paths and relative not in source_files:
             path.unlink()
     _remove_empty_worktree_directories(resolved_repo)
 
@@ -199,7 +206,10 @@ def _scan_applied_public_tree(site_repo: Path) -> None:
     with TemporaryDirectory() as tmp:
         snapshot = Path(tmp) / "dist"
         snapshot.mkdir()
-        for relative, source in _worktree_files(site_repo).items():
+        for relative in sorted(_tracked_paths(site_repo)):
+            source = site_repo / relative
+            if not source.is_file() or source.is_symlink():
+                raise PublishBoundaryError("staged public tree contains an unsupported entry")
             destination = snapshot / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, destination)
@@ -226,8 +236,9 @@ def _commit_message(dist_dir: Path) -> str:
 
 def _stage_and_commit(dist_dir: Path, result: PublishResult) -> str:
     site_repo = result.site_repo
-    _scan_applied_public_tree(site_repo)
-    _checked_git(site_repo, "staging", "add", "-A", "--", ".")
+    if not result.changed_paths:
+        raise PublishBoundaryError("refusing an empty publication commit")
+    _checked_git(site_repo, "staging", "add", "-A", "--", *result.changed_paths)
     _checked_git(site_repo, "staged diff check", "diff", "--cached", "--check")
     staged = _checked_git(
         site_repo,
@@ -243,6 +254,7 @@ def _stage_and_commit(dist_dir: Path, result: PublishResult) -> str:
         raise PublishBoundaryError("refusing an empty publication commit")
     if not staged_paths.issubset(set(result.changed_paths)):
         raise PublishBoundaryError("git index contains out-of-scope paths")
+    _scan_applied_public_tree(site_repo)
     message = _commit_message(dist_dir)
     _checked_git(site_repo, "commit", "commit", "-m", message)
     return _checked_git(site_repo, "commit verification", "rev-parse", "HEAD").stdout.strip()

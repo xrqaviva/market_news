@@ -54,7 +54,7 @@ class WebPublishTest(unittest.TestCase):
 
     def test_dry_run_does_not_modify_site_repo(self):
         with TemporaryDirectory() as tmp:
-            base = Path(tmp)
+            base = Path(tmp).resolve()
             dist = base / "dist"
             repo = base / "market-news-site"
             dist.mkdir()
@@ -69,7 +69,7 @@ class WebPublishTest(unittest.TestCase):
 
     def test_rejects_wrong_repository_directory_name(self):
         with TemporaryDirectory() as tmp:
-            base = Path(tmp)
+            base = Path(tmp).resolve()
             dist = base / "dist"
             repo = base / "wrong-name"
             dist.mkdir()
@@ -80,7 +80,7 @@ class WebPublishTest(unittest.TestCase):
 
     def test_rejects_symlinked_repository_and_wrong_origin_without_leaking_url(self):
         with TemporaryDirectory() as tmp:
-            base = Path(tmp)
+            base = Path(tmp).resolve()
             dist = base / "dist"
             dist.mkdir()
             (dist / "index.html").write_text("safe", encoding="utf-8")
@@ -105,7 +105,7 @@ class WebPublishTest(unittest.TestCase):
 
     def test_rejects_nonempty_untracked_file_before_apply(self):
         with TemporaryDirectory() as tmp:
-            base = Path(tmp)
+            base = Path(tmp).resolve()
             dist = base / "dist"
             repo = base / "market-news-site"
             dist.mkdir()
@@ -119,9 +119,28 @@ class WebPublishTest(unittest.TestCase):
             self.assertEqual("keep me", (repo / "notes.txt").read_text(encoding="utf-8"))
             self.assertFalse((repo / "index.html").exists())
 
+    def test_zero_byte_untracked_file_is_preserved_and_not_committed(self):
+        with TemporaryDirectory() as tmp:
+            base = Path(tmp).resolve()
+            dist = base / "dist"
+            repo = base / "market-news-site"
+            self._write_publishable_dist(dist)
+            self._init_repo(repo)
+            (repo / ".nojekyll").touch()
+
+            publish_site(dist, repo, apply=True, commit=True)
+
+            self.assertTrue((repo / ".nojekyll").is_file())
+            self.assertEqual("?? .nojekyll\n", self._git(repo, "status", "--porcelain").stdout)
+            self.assertEqual("", self._git(repo, "ls-files", ".nojekyll").stdout)
+            self.assertNotIn(
+                ".nojekyll",
+                self._git(repo, "show", "--format=", "--name-only", "HEAD").stdout.splitlines(),
+            )
+
     def test_apply_copies_exact_dist_tree_and_removes_stale_tracked_assets(self):
         with TemporaryDirectory() as tmp:
-            base = Path(tmp)
+            base = Path(tmp).resolve()
             dist = base / "dist"
             repo = base / "market-news-site"
             dist.mkdir()
@@ -144,7 +163,7 @@ class WebPublishTest(unittest.TestCase):
 
     def test_commit_and_push_require_ordered_apply_flags(self):
         with TemporaryDirectory() as tmp:
-            base = Path(tmp)
+            base = Path(tmp).resolve()
             dist = base / "dist"
             repo = base / "market-news-site"
             dist.mkdir()
@@ -163,7 +182,7 @@ class WebPublishTest(unittest.TestCase):
     def test_apply_commit_and_push_to_local_bare_remote(self):
         """The only push exercised by tests targets a temporary local bare remote."""
         with TemporaryDirectory() as tmp:
-            base = Path(tmp)
+            base = Path(tmp).resolve()
             dist = base / "dist"
             repo = base / "market-news-site"
             remote = base / "market-news-site.git"
@@ -197,7 +216,7 @@ class WebPublishTest(unittest.TestCase):
 
     def test_cli_defaults_to_dry_run(self):
         with TemporaryDirectory() as tmp:
-            base = Path(tmp)
+            base = Path(tmp).resolve()
             dist = base / "dist"
             repo = base / "market-news-site"
             dist.mkdir()
@@ -223,6 +242,34 @@ class WebPublishTest(unittest.TestCase):
             self.assertIn('"applied": false', completed.stdout)
             self.assertIn('"changed_paths": [', completed.stdout)
             self.assertFalse((repo / "index.html").exists())
+
+    def test_rejects_symlink_in_parent_path_for_site_repo_and_dist(self):
+        with TemporaryDirectory() as tmp:
+            base = Path(tmp).resolve()
+            dist = base / "dist"
+            dist.mkdir()
+            (dist / "index.html").write_text("safe", encoding="utf-8")
+
+            real_site_parent = base / "real-site-parent"
+            real_site_parent.mkdir()
+            real_repo = real_site_parent / "market-news-site"
+            self._init_repo(real_repo)
+            linked_site_parent = base / "linked-site-parent"
+            linked_site_parent.symlink_to(real_site_parent, target_is_directory=True)
+            with self.assertRaises(PublishBoundaryError):
+                sync_dist(dist, linked_site_parent / "market-news-site")
+
+            repo = base / "market-news-site"
+            self._init_repo(repo)
+            real_dist_parent = base / "real-dist-parent"
+            real_dist_parent.mkdir()
+            linked_dist = real_dist_parent / "dist"
+            linked_dist.mkdir()
+            (linked_dist / "index.html").write_text("safe", encoding="utf-8")
+            linked_dist_parent = base / "linked-dist-parent"
+            linked_dist_parent.symlink_to(real_dist_parent, target_is_directory=True)
+            with self.assertRaises(PublishBoundaryError):
+                sync_dist(linked_dist_parent / "dist", repo)
 
 
 if __name__ == "__main__":
