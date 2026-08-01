@@ -205,6 +205,28 @@ def parse_report(path: Path, entry: CatalogEntry) -> ReportDocument:
     title_match = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
     window_match = re.search(r"^>\s+\*\*窗口：\*\*\s*(.+)$", text, re.MULTILINE)
     cutoff_match = re.search(r"^>\s+\*\*生成任务启动：\*\*\s*([^。]+)", text, re.MULTILINE)
+    window = _plain(window_match.group(1)) if window_match else ""
+    cutoff = _plain(cutoff_match.group(1)) if cutoff_match else ""
+    if not window:
+        news_window_match = re.search(r"^>\s+\*\*新闻窗口：([^*。]+)", text, re.MULTILINE)
+        event_window_match = re.search(r"^>\s+\*\*事件窗口：([^*]+)\*\*", text, re.MULTILINE)
+        if news_window_match:
+            window = _plain(news_window_match.group(1)) + "（北京时间）"
+        elif event_window_match:
+            window = _plain(event_window_match.group(1))
+    if not cutoff:
+        legacy_cutoff_match = re.search(r"^>\s+截止：(.+)$", text, re.MULTILINE)
+        beijing_cutoff_match = re.search(r"北京时间截点：([^｜*]+)", text)
+        if legacy_cutoff_match:
+            cutoff = _plain(legacy_cutoff_match.group(1)).replace(
+                "（Asia/Shanghai）", "（北京时间）"
+            )
+        elif beijing_cutoff_match:
+            cutoff = _plain(beijing_cutoff_match.group(1)) + "（北京时间）"
+        else:
+            event_end_match = re.search(r"—(\d{1,2}:\d{2})（北京时间）$", window)
+            if event_end_match:
+                cutoff = event_end_match.group(1) + "（北京时间）"
     top_items = [_make_top_item(rank, title, block) for rank, title, block in _top_sections(text)]
     heading_ranks = {item.rank for item in top_items}
     compact_items = [item for item in _compact_items(text) if item.rank not in heading_ranks]
@@ -214,8 +236,7 @@ def parse_report(path: Path, entry: CatalogEntry) -> ReportDocument:
         meta=ReportMeta(
             report_id=entry.report_id, report_date=entry.report_date, slot=entry.slot,
             slot_label=entry.label, title=_plain(title_match.group(1)) if title_match else "",
-            window=_plain(window_match.group(1)) if window_match else "",
-            cutoff=_plain(cutoff_match.group(1)) if cutoff_match else "",
+            window=window, cutoff=cutoff,
             source_name=entry.path,
         ),
         items=items,

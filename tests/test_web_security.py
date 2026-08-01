@@ -23,6 +23,20 @@ class WebSecurityTest(unittest.TestCase):
             )
             self.assertEqual([], scan_public_tree(root))
 
+    def test_accepts_only_the_empty_data_favicon_sentinel(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "index.html").write_text(
+                '<link rel="icon" href="data:,">', encoding="utf-8"
+            )
+            self.assertEqual([], scan_public_tree(root))
+
+            (root / "index.html").write_text(
+                '<link rel="icon" href="data:,secret">', encoding="utf-8"
+            )
+            findings = scan_public_tree(root)
+            self.assertTrue(any(item.rule == "unsafe-url-scheme" for item in findings))
+
     def test_rejects_private_file_names_and_symlinks(self):
         private_names = (
             "evidence.txt", "findings.md", "progress.md", "task_plan.md", "HANDOFF.md",

@@ -113,14 +113,19 @@ def _report_archive(document: ReportDocument, report_index: list[dict]) -> str:
 def render_report(document: ReportDocument, report_index: list[dict]) -> str:
     """Render fixed template with escaped text and allowlisted http/https source URLs."""
     template = _TEMPLATE_PATH.read_text(encoding="utf-8")
+    topbar_meta = " · ".join(
+        part for part in (
+            document.meta.report_date,
+            document.meta.slot_label,
+            document.meta.window,
+        ) if part
+    )
     replacements = {
         "PAGE_TITLE": _escape(document.meta.title),
         "REPORT_ID": _escape(document.meta.report_id),
-        "TOPBAR": "<h1>{}</h1><p>{} · {} · {}</p>".format(
+        "TOPBAR": "<h1>{}</h1><p>{}</p>".format(
             _escape(document.meta.title),
-            _escape(document.meta.report_date),
-            _escape(document.meta.slot_label),
-            _escape(document.meta.window),
+            _escape(topbar_meta),
         ),
         "REPORT_ARCHIVE": _report_archive(document, report_index),
         "FILTERS": "<span>{}</span>".format(_escape(document.meta.cutoff)),
@@ -137,7 +142,7 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
         raise ValueError("report template has malformed placeholders")
     for name, value in replacements.items():
         template = template.replace("{{" + name + "}}", value)
-    return template.replace('  <link rel="icon" href="data:,">\n', "")
+    return template
 
 
 def _manifest_entry(document: ReportDocument) -> dict:
@@ -158,7 +163,8 @@ def _write_index(destination: Path, latest_url: str, latest_title: str) -> None:
         "<!doctype html>\n"
         '<html lang="zh-CN"><head><meta charset="utf-8">'
         '<meta http-equiv="refresh" content="0; url={}">'
-        "<title>新闻雷达</title></head><body>"
+        '<title>新闻雷达</title><link rel="icon" href="data:,">'
+        "</head><body>"
         '<p><a href="{}">{}</a></p></body></html>\n'.format(
             escaped_url, escaped_url, _escape(latest_title)
         ),

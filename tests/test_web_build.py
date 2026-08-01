@@ -106,11 +106,40 @@ class WebBuildTest(unittest.TestCase):
             self.assertIn('class="filter-button is-active"', page)
             self.assertIn('data-category=', page)
 
-    def test_page_does_not_use_unsafe_data_url(self):
+    def test_fresh_build_keeps_empty_data_favicon(self):
         with TemporaryDirectory() as tmp:
             output = build_site(ROOT, Path(tmp) / "dist").output_dir
-            page = (output / "reports/2026-07-31-0800.html").read_text(encoding="utf-8")
-            self.assertNotIn('href="data:', page)
+            pages = (
+                (output / "index.html").read_text(encoding="utf-8"),
+                (output / "reports/2026-07-31-0800.html").read_text(encoding="utf-8"),
+            )
+            for page in pages:
+                with self.subTest(page=page[:40]):
+                    self.assertIn('<link rel="icon" href="data:,">', page)
+                    self.assertNotIn('href="/favicon.ico"', page)
+
+    def test_fresh_build_renders_explicit_legacy_beijing_metadata(self):
+        expected = {
+            "2026-07-29-1800.html": (
+                "<p>2026-07-29 · 收盘</p>",
+                '<div class="filter-meta"><span>数据截止</span><span>2026-07-29 18:08（北京时间）</span></div>',
+            ),
+            "2026-07-30-0800.html": (
+                "2026-07-29 00:00—2026-07-30 10:00（北京时间）",
+                '<div class="filter-meta"><span>数据截止</span><span>10:00（北京时间）</span></div>',
+            ),
+            "2026-07-30-1500.html": (
+                "2026-07-30 00:00—15:00（北京时间）",
+                '<div class="filter-meta"><span>数据截止</span><span>15:00（北京时间）</span></div>',
+            ),
+        }
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            for filename, visible_values in expected.items():
+                with self.subTest(filename=filename):
+                    page = (output / "reports" / filename).read_text(encoding="utf-8")
+                    for visible_value in visible_values:
+                        self.assertIn(visible_value, page)
 
     def test_rendered_rows_keep_title_and_core_categories_for_filtering(self):
         with TemporaryDirectory() as tmp:

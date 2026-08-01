@@ -59,9 +59,10 @@ def _find_content(root: Path, path: Path) -> list[SecurityFinding]:
         content.decode("utf-8")
     except UnicodeDecodeError:
         return [SecurityFinding(relative, "unsupported-file-encoding", "bina…")]
+    scannable_content = content.replace(b'<link rel="icon" href="data:,">', b"")
     findings = []
     for rule, pattern in _CONTENT_RULES:
-        for match in pattern.finditer(content):
+        for match in pattern.finditer(scannable_content):
             findings.append(SecurityFinding(relative, rule, _redact(match)))
     return findings
 
