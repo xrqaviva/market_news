@@ -6,6 +6,7 @@ import html
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 from typing import Iterable, Optional
@@ -123,10 +124,17 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
         "FILTERS": "<span>{}</span>".format(_escape(document.meta.cutoff)),
         "NEWS_ITEMS": "".join(_news_item(item) for item in document.items),
     }
+    template_placeholders = set(re.findall(r"{{[^{}]+}}", template))
+    expected_placeholders = {"{{" + name + "}}" for name in replacements}
+    if template_placeholders != expected_placeholders:
+        raise ValueError("report template has unresolved placeholders")
+    template_without_known_placeholders = template
+    for placeholder in expected_placeholders:
+        template_without_known_placeholders = template_without_known_placeholders.replace(placeholder, "")
+    if "{{" in template_without_known_placeholders or "}}" in template_without_known_placeholders:
+        raise ValueError("report template has malformed placeholders")
     for name, value in replacements.items():
         template = template.replace("{{" + name + "}}", value)
-    if "{{" in template or "}}" in template:
-        raise ValueError("report template has unresolved placeholders")
     return template
 
 

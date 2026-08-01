@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from web.build import build_site
+from web.build import build_site, render_report
 from web.report_model import NewsItem, ReportDocument, ReportMeta, SourceLink
 
 
@@ -12,6 +12,47 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class WebBuildTest(unittest.TestCase):
+    def test_renderer_preserves_mustache_literals_in_report_text(self):
+        document = ReportDocument(
+            meta=ReportMeta(
+                report_id="mustache", report_date="2026-08-01", slot="0800", slot_label="盘前",
+                title="{{unresolved}}", window="window", cutoff="cutoff", source_name="",
+            ),
+            items=(NewsItem(
+                rank=1, title="item", core="core", score=1,
+                sources=(SourceLink("source", "", "source", "https://example.com"),),
+            ),),
+        )
+        page = render_report(document, [{
+            "id": "mustache", "date": "2026-08-01", "label": "盘前",
+            "url": "reports/2026-08-01-0800.html",
+        }])
+        self.assertIn("{{unresolved}}", page)
+
+    def test_renderer_rejects_malformed_template_delimiters(self):
+        document = ReportDocument(
+            meta=ReportMeta(
+                report_id="template", report_date="2026-08-01", slot="0800", slot_label="盘前",
+                title="title", window="window", cutoff="cutoff", source_name="",
+            ),
+            items=(NewsItem(
+                rank=1, title="item", core="core", score=1,
+                sources=(SourceLink("source", "", "source", "https://example.com"),),
+            ),),
+        )
+        with TemporaryDirectory() as tmp:
+            template_path = Path(tmp) / "report.html"
+            template_path.write_text(
+                (ROOT / "web/templates/report.html").read_text(encoding="utf-8") + "{{",
+                encoding="utf-8",
+            )
+            with patch("web.build._TEMPLATE_PATH", template_path):
+                with self.assertRaises(ValueError):
+                    render_report(document, [{
+                        "id": "template", "date": "2026-08-01", "label": "盘前",
+                        "url": "reports/2026-08-01-0800.html",
+                    }])
+
     def test_build_creates_index_manifest_and_four_report_pages(self):
         with TemporaryDirectory() as tmp:
             result = build_site(ROOT, Path(tmp) / "dist")
