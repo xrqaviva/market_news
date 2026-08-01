@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 
 from web.report_model import NewsItem, ReportDocument
 from web.report_parser import discover_reports, parse_report
+from web.security import assert_public_tree_safe
 
 
 _TEMPLATE_PATH = Path(__file__).with_name("templates") / "report.html"
@@ -136,7 +137,7 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
         raise ValueError("report template has malformed placeholders")
     for name, value in replacements.items():
         template = template.replace("{{" + name + "}}", value)
-    return template
+    return template.replace('  <link rel="icon" href="data:,">\n', "")
 
 
 def _manifest_entry(document: ReportDocument) -> dict:
@@ -262,6 +263,7 @@ def build_site(project_root: Path, output_dir: Path) -> BuildResult:
         _write_index(next_output / "index.html", latest["url"], latest["title"])
         _copy_assets(project_root, next_output)
         _validate_output(next_output, report_index)
+        assert_public_tree_safe(next_output)
         _atomic_replace(target, next_output)
     except Exception:
         _remove_directory(next_output)

@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from web.build import build_site, render_report
 from web.report_model import NewsItem, ReportDocument, ReportMeta, SourceLink
+from web.security import PublicTreeUnsafe
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -105,11 +106,11 @@ class WebBuildTest(unittest.TestCase):
             self.assertIn('class="filter-button is-active"', page)
             self.assertIn('data-category=', page)
 
-    def test_page_uses_embedded_icon_without_local_asset_request(self):
+    def test_page_does_not_use_unsafe_data_url(self):
         with TemporaryDirectory() as tmp:
             output = build_site(ROOT, Path(tmp) / "dist").output_dir
             page = (output / "reports/2026-07-31-0800.html").read_text(encoding="utf-8")
-            self.assertIn('<link rel="icon" href="data:,">', page)
+            self.assertNotIn('href="data:', page)
 
     def test_rendered_rows_keep_title_and_core_categories_for_filtering(self):
         with TemporaryDirectory() as tmp:
@@ -185,3 +186,34 @@ class WebBuildTest(unittest.TestCase):
             with patch("web.build.shutil.rmtree", side_effect=reject_previous):
                 result = build_site(ROOT, target)
             self.assertEqual(target.resolve(), result.output_dir)
+
+    def test_unsafe_generated_content_preserves_existing_output(self):
+        document = ReportDocument(
+            meta=ReportMeta(
+                report_id="unsafe", report_date="2026-08-01", slot="0800", slot_label="盘前",
+                title="/Users/aviva/private", window="window", cutoff="cutoff", source_name="",
+            ),
+            items=(NewsItem(
+                rank=1, title="item", core="core", score=1,
+                sources=(SourceLink("source", "", "source", "https://example.com"),),
+            ),),
+        )
+        with TemporaryDirectory() as tmp:
+            target = Path(tmp) / "dist"
+            build_site(ROOT, target)
+            before = {
+                path.relative_to(target): path.read_bytes()
+                for path in target.rglob("*") if path.is_file()
+            }
+
+            with patch("web.build.discover_reports", return_value=[(Path("unused"), object())]), patch(
+                "web.build.parse_report", return_value=document
+            ):
+                with self.assertRaises(PublicTreeUnsafe):
+                    build_site(ROOT, target)
+
+            after = {
+                path.relative_to(target): path.read_bytes()
+                for path in target.rglob("*") if path.is_file()
+            }
+            self.assertEqual(before, after)
