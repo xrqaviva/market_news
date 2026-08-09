@@ -93,8 +93,40 @@ class WebBuildTest(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             output = build_site(ROOT, Path(tmp) / "dist").output_dir
             page = (output / "reports/2026-07-31-0800.html").read_text(encoding="utf-8")
-            self.assertIn('href="2026-07-31-0800.html"', page)
+            self.assertIn('href="2026-07-31-0800.html#archive-2026-07-31"', page)
             self.assertNotIn('href="reports/2026-07-31-0800.html"', page)
+
+    def test_archive_groups_dates_and_targets_latest_real_report(self):
+        document = ReportDocument(
+            meta=ReportMeta(
+                report_id="2026-08-10-0800", report_date="2026-08-10", slot="0800",
+                slot_label="盘前", title="title", window="window", cutoff="cutoff",
+                source_name="",
+            ),
+            items=(),
+        )
+
+        page = render_report(document, [
+            {
+                "id": "2026-07-30-1800", "date": "2026-07-30", "slot": "1800",
+                "label": "收盘", "url": "reports/2026-07-30-1800.html",
+            },
+            {
+                "id": "2026-08-10-0800", "date": "2026-08-10", "slot": "0800",
+                "label": "盘前", "url": "reports/2026-08-10-0800.html",
+            },
+            {
+                "id": "2026-07-30-0800", "date": "2026-07-30", "slot": "0800",
+                "label": "盘前", "url": "reports/2026-07-30-0800.html",
+            },
+        ])
+
+        self.assertLess(page.index("2026-08-10"), page.index("2026-07-30"))
+        self.assertEqual(1, page.count('data-report-date="2026-07-30"'))
+        self.assertIn('href="2026-07-30-1800.html#archive-2026-07-30"', page)
+        self.assertLess(page.index(">盘前</a>"), page.index(">盘后</a>"))
+        self.assertNotIn(">盘中</a>", page)
+        self.assertIn('data-report-label="2026-07-30 · 盘后"', page)
 
     def test_page_has_accessible_interaction_contract(self):
         with TemporaryDirectory() as tmp:

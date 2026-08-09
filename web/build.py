@@ -100,16 +100,51 @@ def _news_item(item: NewsItem) -> str:
     )
 
 
+def _archive_slot_label(report: dict) -> str:
+    label = str(report.get("label", ""))
+    return "盘后" if label == "收盘" else label
+
+
+def _archive_sort_key(report: dict) -> tuple:
+    slot = str(report.get("slot", ""))
+    return (int(slot) if slot.isdigit() else 9999, slot, str(report.get("id", "")))
+
+
 def _report_archive(document: ReportDocument, report_index: list[dict]) -> str:
-    entries = []
+    reports_by_date: dict[str, list[dict]] = {}
     for report in report_index:
-        url = Path(str(report["url"])).name
-        label = "{} {}".format(report["date"], report["label"])
-        current = ' aria-current="page"' if report["id"] == document.meta.report_id else ""
-        entries.append(
-            '<a href="{}"{}>{}</a>'.format(_escape(url), current, _escape(label))
+        report_date = str(report.get("date", ""))
+        reports_by_date.setdefault(report_date, []).append(report)
+
+    date_groups = []
+    for report_date in sorted(reports_by_date, reverse=True):
+        reports = sorted(reports_by_date[report_date], key=_archive_sort_key)
+        target = reports[-1]
+        anchor = "archive-{}".format(report_date)
+        target_url = "{}#{}".format(Path(str(target.get("url", ""))).name, anchor)
+        slot_links = []
+        for report in reports:
+            url = "{}#{}".format(Path(str(report.get("url", ""))).name, anchor)
+            current = ' aria-current="page"' if report.get("id") == document.meta.report_id else ""
+            slot_links.append(
+                '<a data-report-link data-report-label="{}" href="{}"{}>{}</a>'.format(
+                    _escape("{} · {}".format(report_date, _archive_slot_label(report))),
+                    _escape(url),
+                    current,
+                    _escape(_archive_slot_label(report)),
+                )
+            )
+        date_groups.append(
+            '<div class="archive-date-group" id="{}"><a class="archive-date-link" '
+            'data-report-date="{}" href="{}">{}</a><div class="archive-slots">{}</div></div>'.format(
+                _escape(anchor),
+                _escape(report_date),
+                _escape(target_url),
+                _escape(report_date),
+                "".join(slot_links),
+            )
         )
-    return "".join(entries)
+    return "".join(date_groups)
 
 
 def render_report(document: ReportDocument, report_index: list[dict]) -> str:
