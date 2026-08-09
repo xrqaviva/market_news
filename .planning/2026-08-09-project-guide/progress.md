@@ -41,3 +41,4 @@
 - Task 5复验：`python3 -m unittest discover -s tests -v`运行16项、全部通过；主工作树`python3 -m unittest tests/test_report_contract.py -v`运行7项、全部通过；`codex/news-radar-web`隔离工作树`python3 -m unittest discover -s tests -v`运行50项、全部通过。
 - Task 5质量检查：`rg -n 'TBD|TODO|待补|稍后填写|一眼结论|操作建议|买入|卖出' docs/PROJECT_GUIDE.md`只命中禁止交易建议的规则/UAT验收语境，无占位符或对读者的交易建议；`git diff --check -- docs/PROJECT_GUIDE.md tests/test_project_guide.py .planning/2026-08-09-project-guide`无错误。规格第16节已逐项核对：链接、章节、来源字段、状态证据、测试编号、分支/暂停状态、凭据与绝对路径边界均满足。
 - GitHub认证、首次推送、GitHub Pages、自动任务和网页分支合并继续暂停；本任务仅提交说明书、文档契约与三份过程记录，不执行外部操作。
+- Task 5交付提交：`3c3b6f3 docs: add news radar project guide`，精确包含`docs/PROJECT_GUIDE.md`、`tests/test_project_guide.py`及`.planning/2026-08-09-project-guide/`下的`task_plan.md`、`findings.md`、`progress.md`五个文件；未包含历史证据、网页实现、GitHub或自动任务配置。
