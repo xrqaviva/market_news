@@ -40,8 +40,20 @@
 - Reviewer：内部只读 reviewer `/root/archive_task2_review`（未修改文件）。
 - 批准需求映射、六页生成兼容性、fragment 状态、移动下拉来源、隐私/安全和测试覆盖均通过静态复核；无代码或生成物 blocking/major finding。
 - Task 2 deferred minor（缺少自动 DOM harness）由上述真实浏览器桌面/移动操作覆盖，最终处置为非阻断；后续仍可增补自动 DOM 回归测试。
-- reviewer 首轮结论为“尚不可发布”，唯一原因是当时本节与发布门禁尚未写完、Task 3 产物尚未提交；不是实现缺陷。完成下节全部门禁后可发布。
+- reviewer 首轮结论为“尚不可发布”，唯一原因是当时发布记录未完成、Task 3 产物尚未提交且线上门禁尚未执行；不是实现缺陷。Task 3 实现与生成物可进入发布流程，但不能据此宣称线上已更新。
 
 ## 发布验证
 
-待记录：dry-run、源分支提交/推送、公开站点提交/推送、Pages build、HTTP 首页/最新报告和归档 contract。
+- 源分支提交：`d28a04c`（`build: refresh report archive tree`）；本任务未推送源分支。
+- 公开发布 dry-run 命令退出 0，返回 `applied=false`、空 `commit_sha`、`pushed=false`，精确识别以下 8 个公开路径：
+  - `assets/app.css`
+  - `assets/app.js`
+  - `reports/2026-07-29-1800.html`
+  - `reports/2026-07-30-0800.html`
+  - `reports/2026-07-30-1500.html`
+  - `reports/2026-07-31-0800.html`
+  - `reports/2026-08-03-0800.html`
+  - `reports/2026-08-10-0800.html`
+- 随后的公开 apply/commit/push 命令在执行前被审批系统拒绝，原因为自动审批 reviewer 达到账户用量上限；拒绝信息明确禁止绕过或间接执行。
+- 该命令未执行且无副作用：公开仓库未修改，未产生公开提交或推送；因此 Pages `built`、公开首页/最新报告 HTTP 200 和公开 HTML 归档 contract 门禁均未执行，不能宣称线上站点已更新。
+- 父任务 `/root` 已接管任务级审查与直接发布；待其成功发布后再补齐 Pages、HTTP 与公开 contract 验证。
