@@ -23,3 +23,7 @@
 - Task 3历史证据处理：主工作树中的`reports/`、`evidence/`及早期设计/计划仍未跟踪；说明书仅以代码路径和状态记录，不创建会在干净克隆中失效的Markdown链接。
 - Task 3 fix round 1：第17章状态列已收紧为`已完成`、`已验证`、`暂停`、`受限`、`规划中`、`历史口径`六种枚举；历史运行、隔离分支和未合入等限定移至证据/限制列。安全边界明确禁止对凭据和浏览器私密数据进行读取、写入、输出、持久化或复制，覆盖本地文件、缓存、构建目录和日志/报告。
 - Task 3 fix round 1 RED/GREEN：新增状态枚举、网页分支/四项暂停、Markdown→固定HTML→`web/dist`及完整安全动词契约后，定向测试按预期报7项失败；修复后`python3 -m unittest tests/test_project_guide.py -v`与`python3 -m unittest discover -s tests -v`均运行10项且全部通过，`git diff --check`通过。
+- Task 4完成：第18章写入UAT-001至UAT-014，第19章写入IT-001至IT-013；每例均含场景、前置条件、操作步骤、预期结果、当前状态、实际结果和证据。历史未跟踪材料只以代码路径记录，未生成失效链接；GitHub认证、推送和Pages相关外部验证仍标为暂停。
+- Task 4 RED：先新增稳定编号/必填字段和未解决占位符契约，再运行`python3 -m unittest tests/test_project_guide.py -v`；12项中10项通过，稳定编号缺失与既有“待补”文字分别导致2项预期失败。
+- Task 4证据核验：2026-08-09在主工作树实际运行`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_report_contract -v`，7项通过；在`codex/news-radar-web`隔离工作树实际运行`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v`，50项通过，仍未合入main或执行外网发布。
+- Task 4 GREEN：补齐两张台账并将既有占位词改为“缺失字段”后，`python3 -m unittest tests/test_project_guide.py -v`与`python3 -m unittest discover -s tests -v`均运行12项、全部通过；`git diff --check`通过，说明书占位符扫描无匹配。

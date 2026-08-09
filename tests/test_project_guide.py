@@ -81,6 +81,18 @@ class ProjectGuideContractTest(unittest.TestCase):
         self.assertIn("不得读取、写入、输出、持久化或复制", text)
         self.assertIn("本地文件、缓存、构建目录和日志/报告", text)
 
+    def test_uat_and_integration_cases_have_stable_ids(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        for case_id in ("UAT-001", "UAT-014", "IT-001", "IT-013"):
+            self.assertIn(case_id, text)
+        for field in ("前置条件", "操作步骤", "预期结果", "当前状态", "实际结果", "证据"):
+            self.assertIn(field, text)
+
+    def test_no_unresolved_placeholders(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        for placeholder in ("TBD", "TODO", "待补", "稍后填写"):
+            self.assertNotIn(placeholder, text)
+
 
 if __name__ == "__main__":
     unittest.main()
