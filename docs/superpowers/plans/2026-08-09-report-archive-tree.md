@@ -46,7 +46,7 @@
 
 **Interfaces:**
 - Consumes: `report_index: list[dict]` entries with `id`, `date`, `slot`, `label`, and `url`.
-- Produces: `_report_archive(document: ReportDocument, report_index: list[dict]) -> str` containing `.archive-date-group`, `.archive-date-link`, and `.archive-slots` markup.
+- Produces: `_report_archive(document: ReportDocument, report_index: list[dict]) -> str` containing `.archive-date-group`, `.archive-date-link`, `.archive-slots`, and child `data-report-link` / `data-report-label="日期 · 时段"` markup.
 
 - [ ] **Step 1: Write the failing rendering test**
 
@@ -58,6 +58,7 @@ self.assertEqual(1, page.count('data-report-date="2026-07-30"'))
 self.assertIn('href="2026-07-30-1800.html#archive-2026-07-30"', page)
 self.assertLess(page.index(">盘前</a>"), page.index(">盘后</a>"))
 self.assertNotIn(">盘中</a>", page)
+self.assertIn('data-report-label="2026-07-30 · 盘后"', page)
 ```
 
 The production mutation caught is reverting to flat input order, targeting the wrong daily report, retaining `收盘`, or inventing absent slots.
@@ -82,7 +83,7 @@ def _archive_sort_key(report: dict) -> tuple:
     return (int(slot) if slot.isdigit() else 9999, slot, str(report.get("id", "")))
 ```
 
-Group by exact `date`, sort date keys descending, sort each real group using `_archive_sort_key`, use the last item as the date-link target, and render child links only from the group. Add `#archive-<date>` to both date and child links. Escape every interpolated value with `_escape`.
+Group by exact `date`, sort date keys descending, sort each real group using `_archive_sort_key`, use the last item as the date-link target, and render child links only from the group. Add `#archive-<date>` to both date and child links, mark every child with `data-report-link`, and put its complete mobile option text in `data-report-label="<date> · <normalized slot>"`. Escape every interpolated value with `_escape`.
 
 - [ ] **Step 4: Run focused and existing archive tests to GREEN**
 
@@ -99,7 +100,7 @@ Expected: both pass; update the existing relative-link assertion to include its 
 - Modify: `web/assets/app.css`
 
 **Interfaces:**
-- Consumes: `.archive-date-group[data-report-date]`, `.archive-date-link[aria-controls]`, `.archive-slots[hidden]`, and child anchors marked `data-report-link`.
+- Consumes: `.archive-date-group[data-report-date]`, `.archive-date-link[aria-controls]`, `.archive-slots[hidden]`, and child anchors marked `data-report-link` with `data-report-label`.
 - Produces: `applyArchiveState()` that derives the sole expanded date from `window.location.hash`; mobile options generated only from `a[data-report-link]`.
 
 - [ ] **Step 1: Write failing accessibility and static-state assertions**
@@ -124,7 +125,7 @@ Expected: FAIL because current pages have no date controls or hidden archive slo
 
 - [ ] **Step 3: Implement fragment-driven state without storage**
 
-Remove the sidebar label from `web/templates/report.html`. In `web/assets/app.js`, change mobile option discovery to `[data-component='report-archive'] a[data-report-link]`. Add `applyArchiveState()` that accepts only hashes matching `#archive-YYYY-MM-DD`, sets exactly one matching group's list `hidden = false`, sets its date link `aria-expanded = "true"`, and collapses all others. Call it at startup and on `hashchange`. Do not call any storage, cookie, or history API.
+Remove the sidebar label from `web/templates/report.html`. In `web/assets/app.js`, change mobile option discovery to `[data-component='report-archive'] a[data-report-link]` and use each link's `data-report-label` as the option text. Add `applyArchiveState()` that accepts only hashes matching `#archive-YYYY-MM-DD`, sets exactly one matching group's list `hidden = false`, sets its date link `aria-expanded = "true"`, and collapses all others. Call it at startup and on `hashchange`. Do not call any storage, cookie, or history API.
 
 - [ ] **Step 4: Implement the 120px visual contract**
 
