@@ -95,6 +95,7 @@ Expected: both pass; update the existing relative-link assertion to include its 
 
 **Files:**
 - Modify: `tests/test_web_build.py`
+- Modify: `web/build.py` (only archive accessibility and initial-collapse attributes on the Task 1 structure)
 - Modify: `web/templates/report.html`
 - Modify: `web/assets/app.js`
 - Modify: `web/assets/app.css`
@@ -125,7 +126,7 @@ Expected: FAIL because current pages have no date controls or hidden archive slo
 
 - [ ] **Step 3: Implement fragment-driven state without storage**
 
-Remove the sidebar label from `web/templates/report.html`. In `web/assets/app.js`, change mobile option discovery to `[data-component='report-archive'] a[data-report-link]` and use each link's `data-report-label` as the option text. Add `applyArchiveState()` that accepts only hashes matching `#archive-YYYY-MM-DD`, sets exactly one matching group's list `hidden = false`, sets its date link `aria-expanded = "true"`, and collapses all others. Call it at startup and on `hashchange`. Do not call any storage, cookie, or history API.
+In `web/build.py`, add stable slot-list IDs, matching date-link `aria-controls`, initial `aria-expanded="false"`, and `hidden` on every slot list without changing Task 1 grouping or target logic. Remove the sidebar label from `web/templates/report.html`. In `web/assets/app.js`, change mobile option discovery to `[data-component='report-archive'] a[data-report-link]` and use each link's `data-report-label` as the option text. Add `applyArchiveState()` that accepts only hashes matching `#archive-YYYY-MM-DD`, sets exactly one matching group's list `hidden = false`, sets its date link `aria-expanded = "true"`, and collapses all others. Call it at startup and on `hashchange`. Do not call any storage, cookie, or history API.
 
 - [ ] **Step 4: Implement the 120px visual contract**
 
