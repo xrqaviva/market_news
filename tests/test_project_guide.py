@@ -45,6 +45,21 @@ class ProjectGuideContractTest(unittest.TestCase):
         self.assertIn("资金验证、公告确认、可靠性、个股映射、市场反馈和深度判断均不参与排序", text)
         self.assertIn("资金验证和公告确认也不是入榜前提", text)
 
+    def test_runtime_and_status_boundaries_are_explicit(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        for phrase in ("海外宏观与财报", "国内政策与公告", "登录渠道热度", "超过15分钟仍继续完成"):
+            self.assertIn(phrase, text)
+        self.assertIn("codex/news-radar-web", text)
+        self.assertIn("尚未合入main", text)
+        self.assertIn("GitHub Pages", text)
+        self.assertIn("暂停", text)
+
+    def test_security_boundaries_are_explicit(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        for forbidden_source in ("密码", "Cookie", "Token", "Local Storage", "浏览器历史"):
+            self.assertIn(forbidden_source, text)
+        self.assertIn("不得读取或输出", text)
+
 
 if __name__ == "__main__":
     unittest.main()
