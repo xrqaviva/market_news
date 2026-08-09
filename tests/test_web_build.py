@@ -137,6 +137,21 @@ class WebBuildTest(unittest.TestCase):
             self.assertIn('class="mobile-report-select"', page)
             self.assertIn('class="filter-button is-active"', page)
             self.assertIn('data-category=', page)
+            self.assertIn('class="archive-date-link"', page)
+            self.assertIn('aria-expanded="false"', page)
+            self.assertIn('class="archive-slots"', page)
+            self.assertIn('data-report-link', page)
+            self.assertNotIn('<p class="sidebar-label">报告归档</p>', page)
+            self.assertIn(
+                '<div class="archive-date-group" id="archive-2026-07-31" '
+                'data-report-date="2026-07-31"><a class="archive-date-link" '
+                'aria-expanded="false" aria-controls="archive-slots-2026-07-31"',
+                page,
+            )
+            self.assertIn(
+                '<div class="archive-slots" id="archive-slots-2026-07-31" hidden>',
+                page,
+            )
 
     def test_renderer_distinguishes_source_only_rows_from_analysis_details(self):
         document = ReportDocument(

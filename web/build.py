@@ -121,6 +121,7 @@ def _report_archive(document: ReportDocument, report_index: list[dict]) -> str:
         reports = sorted(reports_by_date[report_date], key=_archive_sort_key)
         target = reports[-1]
         anchor = "archive-{}".format(report_date)
+        slots_id = "archive-slots-{}".format(report_date)
         target_url = "{}#{}".format(Path(str(target.get("url", ""))).name, anchor)
         slot_links = []
         for report in reports:
@@ -135,12 +136,15 @@ def _report_archive(document: ReportDocument, report_index: list[dict]) -> str:
                 )
             )
         date_groups.append(
-            '<div class="archive-date-group" id="{}"><a class="archive-date-link" '
-            'data-report-date="{}" href="{}">{}</a><div class="archive-slots">{}</div></div>'.format(
+            '<div class="archive-date-group" id="{}" data-report-date="{}"><a '
+            'class="archive-date-link" aria-expanded="false" aria-controls="{}" href="{}">{}</a>'
+            '<div class="archive-slots" id="{}" hidden>{}</div></div>'.format(
                 _escape(anchor),
                 _escape(report_date),
+                _escape(slots_id),
                 _escape(target_url),
                 _escape(report_date),
+                _escape(slots_id),
                 "".join(slot_links),
             )
         )
