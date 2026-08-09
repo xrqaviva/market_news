@@ -83,12 +83,14 @@ def _news_item(item: NewsItem) -> str:
         for label, value in detail_fields
         if value
     )
+    detail_kind = "analysis" if details else "sources-inline"
     return (
-        '<article data-component="news-detail" data-rank="{}" data-category="{}">'
+        '<article data-component="news-detail" data-rank="{}" data-category="{}" data-detail-kind="{}">'
         '<h2>{}. {}</h2><p>{}</p>{}<p>热点权重：{}/100</p>{}</article>'
     ).format(
         _escape(item.rank),
         _escape(item.category),
+        detail_kind,
         _escape(item.rank),
         _escape(item.title),
         _escape(item.core),

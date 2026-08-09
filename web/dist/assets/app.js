@@ -25,6 +25,7 @@
     const detail = document.createElement("div");
     const toggleTemplate = document.querySelector("#news-toggle-template");
     const toggle = toggleTemplate.content.firstElementChild.cloneNode(true);
+    const inlineSources = row.dataset.detailKind === "sources-inline";
 
     row.classList.add("news-row");
     content.className = "news-content";
@@ -40,11 +41,18 @@
     summary.className = "news-summary";
     const score = scoreLine.textContent.match(/(\d+)\/100/);
     scoreCell.innerHTML = `<strong>${score ? score[1] : "—"}</strong><span>热点权重</span>`;
-    if (sources) detail.appendChild(sources);
-    paragraphs.forEach((paragraph) => detail.appendChild(paragraph));
-    decoratePricingLabels(detail);
-
-    content.append(heading, summary, toggle, detail);
+    content.append(heading, summary);
+    if (inlineSources) {
+      if (sources) {
+        sources.classList.add("news-inline-sources");
+        content.appendChild(sources);
+      }
+    } else {
+      if (sources) detail.appendChild(sources);
+      paragraphs.forEach((paragraph) => detail.appendChild(paragraph));
+      decoratePricingLabels(detail);
+      content.append(toggle, detail);
+    }
     row.replaceChildren(rankCell, content, scoreCell);
   }
 

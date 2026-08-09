@@ -367,6 +367,12 @@ select:focus-visible {
   font-weight: 650;
 }
 
+.news-inline-sources {
+  margin-top: 6px;
+  padding-top: 0;
+  border-top: 0;
+}
+
 .mobile-report-control {
   display: none;
 }

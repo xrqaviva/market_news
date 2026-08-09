@@ -1,7 +1,8 @@
 from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
-from web.report_parser import discover_reports, parse_report
+from web.report_parser import CatalogEntry, discover_reports, parse_report
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -80,3 +81,62 @@ class WebReportParserTest(unittest.TestCase):
             with self.subTest(report_id=report_id):
                 self.assertEqual(window, documents[report_id].meta.window)
                 self.assertEqual(cutoff, documents[report_id].meta.cutoff)
+
+    def test_standard_report_keeps_explicit_window_and_actual_cutoff(self):
+        with TemporaryDirectory() as tmp:
+            report_path = Path(tmp) / "2026-08-10-0800-premarket.md"
+            report_path.write_text(
+                "# 2026-08-10 A股盘前新闻热榜\n\n"
+                "> **新闻窗口：** 2026-08-07 00:00—2026-08-09 19:44:27（北京时间）\n"
+                "> **实际截点：** 2026-08-09 19:44:27。本稿为提前版。\n\n"
+                "## 1. 示例新闻\n\n"
+                "**核心信息：** 示例核心信息。\n\n"
+                "**热点权重：80/100**（覆盖20 + 变化20 + 绝对热度15 + 新鲜度15 + 频次10）\n\n"
+                "**财报市场反馈：** 周末发布，下一可交易时段尚未出现。\n\n"
+                "| 传播渠道 | 北京时间 | 消息或热度 |\n"
+                "|---|---:|---|\n"
+                "| 官方 | 08-09 19:00 | [具体页面](https://example.com/post) |\n",
+                encoding="utf-8",
+            )
+            entry = CatalogEntry(
+                report_id="20260810-0800",
+                path=report_path.name,
+                report_date="2026-08-10",
+                slot="0800",
+                label="盘前",
+            )
+
+            document = parse_report(report_path, entry)
+
+            self.assertEqual(
+                "2026-08-07 00:00—2026-08-09 19:44:27（北京时间）",
+                document.meta.window,
+            )
+            self.assertEqual("2026-08-09 19:44:27", document.meta.cutoff)
+            self.assertEqual(
+                "周末发布，下一可交易时段尚未出现。",
+                document.items[0].market_feedback,
+            )
+
+    def test_compact_core_excludes_source_labels_and_keeps_descriptive_source(self):
+        with TemporaryDirectory() as tmp:
+            report_path = Path(tmp) / "2026-08-10-0800-compact.md"
+            report_path.write_text(
+                "# 紧凑条目测试\n\n"
+                "11. **示例新闻｜70/100**：事实说明。"
+                "[财联社周末要闻汇总：示例主题](https://www.cls.cn/detail/1)\n",
+                encoding="utf-8",
+            )
+            entry = CatalogEntry(
+                report_id="20260810-0800",
+                path=report_path.name,
+                report_date="2026-08-10",
+                slot="0800",
+                label="盘前",
+            )
+
+            item = parse_report(report_path, entry).items[0]
+
+            self.assertEqual("事实说明。", item.core)
+            self.assertEqual("财联社周末要闻汇总：示例主题", item.sources[0].label)
+            self.assertEqual("原始来源", item.sources[0].channel)

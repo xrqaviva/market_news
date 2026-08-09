@@ -106,6 +106,37 @@ class WebBuildTest(unittest.TestCase):
             self.assertIn('class="filter-button is-active"', page)
             self.assertIn('data-category=', page)
 
+    def test_renderer_distinguishes_source_only_rows_from_analysis_details(self):
+        document = ReportDocument(
+            meta=ReportMeta(
+                report_id="detail-kinds", report_date="2026-08-10", slot="0800",
+                slot_label="盘前", title="title", window="window", cutoff="cutoff",
+                source_name="",
+            ),
+            items=(
+                NewsItem(
+                    rank=1, title="source only", core="core", score=70,
+                    sources=(SourceLink("原始来源", "", "来源页面", "https://example.com/1"),),
+                ),
+                NewsItem(
+                    rank=2, title="analysis", core="core", score=60,
+                    signal="signal",
+                    sources=(SourceLink("官方", "", "来源页面", "https://example.com/2"),),
+                ),
+            ),
+        )
+
+        page = render_report(document, [{
+            "id": "detail-kinds", "date": "2026-08-10", "label": "盘前",
+            "url": "reports/2026-08-10-0800.html",
+        }])
+
+        self.assertIn(
+            'data-rank="1" data-category="其他" data-detail-kind="sources-inline"',
+            page,
+        )
+        self.assertIn('data-rank="2" data-category="其他" data-detail-kind="analysis"', page)
+
     def test_fresh_build_keeps_empty_data_favicon(self):
         with TemporaryDirectory() as tmp:
             output = build_site(ROOT, Path(tmp) / "dist").output_dir

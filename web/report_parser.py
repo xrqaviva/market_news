@@ -139,7 +139,7 @@ def _inline_sources(text: str) -> Tuple[SourceLink, ...]:
     for label, raw_url in _LINK.findall(text):
         url = _valid_url(raw_url)
         if url:
-            sources.append(SourceLink("报告链接", "", _plain(label), url))
+            sources.append(SourceLink("原始来源", "", _plain(label), url))
     return tuple(sources)
 
 
@@ -167,7 +167,8 @@ def _make_top_item(rank: int, title: str, block: str) -> NewsItem:
         rank=rank, title=title, core=core, score=score, score_breakdown=breakdown,
         signal=_field(block, "关键信号/预期差"),
         market_feedback=(
-            _field(block, "带时间市场反馈") or _field(block, "财报后盘后反馈")
+            _field(block, "带时间市场反馈") or _field(block, "财报市场反馈")
+            or _field(block, "财报后盘后反馈")
             or _field(block, "财报后首个可交易时段反馈")
             or _field(block, "财报后发布日余下交易时段反馈")
         ),
@@ -181,7 +182,7 @@ def _compact_items(text: str) -> Iterable[NewsItem]:
     for match in _COMPACT.finditer(text):
         rank, title, score, core = match.groups()
         visible_title = _plain(title)
-        visible_core = _plain(core or "")
+        visible_core = _plain(_LINK.sub("", core or "")).strip(" ｜")
         yield NewsItem(
             rank=int(rank), title=visible_title, core=visible_core, score=int(score),
             category=_category(visible_title, visible_core), sources=_inline_sources(core or ""),
@@ -205,13 +206,21 @@ def parse_report(path: Path, entry: CatalogEntry) -> ReportDocument:
     title_match = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
     window_match = re.search(r"^>\s+\*\*窗口：\*\*\s*(.+)$", text, re.MULTILINE)
     cutoff_match = re.search(r"^>\s+\*\*生成任务启动：\*\*\s*([^。]+)", text, re.MULTILINE)
+    actual_cutoff_match = re.search(r"^>\s+\*\*实际截点：\*\*\s*([^。]+)", text, re.MULTILINE)
+    news_window_match = re.search(r"^>\s+\*\*新闻窗口：\*\*\s*(.+)$", text, re.MULTILINE)
     window = _plain(window_match.group(1)) if window_match else ""
-    cutoff = _plain(cutoff_match.group(1)) if cutoff_match else ""
+    cutoff = (
+        _plain(cutoff_match.group(1)) if cutoff_match
+        else _plain(actual_cutoff_match.group(1)) if actual_cutoff_match
+        else ""
+    )
+    if not window and news_window_match:
+        window = _plain(news_window_match.group(1))
     if not window:
-        news_window_match = re.search(r"^>\s+\*\*新闻窗口：([^*。]+)", text, re.MULTILINE)
+        legacy_news_window_match = re.search(r"^>\s+\*\*新闻窗口：([^*。]+)", text, re.MULTILINE)
         event_window_match = re.search(r"^>\s+\*\*事件窗口：([^*]+)\*\*", text, re.MULTILINE)
-        if news_window_match:
-            window = _plain(news_window_match.group(1)) + "（北京时间）"
+        if legacy_news_window_match:
+            window = _plain(legacy_news_window_match.group(1)) + "（北京时间）"
         elif event_window_match:
             window = _plain(event_window_match.group(1))
     if not cutoff:
