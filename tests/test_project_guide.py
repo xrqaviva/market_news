@@ -60,6 +60,27 @@ class ProjectGuideContractTest(unittest.TestCase):
             self.assertIn(forbidden_source, text)
         self.assertIn("不得读取或输出", text)
 
+    def test_status_ledger_uses_only_the_unified_status_enum(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        ledger = text.split("## 17. 计划与完成情况", 1)[1].split("## 18. UAT测试用例", 1)[0]
+        allowed = {"已完成", "已验证", "暂停", "受限", "规划中", "历史口径"}
+        for line in ledger.splitlines():
+            if not line.startswith("|") or line.startswith("|---") or "当前状态" in line:
+                continue
+            with self.subTest(row=line):
+                self.assertIn(line.split("|")[2].strip(), allowed)
+
+    def test_web_publish_and_full_security_boundaries_are_explicit(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        self.assertIn("codex/news-radar-web隔离分支已实现且尚未合入main", text)
+        for paused in ("GitHub认证：暂停", "首次推送：暂停", "GitHub Pages：暂停", "自动任务：暂停"):
+            with self.subTest(paused=paused):
+                self.assertIn(paused, text)
+        self.assertIn("Markdown → 固定HTML → web/dist", text)
+        self.assertIn("公开仓库只接收`web/dist`", text)
+        self.assertIn("不得读取、写入、输出、持久化或复制", text)
+        self.assertIn("本地文件、缓存、构建目录和日志/报告", text)
+
 
 if __name__ == "__main__":
     unittest.main()

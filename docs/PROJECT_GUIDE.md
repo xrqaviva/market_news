@@ -143,15 +143,15 @@ Top 10追加深度字段：预期差或新增事实、带时间的市场反馈�
 
 ## 13. Markdown、HTML与公网发布
 
-Markdown报告是唯一内容源；固定HTML模板、CSS、JavaScript和转换器只解析合格Markdown以生成稳定页面，不能手工修改日报HTML来绕过内容或验收。该设计的受跟踪依据是[静态网页与GitHub Pages设计](superpowers/specs/2026-08-01-news-radar-web-github-pages-design.md)。
+Markdown报告是唯一内容源；固定HTML模板、CSS、JavaScript和转换器只解析合格Markdown以生成稳定页面，不能手工修改日报HTML来绕过内容或验收。固定关系为：**Markdown → 固定HTML → web/dist**。该设计的受跟踪依据是[静态网页与GitHub Pages设计](superpowers/specs/2026-08-01-news-radar-web-github-pages-design.md)。
 
 待网页隔离分支合入后，预期链路为：Markdown完整性验证 → 固定模板生成`web/dist/` → HTML结构、链接与公开范围检查 → 同步到独立公开仓库`market-news-site` → Git提交/推送 → GitHub Pages。公开仓库只接收`web/dist`；`reports/`、`evidence/`、`.planning/`、`.superpowers/`、内部说明、浏览器快照和本机调试文件都不在白名单。
 
-当前事实与设计目标必须分开：网页实现位于`codex/news-radar-web`隔离分支且尚未合入main；GitHub认证、公开仓库首次推送、GitHub Pages和任何自动发布均为**暂停**。本说明书不恢复认证、不创建或推送公开仓库、不启用Pages，也不修改自动任务。发布失败时保留上一版公开页面及本地成功的Markdown/HTML，不用空目录或半成品覆盖。
+当前事实与设计目标必须分开：codex/news-radar-web隔离分支已实现且尚未合入main。GitHub认证：暂停；首次推送：暂停；GitHub Pages：暂停；自动任务：暂停。本说明书不恢复认证、不创建或推送公开仓库、不启用Pages，也不修改自动任务。发布失败时保留上一版公开页面及本地成功的Markdown/HTML，不用空目录或半成品覆盖。
 
 ## 14. 安全与公开边界
 
-运行只记录完成任务所需的公开页面字段、结构化事件卡和经核验的具体链接。登录状态只能写为“已验证/未验证”与当时可见字段，不能成为读取私人浏览数据的理由。维护者和自动任务**不得读取或输出**密码、Cookie、Token、Local Storage、浏览器历史、验证码、登录会话、SSH密钥、Git认证配置或环境变量中的凭据。
+运行只记录完成任务所需的公开页面字段、结构化事件卡和经核验的具体链接。登录状态只能写为“已验证/未验证”与当时可见字段，不能成为读取私人浏览数据的理由。维护者和自动任务**不得读取、写入、输出、持久化或复制**密码、Cookie、Token、Local Storage、浏览器历史、验证码、登录会话、SSH密钥、Git认证配置或环境变量中的凭据；尤其不得读取或输出这些信息。该禁令覆盖本地文件、缓存、构建目录和日志/报告。
 
 内部目录与公开目录必须分离：`evidence/`、`reports/`之外的运行记录、`.planning/`、`.superpowers/`、`HANDOFF.md`、浏览器快照、本机绝对路径（例如`/Users/...`）和本地调试文件不得进入`web/dist/`或公开仓库。生成后先扫描`web/dist/`的文件名、内容和绝对路径/敏感模式；发现任一禁止内容即阻断同步和发布。日志与报告使用来源、状态和失败原因，绝不复制凭据或隐私字段。
 
@@ -185,20 +185,20 @@ Markdown报告是唯一内容源；固定HTML模板、CSS、JavaScript和转换�
 
 ## 17. 计划与完成情况
 
-状态表使用第2章的“已完成、已验证、暂停、受限、规划中、历史口径”含义。历史未跟踪证据只列代码路径及状态，不生成在干净克隆中失效的Markdown链接；“历史已运行”不等于当前分支可重跑。
+状态列严格只使用第2章的统一枚举：`已完成`、`已验证`、`暂停`、`受限`、`规划中`或`历史口径`。历史未跟踪证据只列代码路径及状态，不生成在干净克隆中失效的Markdown链接；历史运行记录不等于当前分支可重跑。
 
 | 项目 | 当前状态 | 已有内容与证据 | 未完成/限制 |
 |---|---|---|---|
-| 纯新闻热榜 | 历史已运行（主工作树未跟踪） | 代码路径`reports/2026-07-29-pure-news-hot-ranking-test-v2.md`、`docs/superpowers/plans/2026-07-29-pure-news-hot-ranking-report.md`。 | 历史计划/报告不在干净克隆；不可据此宣称当前自动化已验证。 |
-| V4扩容 | 历史已运行（主工作树未跟踪） | 代码路径`reports/2026-07-29-pure-news-hot-ranking-v4.md`、`evidence/2026-07-29-v4-monitoring-snapshots.md`、`docs/superpowers/specs/2026-07-29-pure-news-hot-ranking-v4-design.md`。 | 同上；文件未随本分支跟踪。 |
+| 纯新闻热榜 | 历史口径 | 代码路径`reports/2026-07-29-pure-news-hot-ranking-test-v2.md`、`docs/superpowers/plans/2026-07-29-pure-news-hot-ranking-report.md`；历史已运行于主工作树。 | 历史计划/报告不在干净克隆；不可据此宣称当前自动化已验证。 |
+| V4扩容 | 历史口径 | 代码路径`reports/2026-07-29-pure-news-hot-ranking-v4.md`、`evidence/2026-07-29-v4-monitoring-snapshots.md`、`docs/superpowers/specs/2026-07-29-pure-news-hot-ranking-v4-design.md`；历史已运行于主工作树。 | 文件未随本分支跟踪；不可据此宣称当前自动化已验证。 |
 | 交易窗口与紧凑长尾 | 历史口径 | 代码路径`docs/superpowers/specs/2026-07-29-trading-window-compact-news-ranking-design.md`；现行规则已写入第4、8—9章。 | 原始设计未跟踪；以当前受跟踪说明和后续设计为准。 |
-| V5/V6报告与Top 10深挖 | 历史已运行（主工作树未跟踪） | 代码路径`reports/2026-07-30-premarket-news-ranking-v5.md`、`reports/2026-07-30-premarket-news-ranking-v6-depth-test.md`、`evidence/v6-heat-agent.md`、`docs/superpowers/specs/2026-07-30-15min-top10-depth-design.md`。 | 历史材料不在本分支；当前规则由第9章和受跟踪的15分钟设计约束。 |
+| V5/V6报告与Top 10深挖 | 历史口径 | 代码路径`reports/2026-07-30-premarket-news-ranking-v5.md`、`reports/2026-07-30-premarket-news-ranking-v6-depth-test.md`、`evidence/v6-heat-agent.md`、`docs/superpowers/specs/2026-07-30-15min-top10-depth-design.md`；历史已运行于主工作树。 | 历史材料不在本分支；当前规则由第9章和受跟踪的15分钟设计约束。 |
 | 15分钟全量交付优化 | 规划中 | 受跟踪的[设计](superpowers/specs/2026-07-30-15min-full-delivery-optimization-design.md)与[实施计划](superpowers/plans/2026-07-30-15min-full-delivery-optimization.md)定义流程、超时和验收。 | 当前分支没有据此流水线实现/实跑证据；不标为已完成。 |
-| 财报反馈与IPO日程修正 | 历史规则已记录 | 第9章规则；代码路径`reports/2026-07-30-premarket-news-ranking-v6-depth-test.md`与`docs/superpowers/specs/2026-07-30-15min-top10-depth-design.md`。 | 历史证据未跟踪；后续报告须逐轮验收字段。 |
-| 静态网页与构建 | 已完成于隔离分支，尚未合入main | 隔离分支`codex/news-radar-web`的提交`4fe009e`、`93485f3`、`38f7367`至`bc16916`，包含`web/`与网页测试。 | 本分支不含该实现；未可作为main的已完成能力。 |
+| 财报反馈与IPO日程修正 | 历史口径 | 第9章规则；代码路径`reports/2026-07-30-premarket-news-ranking-v6-depth-test.md`与`docs/superpowers/specs/2026-07-30-15min-top10-depth-design.md`，表明历史规则已记录。 | 历史证据未跟踪；后续报告须逐轮验收字段。 |
+| 静态网页与构建 | 已完成 | 隔离分支`codex/news-radar-web`的提交`4fe009e`、`93485f3`、`38f7367`至`bc16916`，表明隔离分支已实现。 | 尚未合入main；本分支不含该实现，不能作为main的已完成能力。 |
 | GitHub认证、首次推送与GitHub Pages | 暂停 | 设计与计划规定须另行授权：网页[设计](superpowers/specs/2026-08-01-news-radar-web-github-pages-design.md)和[计划](superpowers/plans/2026-08-01-news-radar-web-github-pages.md)。 | 没有公开仓库、推送或Pages URL验收证据；不得声称上线。 |
 | 自动任务（08:00/12:00/15:00） | 暂停 | 15分钟设计与网页计划均明确自动任务不在当前启用范围。 | 不修改或启用；即使网页设计描述未来链路，也不是当前运行事实。 |
-| 项目说明书 | 建设中 | 设计`af8a7ad`、实施计划`bc8fd81`、骨架/方法提交`ebff5e5`、`1ac0c02`、`a536124`及`tests/test_project_guide.py`。 | 第18—22章仍由后续任务补全和总体验收；本任务不合入main。 |
+| 项目说明书 | 规划中 | 设计`af8a7ad`、实施计划`bc8fd81`、骨架/方法提交`ebff5e5`、`1ac0c02`、`a536124`及`tests/test_project_guide.py`。 | 当前建设中；第18—22章仍由后续任务补全和总体验收，本任务不合入main。 |
 
 ## 18. UAT测试用例
 

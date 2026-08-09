@@ -21,3 +21,5 @@
 - Task 3 GREEN：补全第10—17章后，同一命令运行8项、全部通过；`git diff --check`通过。`python3 -m unittest discover -v`在本分支发现0项测试（`tests/`不是可发现包），故未将其作为全套通过结论；直接模块命令是本任务实际且完整的文档契约入口。
 - Task 3状态核验：网页实现只读核验为隔离分支`codex/news-radar-web`，最新提交`bc16916`，工作树无未提交改动；说明书明确其“已完成于隔离分支，尚未合入main”。GitHub认证、首次推送、GitHub Pages和自动任务均明确为“暂停”，没有执行外部动作。
 - Task 3历史证据处理：主工作树中的`reports/`、`evidence/`及早期设计/计划仍未跟踪；说明书仅以代码路径和状态记录，不创建会在干净克隆中失效的Markdown链接。
+- Task 3 fix round 1：第17章状态列已收紧为`已完成`、`已验证`、`暂停`、`受限`、`规划中`、`历史口径`六种枚举；历史运行、隔离分支和未合入等限定移至证据/限制列。安全边界明确禁止对凭据和浏览器私密数据进行读取、写入、输出、持久化或复制，覆盖本地文件、缓存、构建目录和日志/报告。
+- Task 3 fix round 1 RED/GREEN：新增状态枚举、网页分支/四项暂停、Markdown→固定HTML→`web/dist`及完整安全动词契约后，定向测试按预期报7项失败；修复后`python3 -m unittest tests/test_project_guide.py -v`与`python3 -m unittest discover -s tests -v`均运行10项且全部通过，`git diff --check`通过。
