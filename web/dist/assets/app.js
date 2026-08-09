@@ -58,12 +58,26 @@
 
   function populateReportSelect() {
     const select = document.querySelector(".mobile-report-select");
-    document.querySelectorAll("[data-component='report-archive'] a").forEach((link) => {
+    document.querySelectorAll("[data-component='report-archive'] a[data-report-link]").forEach((link) => {
       const option = document.createElement("option");
       option.value = link.getAttribute("href");
-      option.textContent = link.textContent;
+      option.textContent = link.dataset.reportLabel;
       option.selected = link.getAttribute("aria-current") === "page";
       select.appendChild(option);
+    });
+  }
+
+  function applyArchiveState() {
+    const hashMatch = /^#archive-(\d{4}-\d{2}-\d{2})$/.exec(window.location.hash);
+    const expandedDate = hashMatch ? hashMatch[1] : null;
+
+    document.querySelectorAll(".archive-date-group[data-report-date]").forEach((group) => {
+      const dateLink = group.querySelector(".archive-date-link[aria-controls]");
+      const slots = document.getElementById(dateLink?.getAttribute("aria-controls"));
+      const expanded = group.dataset.reportDate === expandedDate;
+
+      if (slots) slots.hidden = !expanded;
+      if (dateLink) dateLink.setAttribute("aria-expanded", String(expanded));
     });
   }
 
@@ -80,6 +94,8 @@
 
   document.querySelectorAll("[data-component='news-detail']").forEach(enhanceRow);
   populateReportSelect();
+  applyArchiveState();
+  window.addEventListener("hashchange", applyArchiveState);
 
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest(".news-toggle");
