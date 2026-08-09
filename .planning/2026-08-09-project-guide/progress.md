@@ -42,3 +42,14 @@
 - Task 5质量检查：`rg -n 'TBD|TODO|待补|稍后填写|一眼结论|操作建议|买入|卖出' docs/PROJECT_GUIDE.md`只命中禁止交易建议的规则/UAT验收语境，无占位符或对读者的交易建议；`git diff --check -- docs/PROJECT_GUIDE.md tests/test_project_guide.py .planning/2026-08-09-project-guide`无错误。规格第16节已逐项核对：链接、章节、来源字段、状态证据、测试编号、分支/暂停状态、凭据与绝对路径边界均满足。
 - GitHub认证、首次推送、GitHub Pages、自动任务和网页分支合并继续暂停；本任务仅提交说明书、文档契约与三份过程记录，不执行外部操作。
 - Task 5交付提交：`3c3b6f3 docs: add news radar project guide`，精确包含`docs/PROJECT_GUIDE.md`、`tests/test_project_guide.py`及`.planning/2026-08-09-project-guide/`下的`task_plan.md`、`findings.md`、`progress.md`五个文件；未包含历史证据、网页实现、GitHub或自动任务配置。
+
+## 2026-08-09 Final Fix
+
+- 启动全分支最终审阅修复；唯一清单为`.superpowers/sdd/2026-08-09-project-guide/final-review-findings.md`的4项Important和3项Minor。
+- 改动前基线（2026-08-09）：本分支`python3 -m unittest tests/test_project_guide.py -v`与`python3 -m unittest discover -s tests -v`均运行16项、16通过；主工作区`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests/test_report_contract.py -v`运行7项、7通过；`codex/news-radar-web`工作树HEAD为`bc169160b5f62bb49d84fcb685688cd824d70e26`，其`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v`运行50项、50通过。
+- 基线不代表审阅项已满足；下一步只新增契约并在旧文档上观察RED，不先修改说明书。
+- RED：新增结构、状态、证据、Chrome/旧闻和链接契约后，运行`python3 -m unittest tests/test_project_guide.py -v`；共20项，其中14通过、6失败、0错误、0跳过。失败分别是说明书终态、本地/隔离证据边界、Chrome与旧闻边界、来源表结构、计划表结构、IT表“涉及组件”缺口，均为评审清单要求的预期RED。
+- GREEN：仅修改`docs/PROJECT_GUIDE.md`后，同一定向命令运行20项，20通过、0失败、0错误、0跳过。
+- Final Fix内容：来源矩阵补为9列并覆盖全部指定层级；说明书与第17章改为已验证并补提交/验证边界；收紧报告本地夹具和`bc16916`证据归属；UAT-013改为未执行；IT补涉及组件；旧闻明确无合格样本；增加Chrome运行时降级；加强本地链接根边界和Markdown锚点校验。
+- 第一轮完整复验（2026-08-09）：定向文档契约20/20通过；本分支`discover -s tests` 20/20通过；主工作区报告契约7/7通过；严格核对HEAD为`bc16916`的网页隔离工作树50/50通过；`git diff --check`通过。
+- 语境扫描只命中“不提供/不输出买卖建议”的禁令、历史项目目标和UAT-012检查语境；无占位符或面向读者的交易建议。凭据关键词仅出现于明确的安全禁令，`/Users/...`仅作为被禁止公开的绝对路径示例。
