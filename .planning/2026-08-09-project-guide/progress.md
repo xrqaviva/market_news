@@ -9,6 +9,14 @@
 - SDD任务1—5待执行。
 - 预检发现无受跟踪`tests/`目录，既有测试基线不可用；已记录，不误报为测试回归。
 - 用户允许隔离分支阶段性提交；最终审阅通过前不合入`main`。
+- Task 1完成并提交`ebff5e5`：说明书22章骨架、核验日期和首个文档契约测试；RED/GREEN均有记录。
+- Task 1独立审阅：规格✅、质量Approved、无Critical/Important/Minor。
+- Task 2完成：第1—9章、来源矩阵、时间、热度和报告规则落盘；文档契约6项通过。
+- Task 2首轮审阅发现旧闻异动量化边界及资金/公告排序边界两项Important；修复提交`a536124`后范围复审全部ADDRESSED，无新破坏。
+- Task 3完成：第10—17章、运行步骤、文件关系、安全、降级、决策与计划状态台账落盘。
+- Task 3审阅发现状态枚举、安全动词和契约覆盖问题；修复提交`b328879`后10项契约通过，范围复审全部ADDRESSED。
+- Task 4完成：UAT-001—014、IT-001—013全部持久化，区分已通过、隔离分支已通过、受限、未执行和暂停。
+- Task 4审阅发现Apple财报UAT证据范围和测试术语问题；修复提交`6272dd5`后14项文档契约、7项报告契约通过，范围复审APPROVE。
 - Task 1 RED：`python3 -m unittest tests/test_project_guide.py -v`按预期报错，`docs/PROJECT_GUIDE.md`不存在（`FileNotFoundError`）。
 - Task 1 GREEN：同一命令通过，`ProjectGuideContractTest`的1项契约断言成功。
 - Task 1新增：`docs/PROJECT_GUIDE.md`最小骨架与`tests/test_project_guide.py`；说明书包含标题、最后核验日期、适用版本、权威入口说明及22个约定一级章节。
@@ -28,3 +36,8 @@
 - Task 4证据核验：2026-08-09在主工作树实际运行`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_report_contract -v`，7项通过；在`codex/news-radar-web`隔离工作树实际运行`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v`，50项通过，仍未合入main或执行外网发布。
 - Task 4 GREEN：补齐两张台账并将既有占位词改为“缺失字段”后，`python3 -m unittest tests/test_project_guide.py -v`与`python3 -m unittest discover -s tests -v`均运行12项、全部通过；`git diff --check`通过，说明书占位符扫描无匹配。
 - Task 4 fix round 1：审阅指出UAT-009把财报样本的北京时间要求泛化为已通过，且将测试方法误称为断言。先为Apple北京时间样本和术语补充文档契约，RED运行14项并因两处范围/术语缺口失败；随后仅将UAT-009缩窄至报告中Apple的`04:54`/`04:57`北京时间链，并将财报/IPO统计改为5个/2个测试方法。
+- Task 5新增Markdown本地相对链接契约：`python3 -m unittest tests/test_project_guide.py -v`运行15项、全部通过；受跟踪设计链接存在，主工作树/隔离工作树的未跟踪历史证据维持代码路径说明而非Markdown链接。
+- Task 5自审发现第20—22章为空。先加入非空章节契约；定向命令运行16项，其中该契约按预期有3个失败（第20、21、22章均无正文）。补齐已知限制与后续路线、文档维护规则和变更记录后，同一命令运行16项、全部通过。
+- Task 5复验：`python3 -m unittest discover -s tests -v`运行16项、全部通过；主工作树`python3 -m unittest tests/test_report_contract.py -v`运行7项、全部通过；`codex/news-radar-web`隔离工作树`python3 -m unittest discover -s tests -v`运行50项、全部通过。
+- Task 5质量检查：`rg -n 'TBD|TODO|待补|稍后填写|一眼结论|操作建议|买入|卖出' docs/PROJECT_GUIDE.md`只命中禁止交易建议的规则/UAT验收语境，无占位符或对读者的交易建议；`git diff --check -- docs/PROJECT_GUIDE.md tests/test_project_guide.py .planning/2026-08-09-project-guide`无错误。规格第16节已逐项核对：链接、章节、来源字段、状态证据、测试编号、分支/暂停状态、凭据与绝对路径边界均满足。
+- GitHub认证、首次推送、GitHub Pages、自动任务和网页分支合并继续暂停；本任务仅提交说明书、文档契约与三份过程记录，不执行外部操作。

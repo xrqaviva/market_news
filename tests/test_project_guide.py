@@ -1,3 +1,4 @@
+import re
 import unittest
 from pathlib import Path
 
@@ -7,6 +8,15 @@ GUIDE = ROOT / "docs/PROJECT_GUIDE.md"
 
 
 class ProjectGuideContractTest(unittest.TestCase):
+    def test_local_markdown_links_exist(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        for target in re.findall(r"\[[^]]+\]\(([^)]+)\)", text):
+            if "://" in target or target.startswith("#"):
+                continue
+            path = (GUIDE.parent / target.split("#", 1)[0]).resolve()
+            with self.subTest(target=target):
+                self.assertTrue(path.exists(), target)
+
     def test_guide_exists_with_title_and_verification_date(self):
         text = GUIDE.read_text(encoding="utf-8")
         self.assertTrue(text.startswith("# A股短线新闻雷达项目说明书\n"))
@@ -92,6 +102,20 @@ class ProjectGuideContractTest(unittest.TestCase):
         text = GUIDE.read_text(encoding="utf-8")
         for placeholder in ("TBD", "TODO", "待补", "稍后填写"):
             self.assertNotIn(placeholder, text)
+
+    def test_final_maintenance_sections_are_not_empty(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        headings = (
+            "## 20. 已知限制与后续路线",
+            "## 21. 文档维护规则",
+            "## 22. 变更记录",
+        )
+        for index, heading in enumerate(headings):
+            with self.subTest(heading=heading):
+                section = text.split(heading, 1)[1]
+                if index + 1 < len(headings):
+                    section = section.split(headings[index + 1], 1)[0]
+                self.assertTrue(section.strip())
 
     def test_uat_009_limits_pass_status_to_apple_bjt_evidence(self):
         text = GUIDE.read_text(encoding="utf-8")
