@@ -27,3 +27,4 @@
 - Task 4 RED：先新增稳定编号/必填字段和未解决占位符契约，再运行`python3 -m unittest tests/test_project_guide.py -v`；12项中10项通过，稳定编号缺失与既有“待补”文字分别导致2项预期失败。
 - Task 4证据核验：2026-08-09在主工作树实际运行`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_report_contract -v`，7项通过；在`codex/news-radar-web`隔离工作树实际运行`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v`，50项通过，仍未合入main或执行外网发布。
 - Task 4 GREEN：补齐两张台账并将既有占位词改为“缺失字段”后，`python3 -m unittest tests/test_project_guide.py -v`与`python3 -m unittest discover -s tests -v`均运行12项、全部通过；`git diff --check`通过，说明书占位符扫描无匹配。
+- Task 4 fix round 1：审阅指出UAT-009把财报样本的北京时间要求泛化为已通过，且将测试方法误称为断言。先为Apple北京时间样本和术语补充文档契约，RED运行14项并因两处范围/术语缺口失败；随后仅将UAT-009缩窄至报告中Apple的`04:54`/`04:57`北京时间链，并将财报/IPO统计改为5个/2个测试方法。

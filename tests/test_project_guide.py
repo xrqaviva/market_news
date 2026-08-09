@@ -93,6 +93,27 @@ class ProjectGuideContractTest(unittest.TestCase):
         for placeholder in ("TBD", "TODO", "待补", "稍后填写"):
             self.assertNotIn(placeholder, text)
 
+    def test_uat_009_limits_pass_status_to_apple_bjt_evidence(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        row = next(line for line in text.splitlines() if line.startswith("| UAT-009 |"))
+        for phrase in (
+            "苹果盘后市场反馈（北京时间样本）",
+            "北京时间传播链",
+            "04:54",
+            "04:57",
+            "已通过",
+            "test_apple_keeps_early_and_later_after_hours_snapshots",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, row)
+
+    def test_ledger_calls_report_contract_checks_test_methods(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        self.assertIn("财报相关5个测试方法通过", text)
+        self.assertIn("IPO相关2个测试方法通过", text)
+        self.assertNotIn("财报相关5项断言", text)
+        self.assertNotIn("IPO相关2项断言", text)
+
 
 if __name__ == "__main__":
     unittest.main()
