@@ -1,14 +1,16 @@
 import json
 from pathlib import Path
 import re
+import subprocess
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from web.build import _news_instance_id, build_site, render_report
+from web.build import _news_instance_id, _safe_dom_id, build_site, render_report
 from web.report_model import (
     NewsIndexEntry,
     NewsItem,
+    PendingItem,
     ReportDocument,
     ReportMeta,
     SourceLink,
@@ -86,13 +88,13 @@ class WebBuildTest(unittest.TestCase):
         }])
 
         self.assertIn('data-component="news-index"', page)
-        self.assertIn('href="#news-themed-report-theme-alpha-evt-shared"', page)
+        self.assertIn('href="#news-ascii-themed-report-ascii-theme-alpha-ascii-evt-shared"', page)
         self.assertIn("1. 共享新闻", page)
         self.assertIn("90/100", page)
         self.assertIn("theme-alpha", page)
         self.assertIn("theme-beta", page)
         self.assertLess(page.index("甲题材"), page.index("乙题材"))
-        self.assertIn('data-component="theme-group" id="theme-theme-alpha"', page)
+        self.assertIn('data-component="theme-group" id="theme-ascii-theme-alpha"', page)
         self.assertIn("170分 · 关联新闻2条", page)
         self.assertIn("甲的共同催化", page)
         self.assertIn("甲公司（000001）：公告确认", page)
@@ -120,11 +122,17 @@ class WebBuildTest(unittest.TestCase):
         self.assertEqual(2, len(shared_rows))
         instance_ids = [re.search(r'data-instance-id="([^"]+)"', row).group(1) for row in shared_rows]
         self.assertEqual(
-            ["themed-report-theme-alpha-evt-shared", "themed-report-theme-beta-evt-shared"],
+            [
+                "ascii-themed-report-ascii-theme-alpha-ascii-evt-shared",
+                "ascii-themed-report-ascii-theme-beta-ascii-evt-shared",
+            ],
             instance_ids,
         )
         self.assertEqual(
-            ["news-themed-report-theme-alpha-evt-shared", "news-themed-report-theme-beta-evt-shared"],
+            [
+                "news-ascii-themed-report-ascii-theme-alpha-ascii-evt-shared",
+                "news-ascii-themed-report-ascii-theme-beta-ascii-evt-shared",
+            ],
             [match.group(1) for row in shared_rows for match in re.finditer(r'(?<![-\w])id="([^"]+)"', row)],
         )
         normalized = [
@@ -164,6 +172,86 @@ class WebBuildTest(unittest.TestCase):
         self.assertNotEqual(alpha, beta)
         self.assertRegex(alpha, r"^[a-z0-9_-]+$")
         self.assertRegex(beta, r"^[a-z0-9_-]+$")
+
+    def test_safe_dom_id_keeps_ascii_and_utf8_encodings_disjoint(self):
+        self.assertEqual("utf8-e4b8ad", _safe_dom_id("中"))
+        self.assertEqual("ascii-utf8-e4b8ad", _safe_dom_id("utf8-e4b8ad"))
+        self.assertEqual("ascii-Alpha", _safe_dom_id("Alpha"))
+        self.assertNotEqual(_safe_dom_id("Alpha"), _safe_dom_id("alpha"))
+
+    def test_pending_renderer_filters_unsafe_source_urls(self):
+        document = ReportDocument(
+            meta=ReportMeta(
+                report_id="pending-url", report_date="2026-08-11", slot="0800", slot_label="盘前",
+                title="待核链接", window="window", cutoff="cutoff", source_name="",
+            ),
+            items=(),
+            pending_items=(PendingItem(
+                title="不安全线索", known="已知", reason="待核",
+                sources=(SourceLink("来源", "", "不安全链接", "javascript:alert(1)"),),
+            ),),
+        )
+
+        page = render_report(document, [{
+            "id": "pending-url", "date": "2026-08-11", "label": "盘前",
+            "url": "reports/2026-08-11-0800.html",
+        }])
+
+        self.assertIn("不安全线索", page)
+        self.assertNotIn("javascript:alert(1)", page)
+        self.assertNotIn('data-component="pending-sources"', page)
+
+    def test_source_only_row_keeps_associations_when_app_script_enhances_dom(self):
+        harness = r'''
+const fs = require("fs");
+const vm = require("vm");
+class Node {
+  constructor(tag = "div", text = "") {
+    this.tag = tag; this.textContent = text; this.children = []; this.dataset = {};
+    this.className = ""; this.hidden = false;
+    this.classList = { values: new Set(), add: (...names) => names.forEach((name) => this.classList.values.add(name)) };
+  }
+  append(...nodes) { this.children.push(...nodes); }
+  appendChild(node) { this.children.push(node); return node; }
+  replaceChildren(...nodes) { this.children = nodes; }
+  querySelector(selector) {
+    if (selector === "h2") return this.heading || null;
+    if (selector === ":scope > [data-component='sources']") return this.sources || null;
+    if (selector === ":scope > .news-associations") return this.associations || null;
+    return null;
+  }
+  querySelectorAll(selector) {
+    if (selector === ":scope > p") return this.paragraphs || [];
+    return [];
+  }
+}
+const row = new Node("article");
+row.dataset = { rank: "4", instanceId: "unique-other", detailKind: "sources-inline", category: "其他" };
+row.heading = new Node("h2", "4. 来源型新闻");
+const summary = new Node("p", "核心信息");
+const score = new Node("p", "热点权重：60/100");
+const associations = new Node("p", "题材甲");
+associations.className = "news-associations";
+row.paragraphs = [summary, score, associations];
+row.associations = associations;
+row.sources = new Node("ul", "来源链接");
+const document = {
+  createElement: () => new Node(),
+  querySelector: (selector) => selector === ".mobile-report-select" ? null : null,
+  querySelectorAll: (selector) => selector === "[data-component='news-detail']" ? [row] : [],
+  getElementById: () => null,
+  addEventListener: () => {},
+};
+const sandbox = { document, window: { location: { hash: "" }, addEventListener: () => {} }, console };
+vm.runInNewContext(fs.readFileSync("web/assets/app.js", "utf8"), sandbox);
+const content = row.children[1];
+if (!content.children.includes(associations)) throw new Error("source-only associations were discarded");
+if (content.children.some((node) => node.className === "news-toggle")) throw new Error("source-only row gained a toggle");
+'''
+        result = subprocess.run(
+            ["node", "-e", harness], cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_renderer_preserves_mustache_literals_in_report_text(self):
         document = ReportDocument(

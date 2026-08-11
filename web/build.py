@@ -71,10 +71,9 @@ def _source_links(item: NewsItem) -> str:
 
 def _safe_dom_id(value: str) -> str:
     raw_value = str(value)
-    normalized = raw_value.lower()
-    if re.fullmatch(r"[a-z0-9_-]+", normalized):
-        return normalized
-    return "u{}".format(raw_value.encode("utf-8").hex())
+    if re.fullmatch(r"[A-Za-z0-9_-]+", raw_value):
+        return "ascii-{}".format(raw_value)
+    return "utf8-{}".format(raw_value.encode("utf-8").hex())
 
 
 def _news_instance_id(report_id: str, scope_id: str, event_id: str) -> str:
@@ -236,19 +235,22 @@ def _pending_items(document: ReportDocument) -> str:
         return ""
     rows = []
     for item in document.pending_items:
-        links = ""
-        if item.sources:
-            links = '<ul data-component="pending-sources">{}</ul>'.format("".join(
-                '<li><a href="{}" rel="noopener noreferrer">{}</a></li>'.format(
-                    _escape(source.url), _escape(source.label)
-                )
-                for source in item.sources
-            ))
+        links = [
+            '<li><a href="{}" rel="noopener noreferrer">{}</a></li>'.format(
+                _escape(url), _escape(source.label)
+            )
+            for source in item.sources
+            for url in (_safe_source_url(source.url),)
+            if url
+        ]
+        pending_sources = ""
+        if links:
+            pending_sources = '<ul data-component="pending-sources">{}</ul>'.format("".join(links))
         rows.append(
             '<article class="pending-item"><h3>{}</h3>'
             '<p><strong>已知信息</strong>{}</p>'
             '<p><strong>待核原因</strong>{}</p>{}</article>'.format(
-                _escape(item.title), _escape(item.known), _escape(item.reason), links
+                _escape(item.title), _escape(item.known), _escape(item.reason), pending_sources
             )
         )
     return (
