@@ -88,7 +88,7 @@ class WebBuildTest(unittest.TestCase):
         }])
 
         self.assertIn('data-component="news-index"', page)
-        self.assertIn('href="#news-ascii-themed-report-ascii-theme-alpha-ascii-evt-shared"', page)
+        self.assertIn('href="#news-19xascii-themed-report-17xascii-theme-alpha-16xascii-evt-shared"', page)
         self.assertIn("1. 共享新闻", page)
         self.assertIn("90/100", page)
         self.assertIn("theme-alpha", page)
@@ -123,15 +123,15 @@ class WebBuildTest(unittest.TestCase):
         instance_ids = [re.search(r'data-instance-id="([^"]+)"', row).group(1) for row in shared_rows]
         self.assertEqual(
             [
-                "ascii-themed-report-ascii-theme-alpha-ascii-evt-shared",
-                "ascii-themed-report-ascii-theme-beta-ascii-evt-shared",
+                "19xascii-themed-report-17xascii-theme-alpha-16xascii-evt-shared",
+                "19xascii-themed-report-16xascii-theme-beta-16xascii-evt-shared",
             ],
             instance_ids,
         )
         self.assertEqual(
             [
-                "news-ascii-themed-report-ascii-theme-alpha-ascii-evt-shared",
-                "news-ascii-themed-report-ascii-theme-beta-ascii-evt-shared",
+                "news-19xascii-themed-report-17xascii-theme-alpha-16xascii-evt-shared",
+                "news-19xascii-themed-report-16xascii-theme-beta-16xascii-evt-shared",
             ],
             [match.group(1) for row in shared_rows for match in re.finditer(r'(?<![-\w])id="([^"]+)"', row)],
         )
@@ -178,6 +178,14 @@ class WebBuildTest(unittest.TestCase):
         self.assertEqual("ascii-utf8-e4b8ad", _safe_dom_id("utf8-e4b8ad"))
         self.assertEqual("ascii-Alpha", _safe_dom_id("Alpha"))
         self.assertNotEqual(_safe_dom_id("Alpha"), _safe_dom_id("alpha"))
+
+    def test_instance_id_length_prefixes_components_to_avoid_delimiter_collisions(self):
+        left = _news_instance_id("report", "a-ascii-b", "c")
+        right = _news_instance_id("report", "a", "b-ascii-c")
+
+        self.assertEqual("12xascii-report-15xascii-a-ascii-b-7xascii-c", left)
+        self.assertEqual("12xascii-report-7xascii-a-15xascii-b-ascii-c", right)
+        self.assertNotEqual(left, right)
 
     def test_pending_renderer_filters_unsafe_source_urls(self):
         document = ReportDocument(

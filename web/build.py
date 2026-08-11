@@ -77,7 +77,8 @@ def _safe_dom_id(value: str) -> str:
 
 
 def _news_instance_id(report_id: str, scope_id: str, event_id: str) -> str:
-    return "-".join(_safe_dom_id(value) for value in (report_id, scope_id, event_id))
+    components = tuple(_safe_dom_id(value) for value in (report_id, scope_id, event_id))
+    return "-".join("{}x{}".format(len(component), component) for component in components)
 
 
 def _association_badges(theme_ids: tuple[str, ...], theme_names: dict[str, str]) -> str:
