@@ -45,6 +45,7 @@ class WebReportParserTest(unittest.TestCase):
             "**带时间市场反馈：** 共享反馈。\n\n"
             "**判断边界：** 共享边界。\n\n"
             "**热度变化：** 共享热度。\n\n"
+            "**发布时段：** 美国市场盘后发布。\n\n"
             "**关联题材：** theme-alpha、theme-beta（跨题材重复计分）\n\n"
             "#### 新闻：2｜evt-2｜甲题材新闻｜80/100\n\n"
             "**核心信息：** 甲核心。\n\n"
@@ -64,6 +65,7 @@ class WebReportParserTest(unittest.TestCase):
             "**带时间市场反馈：** 共享反馈。\n\n"
             "**判断边界：** 共享边界。\n\n"
             "**热度变化：** 共享热度。\n\n"
+            "**发布时段：** 美国市场盘后发布。\n\n"
             "**关联题材：** theme-alpha、theme-beta（跨题材重复计分）\n\n"
             "#### 新闻：3｜evt-3｜乙题材新闻｜70/100\n\n"
             "**核心信息：** 乙核心。\n\n"
@@ -121,6 +123,7 @@ class WebReportParserTest(unittest.TestCase):
         self.assertEqual("共享反馈。", shared.market_feedback)
         self.assertEqual("共享边界。", shared.boundary)
         self.assertEqual("共享热度。", shared.heat_change)
+        self.assertEqual("美国市场盘后发布。", shared.release_session)
         self.assertEqual(("theme-alpha", "theme-beta"), shared.theme_ids)
         self.assertEqual(1, len(document.pending_items))
         self.assertNotIn(document.pending_items[0].title, [item.title for item in document.items])
@@ -174,6 +177,47 @@ class WebReportParserTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "inconsistent event"):
             self._parse_themed_report(text)
 
+    def test_themed_report_rejects_cross_theme_release_session_drift(self):
+        text = self._themed_report().replace(
+            "**发布时段：** 美国市场盘后发布。",
+            "**发布时段：** 美国市场盘前发布。",
+            1,
+        )
+        with self.assertRaisesRegex(ValueError, "inconsistent event"):
+            self._parse_themed_report(text)
+
+    def test_themed_report_rejects_sources_the_renderer_cannot_link(self):
+        for unsafe_url in ("file:///tmp/source", "ftp://example.com/source", "../relative-source"):
+            with self.subTest(unsafe_url=unsafe_url):
+                text = self._themed_report().replace("https://example.com/shared", unsafe_url)
+                with self.assertRaisesRegex(ValueError, "source link"):
+                    self._parse_themed_report(text)
+
+    def test_themed_report_requires_consecutive_ranks_starting_at_one(self):
+        text = self._themed_report()
+        for old_rank, new_rank in ((4, 7), (3, 6), (2, 5)):
+            text = text.replace(f"| {old_rank} | evt-{old_rank} |", f"| {new_rank} | evt-{old_rank} |")
+            text = text.replace(f"#### 新闻：{old_rank}｜evt-{old_rank}｜", f"#### 新闻：{new_rank}｜evt-{old_rank}｜")
+        with self.assertRaisesRegex(ValueError, "ranks must be consecutive"):
+            self._parse_themed_report(text)
+
+    def test_themed_report_requires_nonincreasing_ranked_scores(self):
+        text = self._themed_report()
+        text = text.replace("| 3 | evt-3 | 乙题材新闻 | 70 |", "| 3 | evt-3 | 乙题材新闻 | 85 |")
+        text = text.replace("乙题材｜160分", "乙题材｜175分")
+        text = text.replace("#### 新闻：3｜evt-3｜乙题材新闻｜70/100", "#### 新闻：3｜evt-3｜乙题材新闻｜85/100")
+        with self.assertRaisesRegex(ValueError, "scores must not increase"):
+            self._parse_themed_report(text)
+
+    def test_themed_report_rejects_scores_outside_zero_to_one_hundred(self):
+        text = self._themed_report()
+        text = text.replace("| 1 | evt-1 | 共享新闻 | 90 |", "| 1 | evt-1 | 共享新闻 | 101 |")
+        text = text.replace("甲题材｜170分", "甲题材｜181分")
+        text = text.replace("乙题材｜160分", "乙题材｜171分")
+        text = text.replace("#### 新闻：1｜evt-1｜共享新闻｜90/100", "#### 新闻：1｜evt-1｜共享新闻｜101/100")
+        with self.assertRaisesRegex(ValueError, "scores must be between 0 and 100"):
+            self._parse_themed_report(text)
+
     def test_themed_report_rejects_theme_reference_missing_from_index(self):
         text = self._themed_report().replace(
             "#### 新闻：2｜evt-2｜甲题材新闻｜80/100",
@@ -221,8 +265,8 @@ class WebReportParserTest(unittest.TestCase):
     def test_aug11_report_parses_all_ranked_news(self):
         found = dict((entry.report_id, (path, entry)) for path, entry in discover_reports(ROOT))
         document = parse_report(*found["20260811-0800"])
-        self.assertEqual(25, len(document.items))
-        self.assertEqual(list(range(1, 26)), [item.rank for item in document.items])
+        self.assertEqual(24, len(document.items))
+        self.assertEqual(list(range(1, 25)), [item.rank for item in document.items])
         self.assertTrue(any("5000亿美元" in item.title for item in document.items))
         self.assertTrue(any("特朗普要求伊朗赔偿" in item.title for item in document.items))
         pboc = next(item for item in document.items if "央行发布" in item.title)
@@ -231,9 +275,11 @@ class WebReportParserTest(unittest.TestCase):
         self.assertIn("-31.51亿元", longsys.signal)
         self.assertTrue(pboc.market_feedback)
         self.assertTrue(longsys.boundary)
-        self.assertEqual(4, len(document.pending_items))
+        self.assertEqual(5, len(document.pending_items))
+        self.assertEqual("2026-08-11 08:30:39（北京时间，Asia/Shanghai）", document.meta.cutoff)
+        self.assertTrue(all(item.release_session for item in document.items))
         self.assertEqual(
-            ["韩国半导体投资覆盖材料、零部件与设备", "马斯克与自由电子激光EUV光源", "英伟达拟向Lancium投资最高30亿美元", "天津机器人会议"],
+            ["韩国半导体投资覆盖材料、零部件与设备", "马斯克与自由电子激光EUV光源", "豆包回应推荐酒店抽取12%佣金争议", "英伟达拟向Lancium投资最高30亿美元", "天津机器人会议"],
             [item.title for item in document.pending_items],
         )
 
@@ -302,7 +348,7 @@ class WebReportParserTest(unittest.TestCase):
             report_path.write_text(
                 "# 2026-08-10 A股盘前新闻热榜\n\n"
                 "> **新闻窗口：** 2026-08-07 00:00—2026-08-09 19:44:27（北京时间）\n"
-                "> **实际截点：** 2026-08-09 19:44:27。本稿为提前版。\n\n"
+                "> **实际截点：** 2026-08-09 19:44:27（北京时间，Asia/Shanghai）；本稿为提前版。\n\n"
                 "## 1. 示例新闻\n\n"
                 "**核心信息：** 示例核心信息。\n\n"
                 "**热点权重：80/100**（覆盖20 + 变化20 + 绝对热度15 + 新鲜度15 + 频次10）\n\n"
@@ -326,7 +372,10 @@ class WebReportParserTest(unittest.TestCase):
                 "2026-08-07 00:00—2026-08-09 19:44:27（北京时间）",
                 document.meta.window,
             )
-            self.assertEqual("2026-08-09 19:44:27", document.meta.cutoff)
+            self.assertEqual(
+                "2026-08-09 19:44:27（北京时间，Asia/Shanghai）",
+                document.meta.cutoff,
+            )
             self.assertEqual(
                 "周末发布，下一可交易时段尚未出现。",
                 document.items[0].market_feedback,

@@ -21,17 +21,7 @@
       {{REPORT_ARCHIVE}}
     </aside>
     <main class="report-main">
-      <nav class="filter-bar" data-component="filters" aria-label="新闻类别筛选">
-        <div class="filter-meta"><span>数据截止</span>{{FILTERS}}</div>
-        <div class="filter-actions">
-          <button class="filter-button is-active" type="button" data-category="all" aria-pressed="true">全部</button>
-          <button class="filter-button" type="button" data-category="政策" aria-pressed="false">政策</button>
-          <button class="filter-button" type="button" data-category="财报" aria-pressed="false">财报</button>
-          <button class="filter-button" type="button" data-category="产业" aria-pressed="false">产业</button>
-          <button class="filter-button" type="button" data-category="地缘" aria-pressed="false">地缘</button>
-          <button class="filter-button" type="button" data-category="其他" aria-pressed="false">其他</button>
-        </div>
-      </nav>
+      {{FILTER_BAR}}
       {{THEME_CONTENT}}{{NEWS_ITEMS}}
 {{PENDING_ITEMS}}
     </main>

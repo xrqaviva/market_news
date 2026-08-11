@@ -28,6 +28,7 @@ class WebBuildTest(unittest.TestCase):
         shared = NewsItem(
             rank=1, event_id="evt-shared", title="共享新闻", core="共享核心", score=90,
             market_feedback="共享反馈", boundary="共享边界", heat_change="共享热度",
+            release_session="美国市场盘后发布",
             sources=(SourceLink("官方", "08-11 08:00", "共享直链", "https://example.com/shared"),),
             theme_ids=("theme-alpha", "theme-beta"),
         )
@@ -102,6 +103,7 @@ class WebBuildTest(unittest.TestCase):
         self.assertIn("甲风险", page)
         self.assertIn("共享反馈", page)
         self.assertIn("共享边界", page)
+        self.assertIn("<strong>发布时段</strong>美国市场盘后发布", page)
         self.assertIn("08-11 08:00", page)
         self.assertIn('href="https://example.com/shared"', page)
         self.assertIn('data-component="other-important-news"', page)
@@ -109,6 +111,20 @@ class WebBuildTest(unittest.TestCase):
         self.assertIn("08-11 08:03", page)
         self.assertIn('href="https://example.com/other"', page)
         self.assertIn("跨题材新闻会在各关联题材中重复计分", page)
+        self.assertIn('href="#theme-ascii-theme-alpha"', page)
+        self.assertIn('href="#theme-ascii-theme-beta"', page)
+        for target in re.findall(r'class="theme-association"[^>]*href="#([^"]+)"', page):
+            self.assertIn(f'id="{target}"', page)
+
+    def test_themed_page_omits_legacy_category_filters(self):
+        page = render_report(self._themed_document(), [{
+            "id": "themed-report", "date": "2026-08-11", "label": "盘前",
+            "url": "reports/2026-08-11-0800.html",
+        }])
+
+        self.assertIn('data-component="filters"', page)
+        self.assertNotIn('class="filter-actions"', page)
+        self.assertNotIn('class="filter-button', page)
 
     def test_themed_cross_theme_instances_are_unique_and_source_only_has_no_toggle(self):
         page = render_report(self._themed_document(), [{
@@ -136,10 +152,12 @@ class WebBuildTest(unittest.TestCase):
             [match.group(1) for row in shared_rows for match in re.finditer(r'(?<![-\w])id="([^"]+)"', row)],
         )
         normalized = [
-            re.sub(r'(id|data-instance-id)="[^"]+"', r'\1="INSTANCE"', row)
+            re.sub(r'(?<![-\w])(id|data-instance-id)="[^"]+"', r'\1="INSTANCE"', row)
             for row in shared_rows
         ]
         self.assertEqual(normalized[0], normalized[1])
+        self.assertIn('data-event-id="evt-shared"', normalized[0])
+        self.assertIn('data-theme-id="theme-alpha"', normalized[0])
 
         other_row = re.search(
             r'<article(?=[^>]*data-event-id="evt-other")[^>]*>.*?</article>', page, re.DOTALL,
@@ -153,7 +171,10 @@ class WebBuildTest(unittest.TestCase):
                 report_id="legacy", report_date="2026-08-11", slot="0800", slot_label="盘前",
                 title="旧报告", window="window", cutoff="cutoff", source_name="",
             ),
-            items=(NewsItem(rank=1, title="旧新闻", core="旧核心", score=50),),
+            items=(NewsItem(
+                rank=1, title="旧新闻", core="旧核心", score=50,
+                sources=(SourceLink("官方", "", "旧新闻来源", "https://example.com/legacy"),),
+            ),),
         )
         page = render_report(document, [{
             "id": "legacy", "date": "2026-08-11", "label": "盘前",
@@ -164,6 +185,28 @@ class WebBuildTest(unittest.TestCase):
         self.assertIn("旧新闻", page)
         self.assertNotIn('data-component="news-index"', page)
         self.assertNotIn('data-component="theme-group"', page)
+        self.assertIn('class="filter-actions"', page)
+        self.assertIn('class="filter-button is-active"', page)
+
+    def test_renderer_rejects_ranked_items_without_a_renderable_source(self):
+        for unsafe_url in ("file:///tmp/source", "ftp://example.com/source", "../relative-source"):
+            with self.subTest(unsafe_url=unsafe_url):
+                document = ReportDocument(
+                    meta=ReportMeta(
+                        report_id="unsafe-source", report_date="2026-08-11", slot="0800",
+                        slot_label="盘前", title="不安全来源", window="window", cutoff="cutoff",
+                        source_name="",
+                    ),
+                    items=(NewsItem(
+                        rank=1, title="新闻", core="核心", score=50,
+                        sources=(SourceLink("来源", "", "不安全", unsafe_url),),
+                    ),),
+                )
+                with self.assertRaisesRegex(ValueError, "renderable source"):
+                    render_report(document, [{
+                        "id": "unsafe-source", "date": "2026-08-11", "label": "盘前",
+                        "url": "reports/2026-08-11-0800.html",
+                    }])
 
     def test_non_ascii_instance_components_remain_distinct_safe_dom_ids(self):
         alpha = _news_instance_id("报告", "题材甲", "事件")
@@ -313,6 +356,20 @@ if (content.children.some((node) => node.className === "news-toggle")) throw new
             self.assertTrue((output / manifest["latest"]).exists())
             self.assertIn(manifest["latest"], (output / "index.html").read_text(encoding="utf-8"))
 
+    def test_checked_in_dist_is_byte_identical_to_a_fresh_build(self):
+        with TemporaryDirectory() as tmp:
+            fresh = build_site(ROOT, Path(tmp) / "dist").output_dir
+            checked = ROOT / "web/dist"
+            fresh_files = {
+                path.relative_to(fresh): path.read_bytes()
+                for path in fresh.rglob("*") if path.is_file()
+            }
+            checked_files = {
+                path.relative_to(checked): path.read_bytes()
+                for path in checked.rglob("*") if path.is_file()
+            }
+            self.assertEqual(fresh_files, checked_files)
+
     def test_report_page_has_fixed_semantic_contract(self):
         with TemporaryDirectory() as tmp:
             output = build_site(ROOT, Path(tmp) / "dist").output_dir
@@ -348,7 +405,6 @@ if (content.children.some((node) => node.className === "news-toggle")) throw new
         self.assertEqual(
             [
                 ("AI算力 / 半导体 / 存储芯片", "420"),
-                ("并购重组", "306"),
                 ("中东局势 / 油气", "184"),
                 ("低空经济 / 航空AI", "166"),
                 ("A股回购 / 资本运作", "165"),
@@ -365,13 +421,21 @@ if (content.children.some((node) => node.className === "news-toggle")) throw new
         )
         self.assertIsNotNone(index)
         index_targets = re.findall(r'href="#news-([^"]+)"', index.group(0))
-        self.assertEqual(25, len(index_targets))
-        self.assertEqual(25, len(set(index_targets)))
+        self.assertEqual(24, len(index_targets))
+        self.assertEqual(24, len(set(index_targets)))
 
         event_ids = re.findall(r'data-event-id="([^"]+)"', page)
         instance_ids = re.findall(r'data-instance-id="([^"]+)"', page)
-        self.assertEqual(25, len(set(event_ids)))
+        self.assertEqual(24, len(set(event_ids)))
         self.assertEqual(len(instance_ids), len(set(instance_ids)))
+        self.assertEqual(25, page.count("<strong>发布时段</strong>"))
+        self.assertIn(
+            '<div class="filter-meta"><span>数据截止</span>'
+            '<span>2026-08-11 08:30:39（北京时间，Asia/Shanghai）</span></div>',
+            page,
+        )
+        self.assertNotIn('class="filter-actions"', page)
+        self.assertNotIn('data-event-id="evt-20260811-011"', page)
         self.assertIn(
             'href="https://www.pbc.gov.cn/goutongjiaoliu/113456/113469/2026081018132329141/index.html"',
             page,
@@ -385,7 +449,8 @@ if (content.children.some((node) => node.className === "news-toggle")) throw new
             r'<section class="pending-section" data-component="pending-list">.*?</section>', page, re.DOTALL,
         )
         self.assertIsNotNone(pending)
-        self.assertEqual(4, pending.group(0).count('class="pending-item"'))
+        self.assertEqual(5, pending.group(0).count('class="pending-item"'))
+        self.assertIn("豆包回应推荐酒店抽取12%佣金争议", pending.group(0))
         self.assertNotRegex(pending.group(0), r'(?:热点权重|\d+/100|\d+分)')
 
         manifest = json.loads((ROOT / "web/dist/reports.json").read_text(encoding="utf-8"))

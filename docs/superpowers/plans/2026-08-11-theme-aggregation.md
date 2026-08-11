@@ -185,24 +185,22 @@ Commit only this slice:
 
 ### Step 1: Write the failing report-contract test
 
-- [ ] Assert exactly 25 unique ranked events.
-- [ ] Assert every rank/title/score pair is unchanged.
-- [ ] Assert these six themes, memberships, and totals:
+- [ ] Assert exactly 24 unique ranked events after the user-directed 豆包 move to pending; preserve every remaining event ID, title, and score while making visible ranks continuous.
+- [ ] Assert these five themes, memberships, and totals:
 
 | Theme | Ranks | Total |
 |---|---:|---:|
-| AI算力 / 半导体 / 存储芯片 | 5, 6, 13, 14, 20 | 420 |
-| 并购重组 | 10, 16, 22, 24 | 306 |
+| AI算力 / 半导体 / 存储芯片 | 5, 6, 12, 13, 19 | 420 |
 | 中东局势 / 油气 | 1, 7 | 184 |
-| 低空经济 / 航空AI | 10, 15 | 166 |
-| A股回购 / 资本运作 | 5, 21 | 165 |
-| 人形机器人 / 具身智能 | 2, 25 | 161 |
+| 低空经济 / 航空AI | 10, 14 | 166 |
+| A股回购 / 资本运作 | 5, 20 | 165 |
+| 人形机器人 / 具身智能 | 2, 24 | 161 |
 
 - [ ] Assert rank 5 contributes 89 to AI and buyback.
-- [ ] Assert rank 10 contributes 86 to M&A and low-altitude aviation.
+- [ ] Assert rank 10 remains only in low-altitude aviation; the semantically incoherent M&A grouping is removed and its other former members occur once in Other Important News.
 - [ ] Assert all remaining qualified events occur exactly once in Other Important News.
 - [ ] Assert repeated blocks are identical.
-- [ ] Assert exactly four pending items, all unscored.
+- [ ] Assert exactly five pending items, all unscored, including 豆包 with the post-cutoff Zhihu discovery disclosed but not used as pre-cutoff proof.
 - [ ] Assert root and worktree Markdown copies are byte-identical.
 
 Expected RED:
@@ -298,12 +296,12 @@ Assert that active documents define:
 
 ### Step 1: Add generated-output assertions
 
-- [ ] Six themes appear in exact total-score order.
-- [ ] Totals are 420, 306, 184, 166, 165, 161.
-- [ ] Index has exactly 25 unique event IDs.
+- [ ] Five themes appear in exact total-score order.
+- [ ] Totals are 420, 184, 166, 165, 161.
+- [ ] Index has exactly 24 unique event IDs.
 - [ ] Repeated instances have unique DOM IDs.
 - [ ] Exact source URLs are clickable.
-- [ ] Pending appendix has four items and no score.
+- [ ] Pending appendix has five items and no score.
 - [ ] Archive navigation and reports.json select the latest report.
 
 ### Step 2: Rebuild through the existing generator

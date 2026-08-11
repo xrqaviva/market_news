@@ -11,6 +11,7 @@ from web.report_model import (
     NewsIndexEntry, NewsItem, PendingItem, ReportDocument, ReportMeta, SourceLink,
     StockMapping, ThemeGroup,
 )
+from web.url_policy import renderable_source_url
 
 
 _HEADING = re.compile(r"^##\s+(\d+)\.\s+(.+)$", re.MULTILINE)
@@ -50,13 +51,6 @@ def _plain(value: str) -> str:
     value = re.sub(r"<[^>]*>", "", value)
     value = re.sub(r"\*{1,3}", "", value)
     return re.sub(r"\s+", " ", value).strip(" -：")
-
-
-def _valid_url(value: str) -> str:
-    value = html.unescape(value).strip()
-    if not value or re.match(r"(?i)^(?:javascript|data):", value):
-        return ""
-    return value
 
 
 def _slot_label(slot: str) -> str:
@@ -146,7 +140,7 @@ def _sources_from_table(block: str) -> Tuple[SourceLink, ...]:
         if len(columns) < 3 or columns[0] == "传播渠道" or set("".join(columns)) <= {"-", ":"}:
             continue
         for label, raw_url in _LINK.findall(" ".join(columns[2:])):
-            url = _valid_url(raw_url)
+            url = renderable_source_url(raw_url)
             if url:
                 sources.append(SourceLink(_plain(columns[0]), _plain(columns[1]), _plain(label), url))
     return tuple(sources)
@@ -155,7 +149,7 @@ def _sources_from_table(block: str) -> Tuple[SourceLink, ...]:
 def _inline_sources(text: str) -> Tuple[SourceLink, ...]:
     sources = []
     for label, raw_url in _LINK.findall(text):
-        url = _valid_url(raw_url)
+        url = renderable_source_url(raw_url)
         if url:
             sources.append(SourceLink("原始来源", "", _plain(label), url))
     return tuple(sources)
@@ -192,6 +186,7 @@ def _make_top_item(rank: int, title: str, block: str) -> NewsItem:
         ),
         pricing=_pricing(block), boundary=_field(block, "判断边界"),
         variables=_field(block, "后续变量"), heat_change=_field(block, "热度变化"),
+        release_session=_field(block, "发布时段"),
         category=_category(title, core), sources=sources,
     )
 
@@ -247,7 +242,7 @@ def _parse_news_index(text: str) -> Tuple[NewsIndexEntry, ...]:
         if not line.startswith("|"):
             continue
         columns = [part.strip() for part in line.strip().strip("|").split("|")]
-        if len(columns) < 5 or columns[0] == "原排名" or set("".join(columns)) <= {"-", ":"}:
+        if len(columns) < 5 or columns[0] in {"排名", "原排名"} or set("".join(columns)) <= {"-", ":"}:
             continue
         score_match = re.search(r"\d+", columns[3])
         if not score_match:
@@ -297,6 +292,7 @@ def _parse_nested_news_blocks(text: str) -> Tuple[NewsItem, ...]:
             ),
             pricing=_pricing(block), boundary=_field(block, "判断边界"),
             variables=_field(block, "后续变量"), heat_change=_field(block, "热度变化"),
+            release_session=_field(block, "发布时段"),
             category=_category(_plain(title), _field(block, "核心信息")), sources=sources,
             theme_ids=_theme_ids(_field(block, "关联题材")),
         )
@@ -357,6 +353,13 @@ def _validate_themed_document(
         raise ValueError("news index ranks must ascend")
     if len({entry.rank for entry in news_index}) != len(news_index):
         raise ValueError("news index has duplicate ranks")
+    if [entry.rank for entry in news_index] != list(range(1, len(news_index) + 1)):
+        raise ValueError("news index ranks must be consecutive from 1")
+    scores = [entry.score for entry in news_index]
+    if any(score < 0 or score > 100 for score in scores):
+        raise ValueError("news index scores must be between 0 and 100")
+    if any(later > earlier for earlier, later in zip(scores, scores[1:])):
+        raise ValueError("news index scores must not increase with rank")
     theme_by_id = {theme.theme_id: theme for theme in themes}
     if len(theme_by_id) != len(themes):
         raise ValueError("report has duplicate theme ids")
@@ -440,20 +443,34 @@ def _validate_items(items: Tuple[NewsItem, ...]) -> None:
         raise ValueError("each report item needs a source link")
 
 
+def _explicit_cutoff(text: str) -> str:
+    for label in ("实际截点", "生成任务启动"):
+        match = re.search(
+            r"^>\s+\*\*" + re.escape(label) + r"：\*\*\s*(.+)$",
+            text,
+            re.MULTILINE,
+        )
+        if not match:
+            continue
+        timestamp = re.match(
+            r"((?:\d{4}-\d{2}-\d{2}\s+)?\d{1,2}:\d{2}(?::\d{2})?"
+            r"(?:（[^）]+）)?)",
+            match.group(1).strip(),
+        )
+        if timestamp:
+            return _plain(timestamp.group(1))
+        return _plain(re.split(r"[。；;]", match.group(1), maxsplit=1)[0])
+    return ""
+
+
 def parse_report(path: Path, entry: CatalogEntry) -> ReportDocument:
     """Parse heading sections and compact numbered lines without inventing missing fields."""
     text = path.read_text(encoding="utf-8")
     title_match = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
     window_match = re.search(r"^>\s+\*\*窗口：\*\*\s*(.+)$", text, re.MULTILINE)
-    cutoff_match = re.search(r"^>\s+\*\*生成任务启动：\*\*\s*([^。]+)", text, re.MULTILINE)
-    actual_cutoff_match = re.search(r"^>\s+\*\*实际截点：\*\*\s*([^。]+)", text, re.MULTILINE)
     news_window_match = re.search(r"^>\s+\*\*新闻窗口：\*\*\s*(.+)$", text, re.MULTILINE)
     window = _plain(window_match.group(1)) if window_match else ""
-    cutoff = (
-        _plain(cutoff_match.group(1)) if cutoff_match
-        else _plain(actual_cutoff_match.group(1)) if actual_cutoff_match
-        else ""
-    )
+    cutoff = _explicit_cutoff(text)
     if not window and news_window_match:
         window = _plain(news_window_match.group(1))
     if not window:

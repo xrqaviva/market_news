@@ -10,11 +10,11 @@ import re
 import shutil
 import sys
 from typing import Iterable, Optional
-from urllib.parse import urlsplit
 
 from web.report_model import NewsItem, ReportDocument
 from web.report_parser import discover_reports, parse_report
 from web.security import assert_public_tree_safe
+from web.url_policy import renderable_source_url
 
 
 _TEMPLATE_PATH = Path(__file__).with_name("templates") / "report.html"
@@ -42,17 +42,10 @@ def _report_url(report_date: str, slot: str) -> str:
     return "reports/{}-{}.html".format(report_date, slot)
 
 
-def _safe_source_url(value: str) -> str:
-    parsed = urlsplit(value)
-    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
-        return ""
-    return value
-
-
 def _source_links(item: NewsItem) -> str:
     links = []
     for source in item.sources:
-        url = _safe_source_url(source.url)
+        url = renderable_source_url(source.url)
         if not url:
             continue
         label = source.label or source.channel or url
@@ -65,7 +58,7 @@ def _source_links(item: NewsItem) -> str:
             )
         )
     if not links:
-        return '<ul data-component="sources"></ul>'
+        raise ValueError("ranked item must have at least one renderable source")
     return '<ul data-component="sources">{}</ul>'.format("".join(links))
 
 
@@ -85,8 +78,10 @@ def _association_badges(theme_ids: tuple[str, ...], theme_names: dict[str, str])
     if not theme_ids:
         return ""
     return '<p class="news-associations">{}</p>'.format("".join(
-        '<span class="theme-association" data-theme-id="{}">{}</span>'.format(
-            _escape(theme_id), _escape(theme_names.get(theme_id, theme_id))
+        '<a class="theme-association" data-theme-id="{}" href="#theme-{}">{}</a>'.format(
+            _escape(theme_id),
+            _escape(_safe_dom_id(theme_id)),
+            _escape(theme_names.get(theme_id, theme_id)),
         )
         for theme_id in theme_ids
     ))
@@ -98,6 +93,7 @@ def _news_item(
     association_labels: str = "",
 ) -> str:
     detail_fields = (
+        ("发布时段", item.release_session),
         ("关键信号/预期差", item.signal),
         ("市场反馈", item.market_feedback),
         ("即时市场定价", item.pricing),
@@ -241,7 +237,7 @@ def _pending_items(document: ReportDocument) -> str:
                 _escape(url), _escape(source.label)
             )
             for source in item.sources
-            for url in (_safe_source_url(source.url),)
+            for url in (renderable_source_url(source.url),)
             if url
         ]
         pending_sources = ""
@@ -313,6 +309,35 @@ def _report_archive(document: ReportDocument, report_index: list[dict]) -> str:
     return "".join(date_groups)
 
 
+def _filter_bar(document: ReportDocument) -> str:
+    metadata = '<div class="filter-meta"><span>数据截止</span><span>{}</span></div>'.format(
+        _escape(document.meta.cutoff)
+    )
+    if document.themes:
+        return (
+            '<nav class="filter-bar" data-component="filters" aria-label="报告元数据">'
+            '{}'
+            '</nav>'
+        ).format(metadata)
+    return (
+        '<nav class="filter-bar" data-component="filters" aria-label="新闻类别筛选">'
+        '{}<div class="filter-actions">'
+        '<button class="filter-button is-active" type="button" data-category="all" '
+        'aria-pressed="true">全部</button>'
+        '<button class="filter-button" type="button" data-category="政策" '
+        'aria-pressed="false">政策</button>'
+        '<button class="filter-button" type="button" data-category="财报" '
+        'aria-pressed="false">财报</button>'
+        '<button class="filter-button" type="button" data-category="产业" '
+        'aria-pressed="false">产业</button>'
+        '<button class="filter-button" type="button" data-category="地缘" '
+        'aria-pressed="false">地缘</button>'
+        '<button class="filter-button" type="button" data-category="其他" '
+        'aria-pressed="false">其他</button>'
+        '</div></nav>'
+    ).format(metadata)
+
+
 def render_report(document: ReportDocument, report_index: list[dict]) -> str:
     """Render fixed template with escaped text and allowlisted http/https source URLs."""
     template = _TEMPLATE_PATH.read_text(encoding="utf-8")
@@ -331,7 +356,7 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
             _escape(topbar_meta),
         ),
         "REPORT_ARCHIVE": _report_archive(document, report_index),
-        "FILTERS": "<span>{}</span>".format(_escape(document.meta.cutoff)),
+        "FILTER_BAR": _filter_bar(document),
         "THEME_CONTENT": _theme_content(document),
         "NEWS_ITEMS": (
             '<section data-component="news-list">{}</section>'.format("".join(
