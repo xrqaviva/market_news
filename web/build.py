@@ -69,7 +69,34 @@ def _source_links(item: NewsItem) -> str:
     return '<ul data-component="sources">{}</ul>'.format("".join(links))
 
 
-def _news_item(item: NewsItem) -> str:
+def _safe_dom_id(value: str) -> str:
+    raw_value = str(value)
+    normalized = raw_value.lower()
+    if re.fullmatch(r"[a-z0-9_-]+", normalized):
+        return normalized
+    return "u{}".format(raw_value.encode("utf-8").hex())
+
+
+def _news_instance_id(report_id: str, scope_id: str, event_id: str) -> str:
+    return "-".join(_safe_dom_id(value) for value in (report_id, scope_id, event_id))
+
+
+def _association_badges(theme_ids: tuple[str, ...], theme_names: dict[str, str]) -> str:
+    if not theme_ids:
+        return ""
+    return '<p class="news-associations">{}</p>'.format("".join(
+        '<span class="theme-association" data-theme-id="{}">{}</span>'.format(
+            _escape(theme_id), _escape(theme_names.get(theme_id, theme_id))
+        )
+        for theme_id in theme_ids
+    ))
+
+
+def _news_item(
+    item: NewsItem,
+    instance_id: str,
+    association_labels: str = "",
+) -> str:
     detail_fields = (
         ("关键信号/预期差", item.signal),
         ("市场反馈", item.market_feedback),
@@ -85,19 +112,151 @@ def _news_item(item: NewsItem) -> str:
     )
     detail_kind = "analysis" if details else "sources-inline"
     return (
-        '<article data-component="news-detail" data-rank="{}" data-category="{}" data-detail-kind="{}">'
-        '<h2>{}. {}</h2><p>{}</p>{}<p>热点权重：{}/100</p>{}</article>'
+        '<article data-component="news-detail" data-rank="{}" data-category="{}" data-detail-kind="{}" '
+        'id="news-{}" data-instance-id="{}" data-event-id="{}">'
+        '<h2>{}. {}</h2><p>{}</p>{}<p>热点权重：{}/100</p>{}{}</article>'
     ).format(
         _escape(item.rank),
         _escape(item.category),
         detail_kind,
+        _escape(instance_id),
+        _escape(instance_id),
+        _escape(item.event_id),
         _escape(item.rank),
         _escape(item.title),
         _escape(item.core),
         _source_links(item),
         _escape(item.score),
+        association_labels,
         details,
     )
+
+
+def _news_index(document: ReportDocument, theme_names: dict[str, str]) -> str:
+    if not document.news_index:
+        return ""
+    rows = []
+    for entry in document.news_index:
+        scope_id = entry.theme_ids[0] if entry.theme_ids else "other"
+        instance_id = _news_instance_id(document.meta.report_id, scope_id, entry.event_id)
+        rows.append(
+            '<li><a href="#news-{}"><span class="news-index-rank">{:02d}</span>'
+            '<span class="news-index-title">{}</span><strong>{}/100</strong></a>{}</li>'.format(
+                _escape(instance_id),
+                entry.rank,
+                _escape(entry.title),
+                _escape(entry.score),
+                _association_badges(entry.theme_ids, theme_names),
+            )
+        )
+    return (
+        '<section class="news-index" data-component="news-index"><h2>单条新闻热榜索引</h2>'
+        '<ol>{}</ol></section>'
+    ).format("".join(rows))
+
+
+def _mapping_list(label: str, mappings: tuple) -> str:
+    if not mappings:
+        return ""
+    return '<div class="theme-mappings"><h3>{}</h3><ul>{}</ul></div>'.format(
+        _escape(label),
+        "".join(
+            '<li>{}（{}）：{}</li>'.format(
+                _escape(mapping.name), _escape(mapping.ticker), _escape(mapping.evidence)
+            )
+            for mapping in mappings
+        ),
+    )
+
+
+def _theme_group(document: ReportDocument, theme, theme_names: dict[str, str]) -> str:
+    rows = "".join(
+        _news_item(
+            item,
+            _news_instance_id(document.meta.report_id, theme.theme_id, item.event_id),
+            _association_badges(item.theme_ids, theme_names),
+        )
+        for item in theme.items
+    )
+    return (
+        '<section class="theme-group" data-component="theme-group" id="theme-{}">'
+        '<header><h2>{}</h2><p class="theme-total">{}分 · 关联新闻{}条</p></header>'
+        '<p class="theme-catalyst"><strong>核心催化</strong>{}</p>{}{}'
+        '<p class="theme-risk"><strong>题材风险边界</strong>{}</p>'
+        '<section class="theme-news-list" data-component="news-list">{}</section></section>'
+    ).format(
+        _escape(_safe_dom_id(theme.theme_id)),
+        _escape(theme.name),
+        _escape(theme.total_score),
+        _escape(len(theme.items)),
+        _escape(theme.catalyst),
+        _mapping_list("直接映射", theme.direct_mappings),
+        _mapping_list("板块代表", theme.sector_representatives),
+        _escape(theme.risk_boundary),
+        rows,
+    )
+
+
+def _other_important_news(document: ReportDocument, theme_names: dict[str, str]) -> str:
+    if not document.other_items:
+        return ""
+    rows = "".join(
+        _news_item(
+            item,
+            _news_instance_id(document.meta.report_id, "other", item.event_id),
+            _association_badges(item.theme_ids, theme_names),
+        )
+        for item in document.other_items
+    )
+    return (
+        '<section class="other-important-news" data-component="other-important-news">'
+        '<h2>其他重要新闻</h2><section data-component="news-list">{}</section></section>'
+    ).format(rows)
+
+
+def _theme_content(document: ReportDocument) -> str:
+    if not document.themes:
+        return ""
+    theme_names = {theme.theme_id: theme.name for theme in document.themes}
+    has_repeated_item = any(len(item.theme_ids) > 1 for theme in document.themes for item in theme.items)
+    disclosure = (
+        '<p class="theme-disclosure">跨题材新闻会在各关联题材中重复计分；各处保留完整详情。</p>'
+        if has_repeated_item else ""
+    )
+    return "{}{}{}{}".format(
+        _news_index(document, theme_names),
+        disclosure,
+        "".join(_theme_group(document, theme, theme_names) for theme in document.themes),
+        _other_important_news(document, theme_names),
+    )
+
+
+def _pending_items(document: ReportDocument) -> str:
+    if not document.pending_items:
+        return ""
+    rows = []
+    for item in document.pending_items:
+        links = ""
+        if item.sources:
+            links = '<ul data-component="pending-sources">{}</ul>'.format("".join(
+                '<li><a href="{}" rel="noopener noreferrer">{}</a></li>'.format(
+                    _escape(source.url), _escape(source.label)
+                )
+                for source in item.sources
+            ))
+        rows.append(
+            '<article class="pending-item"><h3>{}</h3>'
+            '<p><strong>已知信息</strong>{}</p>'
+            '<p><strong>待核原因</strong>{}</p>{}</article>'.format(
+                _escape(item.title), _escape(item.known), _escape(item.reason), links
+            )
+        )
+    return (
+        '<section class="pending-section" data-component="pending-list">'
+        '<h2>待核验线索</h2><p>以下线索不参与主榜计分；补齐具体原文和北京时间后再转入主榜。</p>'
+        '{}'
+        '</section>'
+    ).format("".join(rows))
 
 
 def _archive_slot_label(report: dict) -> str:
@@ -170,7 +329,18 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
         ),
         "REPORT_ARCHIVE": _report_archive(document, report_index),
         "FILTERS": "<span>{}</span>".format(_escape(document.meta.cutoff)),
-        "NEWS_ITEMS": "".join(_news_item(item) for item in document.items),
+        "THEME_CONTENT": _theme_content(document),
+        "NEWS_ITEMS": (
+            '<section data-component="news-list">{}</section>'.format("".join(
+                _news_item(
+                    item,
+                    _news_instance_id(document.meta.report_id, "legacy", item.event_id or str(item.rank)),
+                )
+                for item in document.items
+            ))
+            if not document.themes else ""
+        ),
+        "PENDING_ITEMS": _pending_items(document),
     }
     template_placeholders = set(re.findall(r"{{[^{}]+}}", template))
     expected_placeholders = {"{{" + name + "}}" for name in replacements}

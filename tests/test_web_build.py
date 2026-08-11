@@ -5,8 +5,16 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from web.build import build_site, render_report
-from web.report_model import NewsItem, ReportDocument, ReportMeta, SourceLink
+from web.build import _news_instance_id, build_site, render_report
+from web.report_model import (
+    NewsIndexEntry,
+    NewsItem,
+    ReportDocument,
+    ReportMeta,
+    SourceLink,
+    StockMapping,
+    ThemeGroup,
+)
 from web.security import PublicTreeUnsafe
 
 
@@ -14,6 +22,54 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class WebBuildTest(unittest.TestCase):
+    def _themed_document(self) -> ReportDocument:
+        shared = NewsItem(
+            rank=1, event_id="evt-shared", title="共享新闻", core="共享核心", score=90,
+            market_feedback="共享反馈", boundary="共享边界", heat_change="共享热度",
+            sources=(SourceLink("官方", "08-11 08:00", "共享直链", "https://example.com/shared"),),
+            theme_ids=("theme-alpha", "theme-beta"),
+        )
+        alpha_only = NewsItem(
+            rank=2, event_id="evt-alpha", title="甲题材新闻", core="甲核心", score=80,
+            sources=(SourceLink("官方", "08-11 08:01", "甲直链", "https://example.com/alpha"),),
+            theme_ids=("theme-alpha",),
+        )
+        beta_only = NewsItem(
+            rank=3, event_id="evt-beta", title="乙题材新闻", core="乙核心", score=70,
+            sources=(SourceLink("官方", "08-11 08:02", "乙直链", "https://example.com/beta"),),
+            theme_ids=("theme-beta",),
+        )
+        other = NewsItem(
+            rank=4, event_id="evt-other", title="其他新闻", core="其他核心", score=60,
+            sources=(SourceLink("官方", "08-11 08:03", "其他直链", "https://example.com/other"),),
+        )
+        return ReportDocument(
+            meta=ReportMeta(
+                report_id="themed-report", report_date="2026-08-11", slot="0800",
+                slot_label="盘前", title="题材测试", window="window", cutoff="cutoff", source_name="",
+            ),
+            items=(shared, alpha_only, beta_only, other),
+            news_index=(
+                NewsIndexEntry(1, "evt-shared", "共享新闻", 90, ("theme-alpha", "theme-beta")),
+                NewsIndexEntry(2, "evt-alpha", "甲题材新闻", 80, ("theme-alpha",)),
+                NewsIndexEntry(3, "evt-beta", "乙题材新闻", 70, ("theme-beta",)),
+                NewsIndexEntry(4, "evt-other", "其他新闻", 60),
+            ),
+            themes=(
+                ThemeGroup(
+                    "theme-alpha", "甲题材", 170, "甲的共同催化", "甲风险",
+                    (StockMapping("甲公司", "000001", "公告确认"),),
+                    (StockMapping("乙公司", "000002", "未确认新增订单"),),
+                    ("evt-shared", "evt-alpha"), (shared, alpha_only),
+                ),
+                ThemeGroup(
+                    "theme-beta", "乙题材", 160, "乙的共同催化", "乙风险",
+                    event_ids=("evt-shared", "evt-beta"), items=(shared, beta_only),
+                ),
+            ),
+            other_items=(other,),
+        )
+
     def _article(self, page: str, rank: int) -> str:
         match = re.search(
             r'<article data-component="news-detail" data-rank="{}".*?</article>'.format(rank),
@@ -22,6 +78,92 @@ class WebBuildTest(unittest.TestCase):
         )
         self.assertIsNotNone(match, "missing rendered news row for rank {}".format(rank))
         return match.group(0)
+
+    def test_themed_document_renders_index_groups_and_complete_other_news(self):
+        page = render_report(self._themed_document(), [{
+            "id": "themed-report", "date": "2026-08-11", "label": "盘前",
+            "url": "reports/2026-08-11-0800.html",
+        }])
+
+        self.assertIn('data-component="news-index"', page)
+        self.assertIn('href="#news-themed-report-theme-alpha-evt-shared"', page)
+        self.assertIn("1. 共享新闻", page)
+        self.assertIn("90/100", page)
+        self.assertIn("theme-alpha", page)
+        self.assertIn("theme-beta", page)
+        self.assertLess(page.index("甲题材"), page.index("乙题材"))
+        self.assertIn('data-component="theme-group" id="theme-theme-alpha"', page)
+        self.assertIn("170分 · 关联新闻2条", page)
+        self.assertIn("甲的共同催化", page)
+        self.assertIn("甲公司（000001）：公告确认", page)
+        self.assertIn("乙公司（000002）：未确认新增订单", page)
+        self.assertIn("甲风险", page)
+        self.assertIn("共享反馈", page)
+        self.assertIn("共享边界", page)
+        self.assertIn("08-11 08:00", page)
+        self.assertIn('href="https://example.com/shared"', page)
+        self.assertIn('data-component="other-important-news"', page)
+        self.assertIn("其他新闻", page)
+        self.assertIn("08-11 08:03", page)
+        self.assertIn('href="https://example.com/other"', page)
+        self.assertIn("跨题材新闻会在各关联题材中重复计分", page)
+
+    def test_themed_cross_theme_instances_are_unique_and_source_only_has_no_toggle(self):
+        page = render_report(self._themed_document(), [{
+            "id": "themed-report", "date": "2026-08-11", "label": "盘前",
+            "url": "reports/2026-08-11-0800.html",
+        }])
+
+        shared_rows = re.findall(
+            r'(<article(?=[^>]*data-event-id="evt-shared")[^>]*>.*?</article>)', page, re.DOTALL,
+        )
+        self.assertEqual(2, len(shared_rows))
+        instance_ids = [re.search(r'data-instance-id="([^"]+)"', row).group(1) for row in shared_rows]
+        self.assertEqual(
+            ["themed-report-theme-alpha-evt-shared", "themed-report-theme-beta-evt-shared"],
+            instance_ids,
+        )
+        self.assertEqual(
+            ["news-themed-report-theme-alpha-evt-shared", "news-themed-report-theme-beta-evt-shared"],
+            [match.group(1) for row in shared_rows for match in re.finditer(r'(?<![-\w])id="([^"]+)"', row)],
+        )
+        normalized = [
+            re.sub(r'(id|data-instance-id)="[^"]+"', r'\1="INSTANCE"', row)
+            for row in shared_rows
+        ]
+        self.assertEqual(normalized[0], normalized[1])
+
+        other_row = re.search(
+            r'<article(?=[^>]*data-event-id="evt-other")[^>]*>.*?</article>', page, re.DOTALL,
+        ).group(0)
+        self.assertIn('data-detail-kind="sources-inline"', other_row)
+        self.assertNotIn('class="news-toggle"', other_row)
+
+    def test_legacy_document_keeps_flat_news_list_without_theme_containers(self):
+        document = ReportDocument(
+            meta=ReportMeta(
+                report_id="legacy", report_date="2026-08-11", slot="0800", slot_label="盘前",
+                title="旧报告", window="window", cutoff="cutoff", source_name="",
+            ),
+            items=(NewsItem(rank=1, title="旧新闻", core="旧核心", score=50),),
+        )
+        page = render_report(document, [{
+            "id": "legacy", "date": "2026-08-11", "label": "盘前",
+            "url": "reports/2026-08-11-0800.html",
+        }])
+
+        self.assertIn('<section data-component="news-list">', page)
+        self.assertIn("旧新闻", page)
+        self.assertNotIn('data-component="news-index"', page)
+        self.assertNotIn('data-component="theme-group"', page)
+
+    def test_non_ascii_instance_components_remain_distinct_safe_dom_ids(self):
+        alpha = _news_instance_id("报告", "题材甲", "事件")
+        beta = _news_instance_id("报告", "题材乙", "事件")
+
+        self.assertNotEqual(alpha, beta)
+        self.assertRegex(alpha, r"^[a-z0-9_-]+$")
+        self.assertRegex(beta, r"^[a-z0-9_-]+$")
 
     def test_renderer_preserves_mustache_literals_in_report_text(self):
         document = ReportDocument(
@@ -64,14 +206,14 @@ class WebBuildTest(unittest.TestCase):
                         "url": "reports/2026-08-01-0800.html",
                     }])
 
-    def test_build_creates_index_manifest_and_four_report_pages(self):
+    def test_build_creates_index_manifest_and_all_report_pages(self):
         with TemporaryDirectory() as tmp:
             result = build_site(ROOT, Path(tmp) / "dist")
             output = result.output_dir
             manifest = json.loads((output / "reports.json").read_text(encoding="utf-8"))
-            self.assertEqual(4, result.report_count)
-            self.assertEqual(4, len(manifest["reports"]))
-            self.assertEqual("reports/2026-07-31-0800.html", manifest["latest"])
+            self.assertEqual(7, result.report_count)
+            self.assertEqual(7, len(manifest["reports"]))
+            self.assertEqual("reports/2026-08-11-0800.html", manifest["latest"])
             self.assertTrue((output / manifest["latest"]).exists())
             self.assertIn(manifest["latest"], (output / "index.html").read_text(encoding="utf-8"))
 
@@ -88,6 +230,20 @@ class WebBuildTest(unittest.TestCase):
                 self.assertIn(marker, page)
             self.assertIn("宇树科技8月5日初步询价、8月10日申购", page)
             self.assertNotIn("/Users/", page)
+
+    def test_aug11_page_renders_pending_verification_appendix(self):
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            page = (output / "reports/2026-08-11-0800.html").read_text(encoding="utf-8")
+            self.assertIn('data-component="pending-list"', page)
+            self.assertIn("待核验线索", page)
+            for title in (
+                "韩国半导体投资覆盖材料、零部件与设备",
+                "马斯克与自由电子激光EUV光源",
+                "英伟达拟向Lancium投资最高30亿美元",
+                "天津机器人会议",
+            ):
+                self.assertIn(title, page)
 
     def test_report_archive_links_resolve_from_report_directory(self):
         with TemporaryDirectory() as tmp:

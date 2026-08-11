@@ -14,6 +14,7 @@
 
   function enhanceRow(row) {
     const rank = row.dataset.rank;
+    const instanceId = row.dataset.instanceId;
     const heading = row.querySelector("h2");
     const paragraphs = Array.from(row.querySelectorAll(":scope > p"));
     const summary = paragraphs.shift();
@@ -24,7 +25,6 @@
     const scoreCell = document.createElement("div");
     const detail = document.createElement("div");
     const toggleTemplate = document.querySelector("#news-toggle-template");
-    const toggle = toggleTemplate.content.firstElementChild.cloneNode(true);
     const inlineSources = row.dataset.detailKind === "sources-inline";
 
     row.classList.add("news-row");
@@ -33,9 +33,8 @@
     rankCell.textContent = rank.padStart(2, "0");
     scoreCell.className = "news-score";
     detail.className = "news-detail";
-    detail.id = `news-detail-${rank}`;
+    detail.id = `news-detail-${instanceId}`;
     detail.hidden = true;
-    toggle.setAttribute("aria-controls", detail.id);
 
     heading.textContent = heading.textContent.replace(/^\d+\.\s*/, "");
     summary.className = "news-summary";
@@ -48,6 +47,8 @@
         content.appendChild(sources);
       }
     } else {
+      const toggle = toggleTemplate.content.firstElementChild.cloneNode(true);
+      toggle.setAttribute("aria-controls", detail.id);
       if (sources) detail.appendChild(sources);
       paragraphs.forEach((paragraph) => detail.appendChild(paragraph));
       decoratePricingLabels(detail);
