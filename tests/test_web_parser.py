@@ -140,6 +140,31 @@ class WebReportParserTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "at least two"):
             self._parse_themed_report(text)
 
+    def test_themed_report_rejects_duplicate_event_within_a_theme(self):
+        text = self._themed_report()
+        shared_start = text.index("#### 新闻：1｜evt-1｜共享新闻｜90/100")
+        second_item_start = text.index("#### 新闻：2｜evt-2｜甲题材新闻｜80/100")
+        second_theme_start = text.index("### 主线2：")
+        shared = text[shared_start:second_item_start]
+        text = text[:second_item_start] + shared + text[second_theme_start:]
+        text = text.replace("甲题材｜170分｜关联新闻2条", "甲题材｜180分｜关联新闻2条")
+        with self.assertRaisesRegex(ValueError, "duplicate event_id"):
+            self._parse_themed_report(text)
+
+    def test_themed_report_rejects_duplicate_event_within_other_items(self):
+        text = self._themed_report()
+        other_start = text.index("#### 新闻：4｜evt-4｜其他新闻｜60/100")
+        pending_start = text.index("## 待核验线索")
+        other = text[other_start:pending_start]
+        text = text[:pending_start] + other + text[pending_start:]
+        with self.assertRaisesRegex(ValueError, "duplicate event_id"):
+            self._parse_themed_report(text)
+
+    def test_themed_report_requires_a_nonempty_core_catalyst(self):
+        text = self._themed_report().replace("**核心催化：** 甲的共同催化。", "**核心催化：**")
+        with self.assertRaisesRegex(ValueError, "core catalyst"):
+            self._parse_themed_report(text)
+
     def test_themed_report_rejects_declared_total_mismatch(self):
         with self.assertRaisesRegex(ValueError, "declared total"):
             self._parse_themed_report(self._themed_report().replace("甲题材｜170分", "甲题材｜169分"))

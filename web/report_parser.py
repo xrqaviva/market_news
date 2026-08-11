@@ -317,12 +317,16 @@ def _parse_theme_groups(text: str) -> Tuple[ThemeGroup, ...]:
         theme_id = _field(block, "题材ID")
         if not theme_id:
             raise ValueError("theme needs an id")
+        catalyst_match = re.search(r"^\*\*核心催化：\*\*[ \t]*(.*)$", block, re.MULTILINE)
+        catalyst = _plain(catalyst_match.group(1)) if catalyst_match else ""
+        if not catalyst:
+            raise ValueError("theme needs a nonempty core catalyst")
         items = tuple(sorted(_parse_nested_news_blocks(block), key=lambda item: item.rank))
         if len(items) != int(declared_count):
             raise ValueError("theme declared item count differs from members")
         themes.append(ThemeGroup(
             theme_id=theme_id, name=_plain(name), total_score=int(total_score),
-            catalyst=_field(block, "核心催化"), risk_boundary=_field(block, "题材风险边界"),
+            catalyst=catalyst, risk_boundary=_field(block, "题材风险边界"),
             direct_mappings=_parse_stock_mappings(block, "直接映射"),
             sector_representatives=_parse_stock_mappings(block, "板块代表"),
             event_ids=tuple(item.event_id for item in items), items=items,
@@ -360,6 +364,8 @@ def _validate_themed_document(
     themed_event_ids = set()
     body_items = []
     for theme in themes:
+        if len(theme.event_ids) != len(set(theme.event_ids)):
+            raise ValueError("theme has duplicate event_id")
         if len(theme.items) < 2:
             raise ValueError("theme needs at least two ranked items")
         if sum(item.score for item in theme.items) != theme.total_score:
@@ -373,6 +379,8 @@ def _validate_themed_document(
             body_items.append(item)
 
     other_event_ids = {item.event_id for item in other_items}
+    if len(other_event_ids) != len(other_items):
+        raise ValueError("Other Important News has duplicate event_id")
     both = themed_event_ids & other_event_ids
     if both:
         raise ValueError("item appears in both a theme and Other Important News")
