@@ -2,6 +2,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
+from web.report_model import NewsIndexEntry, StockMapping, ThemeGroup
 from web.report_parser import CatalogEntry, discover_reports, parse_report
 
 
@@ -15,12 +16,200 @@ class WebReportParserTest(unittest.TestCase):
             for path, entry in discover_reports(ROOT)
         }
 
-    def test_catalog_selects_exactly_four_legacy_reports(self):
+    def _themed_report(self):
+        return (
+            "# 题材解析测试\n\n"
+            "> **新闻窗口：** 2026-08-11 00:00—08:30（北京时间）\n"
+            "> **实际截点：** 2026-08-11 08:30。\n\n"
+            "## 单条新闻热榜索引\n\n"
+            "| 原排名 | 事件ID | 新闻标题 | 热点分 | 关联题材 | 跳转锚点 |\n"
+            "|---:|---|---|---:|---|---|\n"
+            "| 1 | evt-1 | 共享新闻 | 90 | theme-alpha、theme-beta | #evt-1 |\n"
+            "| 2 | evt-2 | 甲题材新闻 | 80 | theme-alpha | #evt-2 |\n"
+            "| 3 | evt-3 | 乙题材新闻 | 70 | theme-beta | #evt-3 |\n"
+            "| 4 | evt-4 | 其他新闻 | 60 | - | #evt-4 |\n\n"
+            "## 题材主线\n\n"
+            "### 主线1：甲题材｜170分｜关联新闻2条\n\n"
+            "**题材ID：** theme-alpha\n\n"
+            "**核心催化：** 甲的共同催化。\n\n"
+            "**直接映射：**\n\n"
+            "- 甲公司（000001）：公告确认\n\n"
+            "**板块代表：**\n\n"
+            "- 乙公司（000002）：本轮新闻未确认新增订单或直接受益\n\n"
+            "**题材风险边界：** 甲风险。\n\n"
+            "#### 新闻：1｜evt-1｜共享新闻｜90/100\n\n"
+            "**核心信息：** 共享核心。\n\n"
+            "| 传播渠道 | 北京时间 | 消息或热度 |\n"
+            "|---|---:|---|\n"
+            "| 官方 | 08-11 08:00 | [共享直链](https://example.com/shared) |\n\n"
+            "**带时间市场反馈：** 共享反馈。\n\n"
+            "**判断边界：** 共享边界。\n\n"
+            "**热度变化：** 共享热度。\n\n"
+            "**关联题材：** theme-alpha、theme-beta（跨题材重复计分）\n\n"
+            "#### 新闻：2｜evt-2｜甲题材新闻｜80/100\n\n"
+            "**核心信息：** 甲核心。\n\n"
+            "| 传播渠道 | 北京时间 | 消息或热度 |\n"
+            "|---|---:|---|\n"
+            "| 官方 | 08-11 08:01 | [甲直链](https://example.com/alpha) |\n\n"
+            "**关联题材：** theme-alpha\n\n"
+            "### 主线2：乙题材｜160分｜关联新闻2条\n\n"
+            "**题材ID：** theme-beta\n\n"
+            "**核心催化：** 乙的共同催化。\n\n"
+            "**题材风险边界：** 乙风险。\n\n"
+            "#### 新闻：1｜evt-1｜共享新闻｜90/100\n\n"
+            "**核心信息：** 共享核心。\n\n"
+            "| 传播渠道 | 北京时间 | 消息或热度 |\n"
+            "|---|---:|---|\n"
+            "| 官方 | 08-11 08:00 | [共享直链](https://example.com/shared) |\n\n"
+            "**带时间市场反馈：** 共享反馈。\n\n"
+            "**判断边界：** 共享边界。\n\n"
+            "**热度变化：** 共享热度。\n\n"
+            "**关联题材：** theme-alpha、theme-beta（跨题材重复计分）\n\n"
+            "#### 新闻：3｜evt-3｜乙题材新闻｜70/100\n\n"
+            "**核心信息：** 乙核心。\n\n"
+            "| 传播渠道 | 北京时间 | 消息或热度 |\n"
+            "|---|---:|---|\n"
+            "| 官方 | 08-11 08:02 | [乙直链](https://example.com/beta) |\n\n"
+            "**关联题材：** theme-beta\n\n"
+            "## 其他重要新闻\n\n"
+            "#### 新闻：4｜evt-4｜其他新闻｜60/100\n\n"
+            "**核心信息：** 其他核心。\n\n"
+            "| 传播渠道 | 北京时间 | 消息或热度 |\n"
+            "|---|---:|---|\n"
+            "| 官方 | 08-11 08:03 | [其他直链](https://example.com/other) |\n\n"
+            "## 待核验线索\n\n"
+            "### 待核线索\n\n"
+            "**已知事实：** 待核事实。\n\n"
+            "**待核原因：** 待核原因。\n\n"
+            "[待核直链](https://example.com/pending)\n"
+        )
+
+    def _parse_themed_report(self, text=None):
+        with TemporaryDirectory() as tmp:
+            report_path = Path(tmp) / "2026-08-11-0800-themed.md"
+            report_path.write_text(text or self._themed_report(), encoding="utf-8")
+            entry = CatalogEntry(
+                report_id="20260811-0800", path=report_path.name,
+                report_date="2026-08-11", slot="0800", label="盘前",
+            )
+            return parse_report(report_path, entry)
+
+    def test_themed_report_parses_immutable_model_and_preserves_news_detail(self):
+        document = self._parse_themed_report()
+
+        self.assertIsInstance(document.news_index[0], NewsIndexEntry)
+        self.assertIsInstance(document.themes[0], ThemeGroup)
+        self.assertIsInstance(document.themes[0].direct_mappings[0], StockMapping)
+        with self.assertRaises(AttributeError):
+            document.themes[0].name = "变化"
+        with self.assertRaises(AttributeError):
+            document.themes[0].direct_mappings[0].name = "变化"
+
+        self.assertEqual(["evt-1", "evt-2", "evt-3", "evt-4"], [entry.event_id for entry in document.news_index])
+        self.assertEqual(("theme-alpha", "theme-beta"), document.news_index[0].theme_ids)
+        self.assertEqual(["theme-alpha", "theme-beta"], [theme.theme_id for theme in document.themes])
+        self.assertEqual([170, 160], [theme.total_score for theme in document.themes])
+        self.assertEqual(("evt-1", "evt-2"), document.themes[0].event_ids)
+        self.assertEqual("000001", document.themes[0].direct_mappings[0].ticker)
+        self.assertEqual("公告确认", document.themes[0].direct_mappings[0].evidence)
+        self.assertEqual(["evt-4"], [item.event_id for item in document.other_items])
+        self.assertEqual(["evt-1", "evt-2", "evt-3", "evt-4"], [item.event_id for item in document.items])
+
+        shared = document.themes[0].items[0]
+        self.assertEqual("https://example.com/shared", shared.sources[0].url)
+        self.assertEqual("08-11 08:00", shared.sources[0].time_bj)
+        self.assertEqual("共享反馈。", shared.market_feedback)
+        self.assertEqual("共享边界。", shared.boundary)
+        self.assertEqual("共享热度。", shared.heat_change)
+        self.assertEqual(("theme-alpha", "theme-beta"), shared.theme_ids)
+        self.assertEqual(1, len(document.pending_items))
+        self.assertNotIn(document.pending_items[0].title, [item.title for item in document.items])
+
+    def test_themed_report_sorts_tied_themes_by_normalized_name_after_other_ties(self):
+        text = self._themed_report()
+        text = text.replace("甲题材｜170分｜关联新闻2条", "Ｂ题材｜170分｜关联新闻2条")
+        text = text.replace("乙题材｜160分｜关联新闻2条", "Ａ题材｜170分｜关联新闻2条")
+        text = text.replace("| 3 | evt-3 | 乙题材新闻 | 70 |", "| 3 | evt-3 | 乙题材新闻 | 80 |")
+        text = text.replace("#### 新闻：3｜evt-3｜乙题材新闻｜70/100", "#### 新闻：3｜evt-3｜乙题材新闻｜80/100")
+        document = self._parse_themed_report(text)
+        self.assertEqual(["theme-beta", "theme-alpha"], [theme.theme_id for theme in document.themes])
+
+    def test_themed_report_rejects_single_item_theme(self):
+        text = self._themed_report().replace("关联新闻2条", "关联新闻1条", 1)
+        text = text.replace("#### 新闻：2｜evt-2｜甲题材新闻｜80/100", "#### 已删除：2｜evt-2｜甲题材新闻｜80/100")
+        with self.assertRaisesRegex(ValueError, "at least two"):
+            self._parse_themed_report(text)
+
+    def test_themed_report_rejects_declared_total_mismatch(self):
+        with self.assertRaisesRegex(ValueError, "declared total"):
+            self._parse_themed_report(self._themed_report().replace("甲题材｜170分", "甲题材｜169分"))
+
+    def test_themed_report_rejects_different_cross_theme_event_copy(self):
+        text = self._themed_report().replace("共享反馈。", "漂移反馈。", 1)
+        with self.assertRaisesRegex(ValueError, "inconsistent event"):
+            self._parse_themed_report(text)
+
+    def test_themed_report_rejects_theme_reference_missing_from_index(self):
+        text = self._themed_report().replace(
+            "#### 新闻：2｜evt-2｜甲题材新闻｜80/100",
+            "#### 新闻：2｜evt-missing｜甲题材新闻｜80/100",
+        )
+        with self.assertRaisesRegex(ValueError, "missing from the index"):
+            self._parse_themed_report(text)
+
+    def test_themed_report_rejects_index_body_membership_mismatch(self):
+        text = self._themed_report().replace("**关联题材：** theme-alpha\n\n### 主线2", "**关联题材：** theme-beta\n\n### 主线2")
+        with self.assertRaisesRegex(ValueError, "membership"):
+            self._parse_themed_report(text)
+
+    def test_themed_report_rejects_qualified_index_item_missing_from_body(self):
+        text = self._themed_report().replace("#### 新闻：4｜evt-4｜其他新闻｜60/100", "#### 已删除：4｜evt-4｜其他新闻｜60/100")
+        with self.assertRaisesRegex(ValueError, "missing from themes and Other"):
+            self._parse_themed_report(text)
+
+    def test_themed_report_rejects_item_in_theme_and_other_items(self):
+        text = self._themed_report().replace(
+            "## 其他重要新闻\n\n",
+            "## 其他重要新闻\n\n#### 新闻：2｜evt-2｜甲题材新闻｜80/100\n\n"
+            "**核心信息：** 甲核心。\n\n| 传播渠道 | 北京时间 | 消息或热度 |\n"
+            "|---|---:|---|\n| 官方 | 08-11 08:01 | [甲直链](https://example.com/alpha) |\n\n",
+        )
+        with self.assertRaisesRegex(ValueError, "both a theme and Other"):
+            self._parse_themed_report(text)
+
+    def test_catalog_selects_legacy_and_current_reports(self):
         found = discover_reports(ROOT)
-        self.assertEqual(4, len(found))
+        self.assertEqual(7, len(found))
         self.assertEqual(
-            ["20260729-1800", "20260730-0800", "20260730-1500", "20260731-0800"],
+            [
+                "20260729-1800",
+                "20260730-0800",
+                "20260730-1500",
+                "20260731-0800",
+                "20260803-0800",
+                "20260810-0800",
+                "20260811-0800",
+            ],
             [entry.report_id for _, entry in found],
+        )
+
+    def test_aug11_report_parses_all_ranked_news(self):
+        found = dict((entry.report_id, (path, entry)) for path, entry in discover_reports(ROOT))
+        document = parse_report(*found["20260811-0800"])
+        self.assertEqual(25, len(document.items))
+        self.assertEqual(list(range(1, 26)), [item.rank for item in document.items])
+        self.assertTrue(any("5000亿美元" in item.title for item in document.items))
+        self.assertTrue(any("特朗普要求伊朗赔偿" in item.title for item in document.items))
+        pboc = next(item for item in document.items if "央行发布" in item.title)
+        longsys = next(item for item in document.items if "江波龙" in item.title)
+        self.assertIn("金融服务实体经济", pboc.signal)
+        self.assertIn("-31.51亿元", longsys.signal)
+        self.assertTrue(pboc.market_feedback)
+        self.assertTrue(longsys.boundary)
+        self.assertEqual(4, len(document.pending_items))
+        self.assertEqual(
+            ["韩国半导体投资覆盖材料、零部件与设备", "马斯克与自由电子激光EUV光源", "英伟达拟向Lancium投资最高30亿美元", "天津机器人会议"],
+            [item.title for item in document.pending_items],
         )
 
     def test_latest_report_parses_ranked_news_and_sources(self):

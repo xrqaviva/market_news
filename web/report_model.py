@@ -11,6 +11,22 @@ class SourceLink:
 
 
 @dataclass(frozen=True)
+class StockMapping:
+    name: str
+    ticker: str
+    evidence: str
+
+
+@dataclass(frozen=True)
+class NewsIndexEntry:
+    rank: int
+    event_id: str
+    title: str
+    score: int
+    theme_ids: Tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
 class NewsItem:
     rank: int
     title: str
@@ -24,6 +40,16 @@ class NewsItem:
     variables: str = ""
     heat_change: str = ""
     category: str = "其他"
+    sources: Tuple[SourceLink, ...] = field(default_factory=tuple)
+    event_id: str = ""
+    theme_ids: Tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class PendingItem:
+    title: str
+    known: str
+    reason: str
     sources: Tuple[SourceLink, ...] = field(default_factory=tuple)
 
 
@@ -40,6 +66,23 @@ class ReportMeta:
 
 
 @dataclass(frozen=True)
+class ThemeGroup:
+    theme_id: str
+    name: str
+    total_score: int
+    catalyst: str
+    risk_boundary: str
+    direct_mappings: Tuple[StockMapping, ...] = field(default_factory=tuple)
+    sector_representatives: Tuple[StockMapping, ...] = field(default_factory=tuple)
+    event_ids: Tuple[str, ...] = field(default_factory=tuple)
+    items: Tuple[NewsItem, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
 class ReportDocument:
     meta: ReportMeta
     items: Tuple[NewsItem, ...]
+    pending_items: Tuple[PendingItem, ...] = field(default_factory=tuple)
+    news_index: Tuple[NewsIndexEntry, ...] = field(default_factory=tuple)
+    themes: Tuple[ThemeGroup, ...] = field(default_factory=tuple)
+    other_items: Tuple[NewsItem, ...] = field(default_factory=tuple)

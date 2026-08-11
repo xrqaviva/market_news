@@ -7,7 +7,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Tuple
 
-from web.report_model import NewsItem, ReportDocument, ReportMeta, SourceLink
+from web.report_model import (
+    NewsIndexEntry, NewsItem, PendingItem, ReportDocument, ReportMeta, SourceLink,
+    StockMapping, ThemeGroup,
+)
 
 
 _HEADING = re.compile(r"^##\s+(\d+)\.\s+(.+)$", re.MULTILINE)
@@ -15,6 +18,21 @@ _COMPACT = re.compile(r"^(\d+)\.\s+\*\*(.+?)｜(\d+)/100\*\*(?:：\s*(.*))?$", r
 _LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 _SCORE = re.compile(r"\*\*热点权重：(\d+)/100\*\*(?:（(.+?)）)?")
 _STANDARD_REPORT = re.compile(r"^(\d{4}-\d{2}-\d{2})-(\d{4})-.+\.md$")
+_PENDING_SECTION = re.compile(
+    r"^##\s+待核验线索[^\n]*\n(.*?)(?=^##\s+|\Z)", re.MULTILINE | re.DOTALL
+)
+_PENDING_HEADING = re.compile(r"^###\s+(.+)$", re.MULTILINE)
+_THEMED_INDEX_HEADING = re.compile(r"^##\s+单条新闻热榜索引[^\n]*$", re.MULTILINE)
+_SECTION = re.compile(r"^##\s+([^\n]+)\n(.*?)(?=^##\s+|\Z)", re.MULTILINE | re.DOTALL)
+_NESTED_NEWS = re.compile(
+    r"^####\s+新闻：\s*(\d+)\s*[｜|]\s*([^｜|]+)\s*[｜|]\s*(.+?)\s*[｜|]\s*(\d+)(?:/100|分)?\s*$",
+    re.MULTILINE,
+)
+_THEME_HEADING = re.compile(
+    r"^###\s+主线\s*\d*\s*：\s*(.+?)\s*[｜|]\s*(\d+)(?:分)?\s*[｜|]\s*"
+    r"(?:关联新闻(?:数)?\s*)?(\d+)(?:条)?\s*$",
+    re.MULTILINE,
+)
 
 
 @dataclass(frozen=True)
@@ -189,6 +207,220 @@ def _compact_items(text: str) -> Iterable[NewsItem]:
         )
 
 
+def _pending_items(text: str) -> Tuple[PendingItem, ...]:
+    section_match = _PENDING_SECTION.search(text)
+    if not section_match:
+        return tuple()
+    section = section_match.group(1)
+    headings = list(_PENDING_HEADING.finditer(section))
+    pending = []
+    for index, heading in enumerate(headings):
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(section)
+        block = section[heading.end():end]
+        known = _field(block, "已知事实") or _field(block, "已知线索")
+        reason = _field(block, "待核原因")
+        sources = _inline_sources(block)
+        if not known or not reason:
+            raise ValueError("pending item needs known facts and verification reason")
+        pending.append(PendingItem(
+            title=_plain(heading.group(1)), known=known, reason=reason, sources=sources,
+        ))
+    return tuple(pending)
+
+
+def _theme_ids(value: str) -> Tuple[str, ...]:
+    value = re.sub(r"（[^）]*跨题材重复计分[^）]*）", "", value)
+    return tuple(part.strip() for part in re.split(r"[、,，]", value) if part.strip() and part.strip() != "-")
+
+
+def _section_body(text: str, name: str) -> str:
+    for heading, body in _SECTION.findall(text):
+        if _plain(heading) == name:
+            return body
+    return ""
+
+
+def _parse_news_index(text: str) -> Tuple[NewsIndexEntry, ...]:
+    section = _section_body(text, "单条新闻热榜索引")
+    rows = []
+    for line in section.splitlines():
+        if not line.startswith("|"):
+            continue
+        columns = [part.strip() for part in line.strip().strip("|").split("|")]
+        if len(columns) < 5 or columns[0] == "原排名" or set("".join(columns)) <= {"-", ":"}:
+            continue
+        score_match = re.search(r"\d+", columns[3])
+        if not score_match:
+            raise ValueError("news index item needs a score")
+        rows.append(NewsIndexEntry(
+            rank=int(columns[0]), event_id=_plain(columns[1]), title=_plain(columns[2]),
+            score=int(score_match.group()), theme_ids=_theme_ids(_plain(columns[4])),
+        ))
+    if not rows:
+        raise ValueError("single-news index needs ranked rows")
+    return tuple(rows)
+
+
+def _parse_stock_mappings(block: str, label: str) -> Tuple[StockMapping, ...]:
+    match = re.search(
+        r"^\*\*" + re.escape(label) + r"：\*\*\s*(.*?)(?=^\*\*[^\n]*：\*\*|^####\s+新闻：|\Z)",
+        block, re.MULTILINE | re.DOTALL,
+    )
+    if not match:
+        return tuple()
+    mappings = []
+    for line in match.group(1).splitlines():
+        mapping = re.match(r"\s*[-*]\s*(.+?)（(\d{6})）：\s*(.+)$", line)
+        if mapping:
+            mappings.append(StockMapping(
+                name=_plain(mapping.group(1)), ticker=mapping.group(2), evidence=_plain(mapping.group(3)),
+            ))
+    return tuple(mappings)
+
+
+def _parse_nested_news_blocks(text: str) -> Tuple[NewsItem, ...]:
+    headings = list(_NESTED_NEWS.finditer(text))
+    items = []
+    for index, heading in enumerate(headings):
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+        rank, event_id, title, score = heading.groups()
+        block = text[heading.end():end]
+        sources = _sources_from_table(block) or _inline_sources(block)
+        item = NewsItem(
+            rank=int(rank), event_id=_plain(event_id), title=_plain(title), score=int(score),
+            core=_field(block, "核心信息"), score_breakdown="",
+            signal=_field(block, "关键信号/预期差"),
+            market_feedback=(
+                _field(block, "带时间市场反馈") or _field(block, "财报市场反馈")
+                or _field(block, "财报后盘后反馈") or _field(block, "财报后首个可交易时段反馈")
+                or _field(block, "财报后发布日余下交易时段反馈")
+            ),
+            pricing=_pricing(block), boundary=_field(block, "判断边界"),
+            variables=_field(block, "后续变量"), heat_change=_field(block, "热度变化"),
+            category=_category(_plain(title), _field(block, "核心信息")), sources=sources,
+            theme_ids=_theme_ids(_field(block, "关联题材")),
+        )
+        if not item.sources:
+            raise ValueError("each themed news item needs a source link")
+        items.append(item)
+    return tuple(items)
+
+
+def _parse_theme_groups(text: str) -> Tuple[ThemeGroup, ...]:
+    section = _section_body(text, "题材主线")
+    themes = []
+    headings = list(_THEME_HEADING.finditer(section))
+    for index, heading in enumerate(headings):
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(section)
+        name, total_score, declared_count = heading.groups()
+        block = section[heading.end():end]
+        theme_id = _field(block, "题材ID")
+        if not theme_id:
+            raise ValueError("theme needs an id")
+        items = tuple(sorted(_parse_nested_news_blocks(block), key=lambda item: item.rank))
+        if len(items) != int(declared_count):
+            raise ValueError("theme declared item count differs from members")
+        themes.append(ThemeGroup(
+            theme_id=theme_id, name=_plain(name), total_score=int(total_score),
+            catalyst=_field(block, "核心催化"), risk_boundary=_field(block, "题材风险边界"),
+            direct_mappings=_parse_stock_mappings(block, "直接映射"),
+            sector_representatives=_parse_stock_mappings(block, "板块代表"),
+            event_ids=tuple(item.event_id for item in items), items=items,
+        ))
+    if not themes:
+        raise ValueError("themed report needs theme groups")
+    return tuple(themes)
+
+
+def _parse_other_items(text: str) -> Tuple[NewsItem, ...]:
+    section = _section_body(text, "其他重要新闻")
+    if not section:
+        raise ValueError("themed report needs Other Important News")
+    return tuple(sorted(_parse_nested_news_blocks(section), key=lambda item: item.rank))
+
+
+def _normalized_theme_name(name: str) -> str:
+    return re.sub(r"\s+", "", _plain(name)).casefold()
+
+
+def _validate_themed_document(
+    news_index: Tuple[NewsIndexEntry, ...], themes: Tuple[ThemeGroup, ...], other_items: Tuple[NewsItem, ...],
+) -> Tuple[NewsItem, ...]:
+    index_by_event = {entry.event_id: entry for entry in news_index}
+    if len(index_by_event) != len(news_index):
+        raise ValueError("news index has duplicate event ids")
+    if [entry.rank for entry in news_index] != sorted(entry.rank for entry in news_index):
+        raise ValueError("news index ranks must ascend")
+    if len({entry.rank for entry in news_index}) != len(news_index):
+        raise ValueError("news index has duplicate ranks")
+    theme_by_id = {theme.theme_id: theme for theme in themes}
+    if len(theme_by_id) != len(themes):
+        raise ValueError("report has duplicate theme ids")
+
+    themed_event_ids = set()
+    body_items = []
+    for theme in themes:
+        if len(theme.items) < 2:
+            raise ValueError("theme needs at least two ranked items")
+        if sum(item.score for item in theme.items) != theme.total_score:
+            raise ValueError("theme declared total differs from summed member scores")
+        for item in theme.items:
+            if item.event_id not in index_by_event:
+                raise ValueError("theme references event missing from the index")
+            if theme.theme_id not in item.theme_ids:
+                raise ValueError("theme/body membership mismatch")
+            themed_event_ids.add(item.event_id)
+            body_items.append(item)
+
+    other_event_ids = {item.event_id for item in other_items}
+    both = themed_event_ids & other_event_ids
+    if both:
+        raise ValueError("item appears in both a theme and Other Important News")
+    for item in other_items:
+        if item.event_id not in index_by_event:
+            raise ValueError("Other Important News references event missing from the index")
+        body_items.append(item)
+
+    canonical = {}
+    for item in body_items:
+        existing = canonical.get(item.event_id)
+        if existing is not None and existing != item:
+            raise ValueError("inconsistent event copies")
+        canonical[item.event_id] = item
+    for entry in news_index:
+        item = canonical.get(entry.event_id)
+        if item is None:
+            raise ValueError("qualified index item missing from themes and Other Important News")
+        if (item.rank, item.title, item.score) != (entry.rank, entry.title, entry.score):
+            raise ValueError("index/body membership mismatch")
+        if set(item.theme_ids) != set(entry.theme_ids):
+            raise ValueError("index/body membership mismatch")
+        if entry.theme_ids:
+            if set(entry.theme_ids) != {theme.theme_id for theme in themes if entry.event_id in theme.event_ids}:
+                raise ValueError("index/body membership mismatch")
+        elif entry.event_id not in other_event_ids:
+            raise ValueError("qualified index item missing from themes and Other Important News")
+    return tuple(canonical[entry.event_id] for entry in news_index)
+
+
+def _parse_themed_report(text: str, meta: ReportMeta) -> ReportDocument:
+    news_index = _parse_news_index(text)
+    themes = _parse_theme_groups(text)
+    other_items = _parse_other_items(text)
+    items = _validate_themed_document(news_index, themes, other_items)
+    themes = tuple(sorted(
+        themes,
+        key=lambda theme: (
+            -theme.total_score, -len(theme.items), -max(item.score for item in theme.items),
+            _normalized_theme_name(theme.name),
+        ),
+    ))
+    return ReportDocument(
+        meta=meta, items=items, pending_items=_pending_items(text), news_index=news_index,
+        themes=themes, other_items=other_items,
+    )
+
+
 def _validate_items(items: Tuple[NewsItem, ...]) -> None:
     ranks = [item.rank for item in items]
     scores = [item.score for item in items]
@@ -236,17 +468,20 @@ def parse_report(path: Path, entry: CatalogEntry) -> ReportDocument:
             event_end_match = re.search(r"—(\d{1,2}:\d{2})（北京时间）$", window)
             if event_end_match:
                 cutoff = event_end_match.group(1) + "（北京时间）"
+    meta = ReportMeta(
+        report_id=entry.report_id, report_date=entry.report_date, slot=entry.slot,
+        slot_label=entry.label, title=_plain(title_match.group(1)) if title_match else "",
+        window=window, cutoff=cutoff, source_name=entry.path,
+    )
+    if _THEMED_INDEX_HEADING.search(text):
+        return _parse_themed_report(text, meta)
     top_items = [_make_top_item(rank, title, block) for rank, title, block in _top_sections(text)]
     heading_ranks = {item.rank for item in top_items}
     compact_items = [item for item in _compact_items(text) if item.rank not in heading_ranks]
     items = tuple(sorted(top_items + compact_items, key=lambda item: item.rank))
     _validate_items(items)
     return ReportDocument(
-        meta=ReportMeta(
-            report_id=entry.report_id, report_date=entry.report_date, slot=entry.slot,
-            slot_label=entry.label, title=_plain(title_match.group(1)) if title_match else "",
-            window=window, cutoff=cutoff,
-            source_name=entry.path,
-        ),
+        meta=meta,
         items=items,
+        pending_items=_pending_items(text),
     )
