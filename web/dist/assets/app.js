@@ -14,17 +14,18 @@
 
   function enhanceRow(row) {
     const rank = row.dataset.rank;
+    const instanceId = row.dataset.instanceId;
     const heading = row.querySelector("h2");
     const paragraphs = Array.from(row.querySelectorAll(":scope > p"));
     const summary = paragraphs.shift();
     const scoreLine = paragraphs.shift();
+    const associations = row.querySelector(":scope > .news-associations");
     const sources = row.querySelector(":scope > [data-component='sources']");
     const content = document.createElement("div");
     const rankCell = document.createElement("div");
     const scoreCell = document.createElement("div");
     const detail = document.createElement("div");
     const toggleTemplate = document.querySelector("#news-toggle-template");
-    const toggle = toggleTemplate.content.firstElementChild.cloneNode(true);
     const inlineSources = row.dataset.detailKind === "sources-inline";
 
     row.classList.add("news-row");
@@ -33,21 +34,27 @@
     rankCell.textContent = rank.padStart(2, "0");
     scoreCell.className = "news-score";
     detail.className = "news-detail";
-    detail.id = `news-detail-${rank}`;
+    detail.id = `news-detail-${instanceId}`;
     detail.hidden = true;
-    toggle.setAttribute("aria-controls", detail.id);
 
     heading.textContent = heading.textContent.replace(/^\d+\.\s*/, "");
     summary.className = "news-summary";
     const score = scoreLine.textContent.match(/(\d+)\/100/);
     scoreCell.innerHTML = `<strong>${score ? score[1] : "—"}</strong><span>热点权重</span>`;
     content.append(heading, summary);
+    if (associations) {
+      const associationIndex = paragraphs.indexOf(associations);
+      if (associationIndex >= 0) paragraphs.splice(associationIndex, 1);
+      content.appendChild(associations);
+    }
     if (inlineSources) {
       if (sources) {
         sources.classList.add("news-inline-sources");
         content.appendChild(sources);
       }
     } else {
+      const toggle = toggleTemplate.content.firstElementChild.cloneNode(true);
+      toggle.setAttribute("aria-controls", detail.id);
       if (sources) detail.appendChild(sources);
       paragraphs.forEach((paragraph) => detail.appendChild(paragraph));
       decoratePricingLabels(detail);

@@ -341,6 +341,58 @@ if (content.children.some((node) => node.className === "news-toggle")) throw new
             ):
                 self.assertIn(title, page)
 
+    def test_checked_in_aug11_artifact_keeps_themed_news_contract(self):
+        """Catch a stale dist page that drops Aug. 11's themed report behavior."""
+        page = (ROOT / "web/dist/reports/2026-08-11-0800.html").read_text(encoding="utf-8")
+
+        self.assertEqual(
+            [
+                ("AI算力 / 半导体 / 存储芯片", "420"),
+                ("并购重组", "306"),
+                ("中东局势 / 油气", "184"),
+                ("低空经济 / 航空AI", "166"),
+                ("A股回购 / 资本运作", "165"),
+                ("人形机器人 / 具身智能", "161"),
+            ],
+            re.findall(
+                r'<section class="theme-group" data-component="theme-group"[^>]*><header><h2>'
+                r'([^<]+)</h2><p class="theme-total">(\d+)分',
+                page,
+            ),
+        )
+        index = re.search(
+            r'<section class="news-index" data-component="news-index">.*?</section>', page, re.DOTALL,
+        )
+        self.assertIsNotNone(index)
+        index_targets = re.findall(r'href="#news-([^"]+)"', index.group(0))
+        self.assertEqual(25, len(index_targets))
+        self.assertEqual(25, len(set(index_targets)))
+
+        event_ids = re.findall(r'data-event-id="([^"]+)"', page)
+        instance_ids = re.findall(r'data-instance-id="([^"]+)"', page)
+        self.assertEqual(25, len(set(event_ids)))
+        self.assertEqual(len(instance_ids), len(set(instance_ids)))
+        self.assertIn(
+            'href="https://www.pbc.gov.cn/goutongjiaoliu/113456/113469/2026081018132329141/index.html"',
+            page,
+        )
+        self.assertIn(
+            'href="https://nvidianews.nvidia.com/news/nvidia-partners-with-apollo-blackrock-blackstone-brookfield-goldman-sachs-and-kkr-to-establish-ai-compute-infrastructure-financing-platforms-to-mobilize-over-500-billion-of-third-party-capital"',
+            page,
+        )
+
+        pending = re.search(
+            r'<section class="pending-section" data-component="pending-list">.*?</section>', page, re.DOTALL,
+        )
+        self.assertIsNotNone(pending)
+        self.assertEqual(4, pending.group(0).count('class="pending-item"'))
+        self.assertNotRegex(pending.group(0), r'(?:热点权重|\d+/100|\d+分)')
+
+        manifest = json.loads((ROOT / "web/dist/reports.json").read_text(encoding="utf-8"))
+        self.assertEqual("reports/2026-08-11-0800.html", manifest["latest"])
+        self.assertIn('href="2026-08-11-0800.html#archive-2026-08-11"', page)
+        self.assertIn(manifest["latest"], (ROOT / "web/dist/index.html").read_text(encoding="utf-8"))
+
     def test_report_archive_links_resolve_from_report_directory(self):
         with TemporaryDirectory() as tmp:
             output = build_site(ROOT, Path(tmp) / "dist").output_dir
