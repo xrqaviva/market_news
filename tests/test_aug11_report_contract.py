@@ -2,6 +2,8 @@ import re
 import unittest
 from pathlib import Path
 
+from tests.test_aug11_theme_report_contract import EXPECTED_SESSIONS, _parse_report
+
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "reports/2026-08-11-0800-premarket-news-ranking.md"
@@ -23,6 +25,10 @@ class Aug11ReportContractTest(unittest.TestCase):
                 re.MULTILINE,
             )
         )
+        _index, themes, other = _parse_report(cls.text)
+        cls.cards = {}
+        for item in [member for theme in themes for member in theme["items"]] + list(other):
+            cls.cards.setdefault(item["rank"], item)
 
     def test_all_ranked_news_have_unique_stable_event_ids(self) -> None:
         self.assertEqual(list(range(1, 26)), [row[0] for row in self.index_rows])
@@ -71,10 +77,13 @@ class Aug11ReportContractTest(unittest.TestCase):
         self.assertIn("-31.51亿元", self.text)
 
     def test_release_session_and_observable_market_reaction_are_explicit(self) -> None:
-        self.assertIn("中国市场盘后", self.text)
-        self.assertIn("美国市场盘前", self.text)
-        self.assertIn("美国市场盘后", self.text)
-        self.assertIn("市场反应", self.text)
+        self.assertEqual(set(range(1, 26)), set(self.cards))
+        for rank, card in self.cards.items():
+            with self.subTest(rank=rank):
+                self.assertEqual(EXPECTED_SESSIONS[rank], card["session"])
+                self.assertTrue(card["market_feedback"], f"rank {rank} missing market feedback")
+                self.assertTrue(card["boundary"], f"rank {rank} missing boundary")
+                self.assertTrue(card["heat_change"], f"rank {rank} missing heat change")
 
     def test_recall_audit_has_a_disposition_for_each_missed_event(self) -> None:
         audit = AUDIT.read_text(encoding="utf-8")

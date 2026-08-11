@@ -5,10 +5,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "reports/2026-08-11-0800-premarket-news-ranking.md"
-WORKTREE_REPORT = (
-    ROOT
-    / ".worktrees/news-radar-web/reports/2026-08-11-0800-premarket-news-ranking.md"
-)
 
 EXPECTED_RANKED_NEWS = (
     (1, "霍尔木兹重开条件继续发酵，布油收涨5%", 96),
@@ -47,6 +43,34 @@ EXPECTED_THEMES = (
     ("theme-humanoid-embodied-ai", "人形机器人 / 具身智能", (2, 25), 161),
 )
 
+EXPECTED_SESSIONS = {
+    1: "美国市场盘前至收盘；中文平台传播延续至美国市场盘后。",
+    2: "中国市场盘后发布，传播延续至次日中国市场盘前。",
+    3: "美国市场盘后（中文平台传播）。",
+    4: "中国市场盘后发布，传播延续至次日中国市场盘前。",
+    5: "中国市场盘后发布，传播延续至次日中国市场盘前。",
+    6: "美国市场盘后发布。",
+    7: "美国市场盘前发布，中文平台传播延续至美国市场盘后。",
+    8: "中国市场盘后发布，传播延续至次日中国市场盘前。",
+    9: "美国市场收盘。",
+    10: "美国市场盘后发布。",
+    11: "中国市场盘前传播。",
+    12: "官方日期分钟未取得，产业传播节点位于中国市场盘前。",
+    13: "美国市场收盘。",
+    14: "中国市场盘前传播。",
+    15: "美国市场盘后发布。",
+    16: "美国市场收盘。",
+    17: "原始报道分钟未取得，新增传播节点位于中国市场盘前。",
+    18: "中国市场盘前发布停牌核查信息。",
+    19: "美国市场盘前至收盘；中文平台传播延续至美国市场盘后。",
+    20: "中国市场盘前传播。",
+    21: "中国市场盘前传播。",
+    22: "美国市场收盘。",
+    23: "日本市场盘前发布。",
+    24: "中国市场盘前发布停牌及拟收购摘要。",
+    25: "中国市场盘前传播。",
+}
+
 EXPECTED_SOURCE_ROWS = {
     1: (("AP中东更新", "08-10 18:48", "https://apnews.com/article/iran-us-strait-hormuz-august-10-2026-0bdaae8f1d7b781918e76dca4317c897"), ("X固定帖", "08-09 00:24→08-11 08:28", "https://x.com/HormuzReport/status/2086126445051687039"), ("AP市场", "08-11 04:00", "https://apnews.com/article/stocks-markets-rates-iran-ai-adb7b918b15206e38d7899d482422308")),
     2: (("财经媒体", "08-10 20:00", "https://www.cls.cn/detail/2450388"), ("微博固定帖", "08-09 07:50→08-11 08:27", "https://weibo.com/1896820725/Rcy5YaEEe"), ("财联社早报", "08-11 07:00", "https://www.cls.cn/detail/2450678")),
@@ -78,13 +102,18 @@ EXPECTED_SOURCE_ROWS = {
 EXPECTED_DIRECT_MAPPINGS = {
     "theme-ai-compute-memory": (("江波龙", "301308"), ("芯联集成", "688469")),
     "theme-ma": (("建设机械", "600984"),),
+    "theme-middle-east-oil": (),
+    "theme-low-altitude-aviation-ai": (),
     "theme-a-share-buyback-capital": (("江波龙", "301308"), ("兆驰股份", "002429"), ("国联民生", "601456"), ("永茂泰", "605208"), ("威迈斯", "688612")),
+    "theme-humanoid-embodied-ai": (),
 }
 
 EXPECTED_SECTOR_REPRESENTATIVES = {
     "theme-ai-compute-memory": (("浪潮信息", "000977"), ("中科曙光", "603019"), ("海光信息", "688041"), ("中际旭创", "300308"), ("天孚通信", "300394"), ("北方华创", "002371"), ("中微公司", "688012"), ("兆易创新", "603986"), ("佰维存储", "688525")),
+    "theme-ma": (),
     "theme-middle-east-oil": (("中国石油", "601857"), ("中国海油", "600938"), ("中远海能", "600026")),
     "theme-low-altitude-aviation-ai": (("万丰奥威", "002085"), ("中信海直", "000099"), ("宗申动力", "001696")),
+    "theme-a-share-buyback-capital": (),
     "theme-humanoid-embodied-ai": (("绿的谐波", "688017"), ("双环传动", "002472"), ("鸣志电器", "603728"), ("柯力传感", "603662"), ("埃斯顿", "002747"), ("拓普集团", "601689")),
 }
 
@@ -129,6 +158,10 @@ def _news_blocks(text: str):
             "block": block.strip(),
             "core": _field(block, "核心信息"),
             "session": _field(block, "发布时段"),
+            "signal": _field(block, "关键信号/预期差"),
+            "market_feedback": _field(block, "带时间市场反馈"),
+            "boundary": _field(block, "判断边界"),
+            "heat_change": _field(block, "热度变化"),
             "theme_ids": tuple(filter(None, re.split(r"[、，,]", re.sub(r"（.*", "", _field(block, "关联题材"))))),
             "sources": tuple(sources),
         }
@@ -231,16 +264,14 @@ class Aug11ThemeReportContractTest(unittest.TestCase):
             with self.subTest(rank=rank):
                 item = copies[rank][0]
                 self.assertTrue(item["core"])
-                self.assertRegex(item["session"], r"市场(?:盘前|盘中|盘后|收盘)")
+                self.assertEqual(EXPECTED_SESSIONS[rank], item["session"])
+                for field in ("signal", "market_feedback", "boundary", "heat_change"):
+                    self.assertTrue(item[field], f"rank {rank} missing {field}")
                 self.assertEqual(expected_sources, item["sources"])
                 score_line = re.search(r"^\*\*热点权重：(\d+)/100\*\*（(.+)）$", item["block"], re.MULTILINE)
                 self.assertIsNotNone(score_line)
                 self.assertEqual(item["score"], int(score_line.group(1)))
                 self.assertEqual(item["score"], sum(map(int, re.findall(r"\d+", score_line.group(2)))))
-        for rank in (1, 2, 3, 6, 7, 11):
-            self.assertTrue(_field(copies[rank][0]["block"], "热度变化"))
-        for rank in (1, 4, 5, 8, 9, 10, 12, 13, 14, 15, 16, 18, 19, 20, 22, 23):
-            self.assertTrue(_field(copies[rank][0]["block"], "带时间市场反馈"))
         self.assertIn("题材分不能再次相加", self.text)
 
     def test_cross_theme_rank_5_and_10_copies_are_byte_identical(self) -> None:
@@ -265,31 +296,28 @@ class Aug11ThemeReportContractTest(unittest.TestCase):
 
     def test_a_share_mappings_are_conservative_and_do_not_inherit_scores(self) -> None:
         by_id = {theme["theme_id"]: theme for theme in self.themes}
-        self.assertEqual(
-            set(EXPECTED_DIRECT_MAPPINGS) | set(EXPECTED_SECTOR_REPRESENTATIVES),
-            set(by_id) & (set(EXPECTED_DIRECT_MAPPINGS) | set(EXPECTED_SECTOR_REPRESENTATIVES)),
-        )
+        self.assertEqual(set(EXPECTED_DIRECT_MAPPINGS), set(by_id))
+        self.assertEqual(set(EXPECTED_SECTOR_REPRESENTATIVES), set(by_id))
         actual_direct = {
             theme_id: tuple((name, ticker) for name, ticker, _evidence in by_id[theme_id]["direct"])
-            for theme_id in EXPECTED_DIRECT_MAPPINGS
+            for theme_id in by_id
         }
         actual_representatives = {
             theme_id: tuple((name, ticker) for name, ticker, _evidence in by_id[theme_id]["representatives"])
-            for theme_id in EXPECTED_SECTOR_REPRESENTATIVES
+            for theme_id in by_id
         }
         self.assertEqual(EXPECTED_DIRECT_MAPPINGS, actual_direct)
         self.assertEqual(EXPECTED_SECTOR_REPRESENTATIVES, actual_representatives)
         for theme in self.themes:
-            for _name, _ticker, evidence in theme["direct"] + theme["representatives"]:
-                self.assertTrue(evidence)
+            for _name, _ticker, evidence in theme["direct"]:
+                self.assertRegex(evidence, r"第\d+条")
         for theme_id in EXPECTED_SECTOR_REPRESENTATIVES:
             for _name, _ticker, evidence in by_id[theme_id]["representatives"]:
                 self.assertIn("本轮新闻未确认新增订单或直接受益", evidence)
-        self.assertIn("板块代表不继承新闻或题材分数，也不构成投资建议", self.text)
+        self.assertIn("直接映射与板块代表均不参与计分", self.text)
+        self.assertIn("均不继承新闻或题材分数", self.text)
+        self.assertIn("均不构成投资建议", self.text)
         self.assertIn("AmazingData认证不可用", self.text)
-
-    def test_root_and_worktree_reports_are_byte_identical(self) -> None:
-        self.assertEqual(REPORT.read_bytes(), WORKTREE_REPORT.read_bytes())
 
 
 if __name__ == "__main__":
