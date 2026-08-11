@@ -2,7 +2,7 @@ import re
 import unittest
 from pathlib import Path
 
-from tests.test_aug11_theme_report_contract import EXPECTED_SESSIONS, _parse_report
+from tests.test_aug11_theme_report_contract import EXPECTED_EVENT_IDS, EXPECTED_SESSIONS, _parse_report
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,12 +31,9 @@ class Aug11ReportContractTest(unittest.TestCase):
             cls.cards.setdefault(item["rank"], item)
 
     def test_all_ranked_news_have_unique_stable_event_ids(self) -> None:
-        self.assertEqual(list(range(1, 26)), [row[0] for row in self.index_rows])
-        self.assertEqual(25, len({row[1] for row in self.index_rows}))
-        self.assertEqual(
-            [f"evt-20260811-{rank:03d}" for rank in range(1, 26)],
-            [row[1] for row in self.index_rows],
-        )
+        self.assertEqual(list(range(1, 25)), [row[0] for row in self.index_rows])
+        self.assertEqual(24, len({row[1] for row in self.index_rows}))
+        self.assertEqual(list(EXPECTED_EVENT_IDS), [row[1] for row in self.index_rows])
 
     def test_nine_previously_missed_events_are_visible(self) -> None:
         expected = (
@@ -56,7 +53,7 @@ class Aug11ReportContractTest(unittest.TestCase):
 
     def test_titles_are_factual_and_do_not_contain_heat_judgements(self) -> None:
         titles = [row[2] for row in self.index_rows]
-        self.assertEqual(25, len(titles))
+        self.assertEqual(24, len(titles))
         for title in titles:
             with self.subTest(title=title):
                 self.assertNotRegex(title, r"升温|高热|新出现|持续传播|激增")
@@ -77,7 +74,7 @@ class Aug11ReportContractTest(unittest.TestCase):
         self.assertIn("-31.51亿元", self.text)
 
     def test_release_session_and_observable_market_reaction_are_explicit(self) -> None:
-        self.assertEqual(set(range(1, 26)), set(self.cards))
+        self.assertEqual(set(range(1, 25)), set(self.cards))
         for rank, card in self.cards.items():
             with self.subTest(rank=rank):
                 self.assertEqual(EXPECTED_SESSIONS[rank], card["session"])
@@ -87,16 +84,41 @@ class Aug11ReportContractTest(unittest.TestCase):
 
     def test_recall_audit_has_a_disposition_for_each_missed_event(self) -> None:
         audit = AUDIT.read_text(encoding="utf-8")
-        event_ids = re.findall(r"^\| MISS-\d{2} \|", audit, re.MULTILINE)
-        self.assertEqual(9, len(event_ids))
+        rows = {
+            event_id: (event, disposition, boundary)
+            for event_id, event, _miss, disposition, boundary in re.findall(
+                r"^\| (MISS-\d{2}) \| (.*?) \| (.*?) \| (.*?) \| (.*?) \|$",
+                audit,
+                re.MULTILINE,
+            )
+        }
+        self.assertEqual(9, len(rows))
+        expected = {
+            "MISS-01": ("待核验保留", None),
+            "MISS-02": ("待核验保留", None),
+            "MISS-03": ("待核验保留", None),
+            "MISS-04": ("进入主榜", 17),
+            "MISS-05": ("待核验保留", None),
+            "MISS-06": ("进入主榜", 6),
+            "MISS-07": ("待核验保留", None),
+            "MISS-08": ("进入主榜", 9),
+            "MISS-09": ("进入主榜", 7),
+        }
+        for event_id, (disposition, rank) in expected.items():
+            with self.subTest(event_id=event_id):
+                self.assertEqual(disposition, rows[event_id][1])
+                if rank is None:
+                    self.assertIn("榜外待核", rows[event_id][2])
+                else:
+                    self.assertIn(f"第{rank}", rows[event_id][2])
         self.assertNotIn("静默丢弃", audit)
 
     def test_unverified_old_news_and_tianjin_meeting_are_not_scored_as_ranked_news(self) -> None:
         pending = self.text[self.text.index("## 待核验线索") :]
-        for keyword in ("韩国", "自由电子激光", "Lancium", "天津机器人会议"):
+        for keyword in ("韩国", "自由电子激光", "豆包", "Lancium", "天津机器人会议"):
             self.assertIn(keyword, pending)
         ranked_titles = [row[2] for row in self.index_rows]
-        for keyword in ("韩国", "自由电子激光", "Lancium", "天津机器人会议"):
+        for keyword in ("韩国", "自由电子激光", "豆包", "Lancium", "天津机器人会议"):
             self.assertFalse(any(keyword in title for title in ranked_titles))
         self.assertEqual(
             1,
