@@ -431,7 +431,7 @@ git commit -m "style: prioritize core directions in reports"
 - Modify: `tests/test_web_build.py:401-459`
 
 **Interfaces:**
-- Consumes: the approved fixed renderer/assets and reports discovered from `/Users/aviva/Projects/market_news`.
+- Consumes: the approved fixed renderer/assets and the seven tracked report Markdown files discovered inside the isolated worktree.
 - Produces: deterministic checked-in `web/dist`, a current Aug. 11 contract test, and a persistent UAT record. It does not publish the tree.
 
 - [ ] **Step 1: Update the checked-artifact test before rebuilding**

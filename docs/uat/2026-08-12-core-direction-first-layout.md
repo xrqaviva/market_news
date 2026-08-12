@@ -54,3 +54,25 @@
 
 - 本次只重建并验收受控静态树、更新 artifact 回归契约并保存 UAT 证据；没有读取浏览器 Cookie、Local Storage、密码、Token 或历史，也没有访问外部来源站点。
 - 明确边界：**未合并、未推送、未部署、自动任务保持关闭**。
+
+## 最终评审修正（2026-08-12）
+
+### RED
+
+- 桌面锚点：在 1440 × 900 的实际构建页点击方向 03，72px sticky 顶栏底边为 `72px`，目标区块顶边约 `0.13px`、标题顶边约 `23.13px`，标题被顶栏遮挡。独立 headless Chrome 行为测试同样测得 `scroll-margin-top: 0px`、目标顶边约 `0.08px`。
+- 方向元数据对比度：构建页 `.theme-total` 为 `rgb(138, 150, 168)`、10px；相对白色背景按 WCAG 相对亮度公式计算约 `3.00:1`，低于普通文本 `4.5:1`。
+- 打印附录：在保守的 closed-details 打印语义下模拟 print media，待核正文高度为 `0px`、可见项目 `0/5`。实际 Chrome PDF 为 12 页、378341 字节，文本层仅出现“· 5”摘要，不含待核正文中的 `EUV` 或 `Lancium`，确认默认关闭的正文没有进入 PDF。
+
+### 修正
+
+- 桌面 `.theme-group` 使用 `scroll-margin-top: 76px`，位于评审要求的 72–80px 范围；`max-width: 820px` 时归零，因为移动端顶栏为 static。
+- `.theme-total` 改用既有 `--muted`，保持 10px 次级元数据层级。
+- print media 强制 `.pending-body` 参与布局；`beforeprint` 临时打开原先关闭的 `.pending-details`，`afterprint` 只恢复这些原先关闭的控件，避免 Chrome PDF 忽略 closed details 的子内容。
+- 计划接口边界同步为“隔离工作树中的 7 份受跟踪 Markdown 报告”，不再指向主检出目录。
+
+### GREEN
+
+- `node tests/report_layout_browser.mjs`：退出 0。桌面目标顶边约 `76.08px`、顶栏底边 `72px`，目标可见；方向总计颜色 `rgb(101, 114, 135)`，对白色对比度约 `4.87:1`；print 生命周期中 `<details>` 临时打开且 `5/5` 待核项目可见，结束后恢复关闭；移动端 header 为 static、scroll margin 为 `0px`，文档 `390/390px` 无页面级横向溢出；浏览器 console 为 0 warnings、0 errors。
+- in-app browser 桌面复验（1440 × 900）：实际点击方向 03 后 hash 正确，区块顶边约 `76.13px`、标题顶边约 `99.13px`，均在 sticky 顶栏以下；页面宽 `1440/1440px`；待核附录仍默认关闭；console 为 0 warnings、0 errors。
+- in-app browser 移动复验（390 × 844）：实际点击屏外方向 05 后导航 `scrollLeft=275.5`，目标顶边约 `0.13px`，`scroll-margin-top: 0px`；导航 `374/652px` 保持横向滚动，页面 `390/390px` 无整页溢出；待核附录仍默认关闭；console 为 0 warnings、0 errors。
+- 实际 Chrome PDF 复验：修正后 PDF 为 13 页、439941 字节；文本层包含待核正文的 `EUV`、`xLight`、`Terafab`、`Lancium`、`Blackstone`、`Reuters` 等标记，末两页渲染确认附录正文及分隔线进入打印输出。该 headless 环境的 PDF 字体未呈现整份报告中的 CJK 字形，因此中文完整性以同一 print DOM 的 `5/5` 可见项目断言补足。

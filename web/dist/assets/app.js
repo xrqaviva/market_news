@@ -104,6 +104,21 @@
   applyArchiveState();
   window.addEventListener("hashchange", applyArchiveState);
 
+  const closedPendingDetailsForPrint = new Set();
+  window.addEventListener("beforeprint", () => {
+    document.querySelectorAll(".pending-details").forEach((details) => {
+      if (details.open) return;
+      closedPendingDetailsForPrint.add(details);
+      details.open = true;
+    });
+  });
+  window.addEventListener("afterprint", () => {
+    closedPendingDetailsForPrint.forEach((details) => {
+      details.open = false;
+    });
+    closedPendingDetailsForPrint.clear();
+  });
+
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest(".news-toggle");
     if (toggle) {
