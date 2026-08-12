@@ -244,34 +244,31 @@ git commit -m "feat: collapse pending verification appendix"
 - Consumes: `.theme-navigation`, `.theme-group`, `.theme-kicker`, `.theme-heading-line`, `.theme-total`, existing `.news-row`, and native `.pending-details` markup from Tasks 1–2.
 - Produces: one-line scrollable direction navigation; sequential border-light theme sections; compact news rows with muted scores; responsive pending appendix; unchanged archive, mobile report selector, source-only behavior, detail toggles, and legacy filters.
 
-- [ ] **Step 1: Add failing source-asset contract tests**
+- [ ] **Step 1: Add a failing runtime DOM behavior test for compact score enhancement**
 
-Add a test that reads `web/assets/app.css` and `web/assets/app.js` and asserts the required progressive-enhancement contract:
+Extend the existing Node DOM harness used by `test_source_only_row_keeps_associations_when_app_script_enhances_dom`. After `web/assets/app.js` executes against a row whose raw score is `热点权重：60/100`, inspect the real enhanced output rather than the JavaScript source:
 
-```python
-css = (ROOT / "web/assets/app.css").read_text(encoding="utf-8")
-javascript = (ROOT / "web/assets/app.js").read_text(encoding="utf-8")
-self.assertIn(".theme-navigation", css)
-self.assertIn("overflow-x: auto", css)
-self.assertIn(".theme-kicker", css)
-self.assertIn(".pending-details", css)
-self.assertIn(".pending-details summary", css)
-self.assertIn('scoreCell.innerHTML = `<span>热度 ${score ? score[1] : "—"}</span>`;', javascript)
-self.assertNotIn("<strong>${score ? score[1]", javascript)
-self.assertNotIn("news-index", css)
+```javascript
+const scoreCell = row.children[2];
+if (scoreCell.innerHTML !== '<span>热度 60</span>') {
+  throw new Error(`unexpected score markup: ${scoreCell.innerHTML}`);
+}
+if (scoreCell.innerHTML.includes('<strong>')) {
+  throw new Error('score remains visually prominent');
+}
 ```
 
-This test does not replace browser UAT; it prevents restoring the deleted index or large JavaScript score markup.
+Rename the test to `test_app_script_keeps_source_only_associations_and_mutes_score_metadata`. The structural requirements for navigation, theme sequence, removed index, and collapsed pending appendix remain covered by Tasks 1, 2, and 4; CSS dimensions, horizontal scrolling, and visual hierarchy are verified on the built page in Task 4 browser UAT.
 
 - [ ] **Step 2: Run the asset contract and verify RED**
 
 Run:
 
 ```bash
-python3 -m unittest tests.test_web_build.WebBuildTest.test_direction_first_assets_keep_compact_progressive_contract -v
+python3 -m unittest tests.test_web_build.WebBuildTest.test_app_script_keeps_source_only_associations_and_mutes_score_metadata -v
 ```
 
-Expected: FAIL because the new selectors do not exist, index CSS remains, and JavaScript creates a large `<strong>` score.
+Expected: FAIL because the current runtime enhancement produces `<strong>60</strong><span>热点权重</span>` instead of the compact metadata span.
 
 - [ ] **Step 3: Reduce news score markup without changing row enhancement**
 
@@ -406,7 +403,7 @@ Run:
 
 ```bash
 python3 -m unittest \
-  tests.test_web_build.WebBuildTest.test_direction_first_assets_keep_compact_progressive_contract \
+  tests.test_web_build.WebBuildTest.test_app_script_keeps_source_only_associations_and_mutes_score_metadata \
   tests.test_web_build.WebBuildTest.test_themed_cross_theme_instances_are_unique_and_source_only_has_no_toggle \
   tests.test_web_build.WebBuildTest.test_page_has_accessible_interaction_contract -v
 node --check web/assets/app.js
