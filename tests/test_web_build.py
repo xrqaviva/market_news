@@ -253,6 +253,10 @@ class WebBuildTest(unittest.TestCase):
             "url": "reports/2026-08-11-0800.html",
         }])
 
+        self.assertIn('<details class="pending-details">', page)
+        self.assertIn('<summary>待核验线索 <span>· 1</span></summary>', page)
+        self.assertNotIn('<details class="pending-details" open>', page)
+        self.assertIn('<div class="pending-body">', page)
         self.assertIn("不安全线索", page)
         self.assertNotIn("javascript:alert(1)", page)
         self.assertNotIn('data-component="pending-sources"', page)
@@ -394,7 +398,10 @@ if (content.children.some((node) => node.className === "news-toggle")) throw new
             output = build_site(ROOT, Path(tmp) / "dist").output_dir
             page = (output / "reports/2026-08-11-0800.html").read_text(encoding="utf-8")
             self.assertIn('data-component="pending-list"', page)
-            self.assertIn("待核验线索", page)
+            self.assertIn('<details class="pending-details">', page)
+            self.assertIn('<summary>待核验线索 <span>· 5</span></summary>', page)
+            self.assertNotIn('<details class="pending-details" open>', page)
+            self.assertIn('<div class="pending-body">', page)
             for title in (
                 "韩国半导体投资覆盖材料、零部件与设备",
                 "马斯克与自由电子激光EUV光源",
@@ -451,12 +458,17 @@ if (content.children.some((node) => node.className === "news-toggle")) throw new
         )
 
         pending = re.search(
-            r'<section class="pending-section" data-component="pending-list">.*?</section>', page, re.DOTALL,
+            r'<section class="pending-section" data-component="pending-list">.*?</details></section>',
+            page,
+            re.DOTALL,
         )
         self.assertIsNotNone(pending)
-        self.assertEqual(5, pending.group(0).count('class="pending-item"'))
-        self.assertIn("豆包回应推荐酒店抽取12%佣金争议", pending.group(0))
-        self.assertNotRegex(pending.group(0), r'(?:热点权重|\d+/100|\d+分)')
+        pending_html = pending.group(0)
+        self.assertEqual(5, pending_html.count('class="pending-item"'))
+        self.assertIn("豆包回应推荐酒店抽取12%佣金争议", pending_html)
+        self.assertNotIn("热点权重", pending_html)
+        self.assertNotIn("/100", pending_html)
+        self.assertNotIn("分 ·", pending_html)
 
         manifest = json.loads((ROOT / "web/dist/reports.json").read_text(encoding="utf-8"))
         self.assertEqual("reports/2026-08-11-0800.html", manifest["latest"])

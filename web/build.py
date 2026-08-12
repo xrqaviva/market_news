@@ -247,10 +247,13 @@ def _pending_items(document: ReportDocument) -> str:
         )
     return (
         '<section class="pending-section" data-component="pending-list">'
-        '<h2>待核验线索</h2><p>以下线索不参与主榜计分；补齐具体原文和北京时间后再转入主榜。</p>'
+        '<details class="pending-details">'
+        '<summary>待核验线索 <span>· {}</span></summary>'
+        '<div class="pending-body">'
+        '<p>以下线索不参与主榜计分；补齐具体原文和北京时间后再转入主榜。</p>'
         '{}'
-        '</section>'
-    ).format("".join(rows))
+        '</div></details></section>'
+    ).format(_escape(len(document.pending_items)), "".join(rows))
 
 
 def _archive_slot_label(report: dict) -> str:
