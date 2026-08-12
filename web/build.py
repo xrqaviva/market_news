@@ -308,15 +308,11 @@ def _report_archive(document: ReportDocument, report_index: list[dict]) -> str:
 
 
 def _filter_bar(document: ReportDocument) -> str:
+    if document.themes:
+        return ""
     metadata = '<div class="filter-meta"><span>数据截止</span><span>{}</span></div>'.format(
         _escape(document.meta.cutoff)
     )
-    if document.themes:
-        return (
-            '<nav class="filter-bar" data-component="filters" aria-label="报告元数据">'
-            '{}'
-            '</nav>'
-        ).format(metadata)
     return (
         '<nav class="filter-bar" data-component="filters" aria-label="新闻类别筛选">'
         '{}<div class="filter-actions">'
@@ -343,15 +339,18 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
         part for part in (
             document.meta.report_date,
             document.meta.slot_label,
-            document.meta.window,
         ) if part
     )
     replacements = {
         "PAGE_TITLE": _escape(document.meta.title),
         "REPORT_ID": _escape(document.meta.report_id),
-        "TOPBAR": "<h1>{}</h1><p>{}</p>".format(
-            _escape(document.meta.title),
+        "TOPBAR": (
+            '<div class="report-heading"><p class="report-eyebrow">{}</p>'
+            '<h1>{}</h1></div><p class="report-cutoff">截至 {}</p>'
+        ).format(
             _escape(topbar_meta),
+            _escape(document.meta.title),
+            _escape(document.meta.cutoff),
         ),
         "REPORT_ARCHIVE": _report_archive(document, report_index),
         "FILTER_BAR": _filter_bar(document),

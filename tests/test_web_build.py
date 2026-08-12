@@ -127,9 +127,27 @@ class WebBuildTest(unittest.TestCase):
             "url": "reports/2026-08-11-0800.html",
         }])
 
-        self.assertIn('data-component="filters"', page)
+        self.assertNotIn('class="filter-bar"', page)
         self.assertNotIn('class="filter-actions"', page)
         self.assertNotIn('class="filter-button', page)
+
+    def test_report_shell_matches_reference_structure(self):
+        page = render_report(self._themed_document(), [{
+            "id": "themed-report", "date": "2026-08-11", "label": "盘前",
+            "url": "reports/2026-08-11-0800.html",
+        }])
+
+        self.assertIn('<div class="page-shell">', page)
+        self.assertIn('<section class="report-card">', page)
+        self.assertRegex(
+            page,
+            r'<aside class="report-sidebar"[^>]*>.*?class="brand".*?'
+            r'</aside>\s*<div class="report-workspace">',
+        )
+        self.assertIn('<p class="report-eyebrow">2026-08-11 · 盘前</p>', page)
+        self.assertIn('<h1>题材测试</h1>', page)
+        self.assertIn('<p class="report-cutoff">截至 cutoff</p>', page)
+        self.assertNotIn('class="filter-bar"', page)
 
     def test_themed_cross_theme_instances_are_unique_and_source_only_has_no_toggle(self):
         page = render_report(self._themed_document(), [{
@@ -597,16 +615,16 @@ if (scoreCell.innerHTML.includes('<strong>')) {
     def test_fresh_build_renders_explicit_legacy_beijing_metadata(self):
         expected = {
             "2026-07-29-1800.html": (
-                "<p>2026-07-29 · 收盘</p>",
-                '<div class="filter-meta"><span>数据截止</span><span>2026-07-29 18:08（北京时间）</span></div>',
+                '<p class="report-eyebrow">2026-07-29 · 收盘</p>',
+                '<p class="report-cutoff">截至 2026-07-29 18:08（北京时间）</p>',
             ),
             "2026-07-30-0800.html": (
-                "2026-07-29 00:00—2026-07-30 10:00（北京时间）",
-                '<div class="filter-meta"><span>数据截止</span><span>10:00（北京时间）</span></div>',
+                '<p class="report-eyebrow">2026-07-30 · 盘前</p>',
+                '<p class="report-cutoff">截至 10:00（北京时间）</p>',
             ),
             "2026-07-30-1500.html": (
-                "2026-07-30 00:00—15:00（北京时间）",
-                '<div class="filter-meta"><span>数据截止</span><span>15:00（北京时间）</span></div>',
+                '<p class="report-eyebrow">2026-07-30 · 盘后</p>',
+                '<p class="report-cutoff">截至 15:00（北京时间）</p>',
             ),
         }
         with TemporaryDirectory() as tmp:
