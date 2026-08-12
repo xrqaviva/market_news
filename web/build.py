@@ -128,27 +128,18 @@ def _news_item(
     )
 
 
-def _news_index(document: ReportDocument, theme_names: dict[str, str]) -> str:
-    if not document.news_index:
-        return ""
-    rows = []
-    for entry in document.news_index:
-        scope_id = entry.theme_ids[0] if entry.theme_ids else "other"
-        instance_id = _news_instance_id(document.meta.report_id, scope_id, entry.event_id)
-        rows.append(
-            '<li><a href="#news-{}"><span class="news-index-rank">{:02d}</span>'
-            '<span class="news-index-title">{}</span><strong>{}/100</strong></a>{}</li>'.format(
-                _escape(instance_id),
-                entry.rank,
-                _escape(entry.title),
-                _escape(entry.score),
-                _association_badges(entry.theme_ids, theme_names),
-            )
+def _theme_navigation(document: ReportDocument) -> str:
+    links = "".join(
+        '<a href="#theme-{}">{}</a>'.format(
+            _escape(_safe_dom_id(theme.theme_id)),
+            _escape(theme.name),
         )
+        for theme in document.themes
+    )
     return (
-        '<section class="news-index" data-component="news-index"><h2>单条新闻热榜索引</h2>'
-        '<ol>{}</ol></section>'
-    ).format("".join(rows))
+        '<nav class="theme-navigation" data-component="theme-navigation" '
+        'aria-label="核心方向">{}</nav>'
+    ).format(links)
 
 
 def _mapping_list(label: str, mappings: tuple) -> str:
@@ -165,7 +156,9 @@ def _mapping_list(label: str, mappings: tuple) -> str:
     )
 
 
-def _theme_group(document: ReportDocument, theme, theme_names: dict[str, str]) -> str:
+def _theme_group(
+    document: ReportDocument, theme, theme_names: dict[str, str], ordinal: int
+) -> str:
     rows = "".join(
         _news_item(
             item,
@@ -176,15 +169,20 @@ def _theme_group(document: ReportDocument, theme, theme_names: dict[str, str]) -
     )
     return (
         '<section class="theme-group" data-component="theme-group" id="theme-{}">'
-        '<header><h2>{}</h2><p class="theme-total">{}分 · 关联新闻{}条</p></header>'
+        '<header class="theme-header">'
+        '<p class="theme-kicker">核心方向 {:02d}</p>'
+        '<div class="theme-heading-line"><h2>{}</h2>'
+        '<p class="theme-total">{}条 · {}</p></div>'
+        '</header>'
         '<p class="theme-catalyst"><strong>核心催化</strong>{}</p>{}{}'
         '<p class="theme-risk"><strong>题材风险边界</strong>{}</p>'
         '<section class="theme-news-list" data-component="news-list">{}</section></section>'
     ).format(
         _escape(_safe_dom_id(theme.theme_id)),
+        ordinal,
         _escape(theme.name),
-        _escape(theme.total_score),
         _escape(len(theme.items)),
+        _escape(theme.total_score),
         _escape(theme.catalyst),
         _mapping_list("直接映射", theme.direct_mappings),
         _mapping_list("板块代表", theme.sector_representatives),
@@ -214,15 +212,12 @@ def _theme_content(document: ReportDocument) -> str:
     if not document.themes:
         return ""
     theme_names = {theme.theme_id: theme.name for theme in document.themes}
-    has_repeated_item = any(len(item.theme_ids) > 1 for theme in document.themes for item in theme.items)
-    disclosure = (
-        '<p class="theme-disclosure">跨题材新闻会在各关联题材中重复计分；各处保留完整详情。</p>'
-        if has_repeated_item else ""
-    )
-    return "{}{}{}{}".format(
-        _news_index(document, theme_names),
-        disclosure,
-        "".join(_theme_group(document, theme, theme_names) for theme in document.themes),
+    return "{}{}{}".format(
+        _theme_navigation(document),
+        "".join(
+            _theme_group(document, theme, theme_names, ordinal)
+            for ordinal, theme in enumerate(document.themes, start=1)
+        ),
         _other_important_news(document, theme_names),
     )
 

@@ -82,21 +82,27 @@ class WebBuildTest(unittest.TestCase):
         self.assertIsNotNone(match, "missing rendered news row for rank {}".format(rank))
         return match.group(0)
 
-    def test_themed_document_renders_index_groups_and_complete_other_news(self):
+    def test_themed_document_renders_navigation_sequential_groups_and_complete_news(self):
         page = render_report(self._themed_document(), [{
             "id": "themed-report", "date": "2026-08-11", "label": "盘前",
             "url": "reports/2026-08-11-0800.html",
         }])
 
-        self.assertIn('data-component="news-index"', page)
-        self.assertIn('href="#news-19xascii-themed-report-17xascii-theme-alpha-16xascii-evt-shared"', page)
-        self.assertIn("1. 共享新闻", page)
-        self.assertIn("90/100", page)
-        self.assertIn("theme-alpha", page)
-        self.assertIn("theme-beta", page)
-        self.assertLess(page.index("甲题材"), page.index("乙题材"))
+        self.assertNotIn('data-component="news-index"', page)
+        self.assertNotIn("单条新闻热榜索引", page)
+        self.assertNotIn("接下来的方向", page)
+        self.assertIn(
+            '<nav class="theme-navigation" data-component="theme-navigation" '
+            'aria-label="核心方向">',
+            page,
+        )
+        self.assertIn('href="#theme-ascii-theme-alpha">甲题材</a>', page)
+        self.assertIn('href="#theme-ascii-theme-beta">乙题材</a>', page)
+        self.assertLess(page.index("核心方向 01"), page.index("核心方向 02"))
+        self.assertLess(page.index("核心方向 02"), page.index("其他重要新闻"))
         self.assertIn('data-component="theme-group" id="theme-ascii-theme-alpha"', page)
-        self.assertIn("170分 · 关联新闻2条", page)
+        self.assertIn('<p class="theme-total">2条 · 170</p>', page)
+        self.assertIn('<p class="theme-total">2条 · 160</p>', page)
         self.assertIn("甲的共同催化", page)
         self.assertIn("甲公司（000001）：公告确认", page)
         self.assertIn("乙公司（000002）：未确认新增订单", page)
@@ -110,7 +116,6 @@ class WebBuildTest(unittest.TestCase):
         self.assertIn("其他新闻", page)
         self.assertIn("08-11 08:03", page)
         self.assertIn('href="https://example.com/other"', page)
-        self.assertIn("跨题材新闻会在各关联题材中重复计分", page)
         self.assertIn('href="#theme-ascii-theme-alpha"', page)
         self.assertIn('href="#theme-ascii-theme-beta"', page)
         for target in re.findall(r'class="theme-association"[^>]*href="#([^"]+)"', page):
