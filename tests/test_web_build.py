@@ -261,7 +261,7 @@ class WebBuildTest(unittest.TestCase):
         self.assertNotIn("javascript:alert(1)", page)
         self.assertNotIn('data-component="pending-sources"', page)
 
-    def test_source_only_row_keeps_associations_when_app_script_enhances_dom(self):
+    def test_app_script_keeps_source_only_associations_and_mutes_score_metadata(self):
         harness = r'''
 const fs = require("fs");
 const vm = require("vm");
@@ -307,6 +307,13 @@ vm.runInNewContext(fs.readFileSync("web/assets/app.js", "utf8"), sandbox);
 const content = row.children[1];
 if (!content.children.includes(associations)) throw new Error("source-only associations were discarded");
 if (content.children.some((node) => node.className === "news-toggle")) throw new Error("source-only row gained a toggle");
+const scoreCell = row.children[2];
+if (scoreCell.innerHTML !== '<span>热度 60</span>') {
+  throw new Error(`unexpected score markup: ${scoreCell.innerHTML}`);
+}
+if (scoreCell.innerHTML.includes('<strong>')) {
+  throw new Error('score remains visually prominent');
+}
 '''
         result = subprocess.run(
             ["node", "-e", harness], cwd=ROOT, text=True, capture_output=True, check=False,
