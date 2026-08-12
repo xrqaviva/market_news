@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Markdown remains the only report-content source of truth; do not hand-edit generated HTML.
+- Markdown remains the only report-content source of truth; do not hand-edit generated HTML. For this layout-only build, use only the seven report Markdown files tracked in the isolated worktree; do not import untracked candidate reports from the main checkout.
 - Do not modify collection, scoring, theme aggregation, theme sorting, fact verification, or report classification.
 - Themed pages contain one compact direction navigation, then complete core directions 01 through N in ranked order, then “其他重要新闻”, then “待核验线索”.
 - Remove the long single-news index, “接下来的方向”, theme-intensity displays, prominent statistic cards, and large score treatments.
@@ -467,10 +467,12 @@ Expected: FAIL against the stale checked-in Aug. 11 HTML.
 
 - [ ] **Step 3: Rebuild the complete static site from Markdown and fixed source assets**
 
-Use the existing worktree adapter so report content comes from the main project while template assets come from this worktree:
+Build from the isolated worktree so both report Markdown and fixed template assets come from the same tracked, reproducible revision. The user confirmed this boundary after the main checkout's untracked historical candidates changed three legacy outputs:
 
 ```bash
-python3 -c 'from pathlib import Path; import shutil; import web.build as b; source_assets=Path(b.__file__).with_name("assets"); b._copy_assets=lambda project_root,destination: shutil.copytree(source_assets,destination/"assets"); result=b.build_site(Path("/Users/aviva/Projects/market_news"),Path("/Users/aviva/Projects/market_news/.worktrees/news-radar-web/web/dist")); print(result)'
+python3 -m web.build \
+  --project-root /Users/aviva/Projects/market_news/.worktrees/news-radar-web \
+  --output /Users/aviva/Projects/market_news/.worktrees/news-radar-web/web/dist
 ```
 
 Record the exact `BuildResult` report count, item count, and latest URL in the UAT document.
@@ -487,7 +489,7 @@ python3 -m unittest discover -s tests -v
 git diff --check
 ```
 
-Then build once more into a temporary `dist` using the same adapter and byte-compare every file to checked-in `web/dist`. Expected: assets match byte-for-byte, all tests pass, no whitespace errors, public-tree safety passes inside `build_site`, and the second complete build is byte-identical.
+Then build once more from the same isolated-worktree project root into a temporary `dist` and byte-compare every file to checked-in `web/dist`. Expected: assets match byte-for-byte, all tests pass, no whitespace errors, public-tree safety passes inside `build_site`, and the second complete build is byte-identical.
 
 - [ ] **Step 5: Perform desktop and mobile browser UAT**
 
