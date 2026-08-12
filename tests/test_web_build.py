@@ -430,18 +430,23 @@ if (scoreCell.innerHTML.includes('<strong>')) {
                 ("人形机器人 / 具身智能", "161"),
             ],
             re.findall(
-                r'<section class="theme-group" data-component="theme-group"[^>]*><header><h2>'
-                r'([^<]+)</h2><p class="theme-total">(\d+)分',
+                r'<div class="theme-heading-line"><h2>([^<]+)</h2>'
+                r'<p class="theme-total">\d+条 · (\d+)</p>',
                 page,
             ),
         )
-        index = re.search(
-            r'<section class="news-index" data-component="news-index">.*?</section>', page, re.DOTALL,
+        self.assertNotIn('data-component="news-index"', page)
+        self.assertNotIn("单条新闻热榜索引", page)
+        self.assertNotIn("接下来的方向", page)
+        self.assertEqual(5, page.count('data-component="theme-group"'))
+        self.assertEqual(
+            ["01", "02", "03", "04", "05"],
+            re.findall(r'<p class="theme-kicker">核心方向 (\d{2})</p>', page),
         )
-        self.assertIsNotNone(index)
-        index_targets = re.findall(r'href="#news-([^"]+)"', index.group(0))
-        self.assertEqual(24, len(index_targets))
-        self.assertEqual(24, len(set(index_targets)))
+        self.assertLess(page.index("核心方向 05"), page.index("其他重要新闻"))
+        self.assertLess(page.index("其他重要新闻"), page.index("待核验线索"))
+        self.assertIn('<summary>待核验线索 <span>· 5</span></summary>', page)
+        self.assertNotIn('<details class="pending-details" open>', page)
 
         event_ids = re.findall(r'data-event-id="([^"]+)"', page)
         instance_ids = re.findall(r'data-instance-id="([^"]+)"', page)

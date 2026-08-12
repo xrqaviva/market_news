@@ -40,7 +40,7 @@
     heading.textContent = heading.textContent.replace(/^\d+\.\s*/, "");
     summary.className = "news-summary";
     const score = scoreLine.textContent.match(/(\d+)\/100/);
-    scoreCell.innerHTML = `<strong>${score ? score[1] : "—"}</strong><span>热点权重</span>`;
+    scoreCell.innerHTML = `<span>热度 ${score ? score[1] : "—"}</span>`;
     content.append(heading, summary);
     if (associations) {
       const associationIndex = paragraphs.indexOf(associations);
