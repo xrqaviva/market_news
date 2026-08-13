@@ -16,6 +16,7 @@ const EXPECTED_REPORT_OUTPUT_BY_INPUT = new Map([
   ["reports/2026-08-03-0800-premarket-news-ranking.md", "reports/2026-08-03-0800.html"],
   ["reports/2026-08-10-0800-premarket-news-ranking.md", "reports/2026-08-10-0800.html"],
   ["reports/2026-08-11-0800-premarket-news-ranking.md", "reports/2026-08-11-0800.html"],
+  ["reports/2026-08-13-1500-news-ranking-test.md", "reports/2026-08-13-1500.html"],
 ]);
 
 function assertSameStringSet(label, actual, expected) {
@@ -159,9 +160,9 @@ try {
     { cwd: ROOT },
   );
   const trackedReports = trackedReportOutput.trim().split("\n").filter(Boolean);
-  if (trackedReports.length !== 7) {
+  if (trackedReports.length !== 8) {
     throw new Error(
-      `fresh browser build must use exactly 7 tracked report Markdown files, got ${trackedReports.length}`,
+      `fresh browser build must use exactly 8 tracked report Markdown files, got ${trackedReports.length}`,
     );
   }
   assertSameStringSet(
