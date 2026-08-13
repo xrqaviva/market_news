@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>新闻雷达 · 页面结构方向</title>
+  <style>
+    :root{--ink:#172033;--muted:#6d7687;--line:#dfe4ec;--blue:#2356d8;--bg:#edf1f6}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}
+    .page{max-width:1480px;margin:auto;padding:30px}.intro{display:flex;align-items:end;justify-content:space-between;margin-bottom:20px}
+    h1{font-size:25px;margin:0 0 4px}.intro p{margin:0;color:var(--muted)}.hint{font-size:12px;color:#8791a2}
+    .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}
+    .choice{border:2px solid transparent;border-radius:17px;background:#fff;box-shadow:0 12px 28px rgba(26,36,55,.08);overflow:hidden;cursor:pointer;transition:.18s}
+    .choice:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(26,36,55,.12)}.choice.selected{border-color:#2b64e5;box-shadow:0 0 0 4px rgba(43,100,229,.12)}
+    .choice-head{display:flex;gap:11px;align-items:center;padding:15px 17px;border-bottom:1px solid var(--line)}
+    .letter{width:30px;height:30px;border-radius:9px;background:#172033;color:#fff;display:grid;place-items:center;font-weight:800}
+    .choice-head h2{font-size:15px;margin:0}.choice-head p{font-size:11px;color:var(--muted);margin:1px 0 0}.recommend{margin-left:auto;font-size:10px;color:#1746b9;background:#eaf0ff;padding:3px 7px;border-radius:99px;font-weight:700}
+    .mock{height:730px;overflow:hidden;background:#f7f8fb}.side{width:73px;background:#182239;color:#9aa8be;padding:15px 8px;flex:none}.brand{font-weight:800;color:#fff;margin-bottom:20px}.day{font-size:10px;padding:7px 5px;border-radius:6px;margin:3px 0}.day.active{background:#2b64e5;color:#fff}
+    .main{min-width:0;flex:1;padding:17px}.topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.eyebrow{font-size:9px;letter-spacing:.1em;color:#7e899a}.title{font-size:18px;font-weight:800}.cut{font-size:9px;color:#8b95a4}
+    .direction-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}.direction{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px}.direction b{font-size:10px;display:block}.direction strong{font-size:19px}.direction small{font-size:8px;color:#7a8493}
+    .direction.primary{background:#14254c;color:#fff;border-color:#14254c}.direction.primary small{color:#b4c3e7}
+    .section-title{font-size:11px;font-weight:800;margin:14px 0 7px}.story{background:#fff;border:1px solid var(--line);border-radius:11px;margin-bottom:8px;padding:10px 11px}.story-row{display:flex;gap:9px}.rank{font-size:9px;color:#7b8799;width:16px}.story h3{font-size:11px;line-height:1.35;margin:0 0 4px}.story p{font-size:9px;color:#697386;margin:0}.tags{margin-top:6px}.tag{font-size:8px;padding:2px 5px;border-radius:99px;background:#edf2ff;color:#3159bb;margin-right:3px}
+    .pending{margin-top:13px;border-top:1px dashed #cfd5df;padding-top:10px}.pending h4{font-size:10px;color:#536074;margin:0 0 5px}.pending-line{font-size:8px;color:#7d8796;padding:4px 0;border-bottom:1px solid #e8ebf0}
+    .index-link{font-size:9px;color:#68768a;background:#eef1f6;padding:7px 9px;border-radius:7px;margin-top:9px}
+    .a-layout{display:flex;height:100%}
+    .b-layout{background:#101623;color:#e7ecf6;padding:16px;height:100%}.b-top{border-bottom:1px solid #2c3545;padding-bottom:11px;margin-bottom:12px}.b-top .title{font-family:Georgia,serif;font-size:18px}.ticker{display:flex;gap:5px;margin:10px 0}.ticker span{font-size:8px;border:1px solid #36425a;padding:4px 6px;border-radius:4px}.ticker .on{background:#c5ff44;color:#111;border-color:#c5ff44}
+    .b-columns{display:grid;grid-template-columns:38% 62%;gap:10px}.b-panel{border:1px solid #303a4b;background:#171e2c;border-radius:6px;padding:9px}.b-panel h3{font-size:9px;color:#9eabc0;margin:0 0 8px;text-transform:uppercase}.bar{margin:8px 0}.bar label{display:flex;justify-content:space-between;font-size:8px}.bar i{display:block;height:3px;background:#2c3547;margin-top:3px}.bar i em{display:block;height:100%;background:#c5ff44}.signal{padding:8px 0;border-top:1px solid #2b3547}.signal b{font-size:10px}.signal p{font-size:8px;color:#9eabc0;margin:3px 0}.score{color:#c5ff44}.b-pending{margin-top:10px;color:#7e8b9f;font-size:8px}.b-pending b{color:#aeb8c8}
+    .c-layout{height:100%;background:#f4efe7;padding:18px;color:#2c2925}.c-mast{border-bottom:3px double #2c2925;padding-bottom:9px;display:flex;justify-content:space-between;align-items:end}.c-mast .title{font-family:Georgia,"Songti SC",serif;font-size:21px}.c-mast small{font-size:8px}.c-lead{margin-top:15px;display:grid;grid-template-columns:1.25fr .75fr;gap:12px}.c-lead h2{font:700 19px/1.12 Georgia,"Songti SC",serif;margin:0 0 7px}.c-lead p{font-size:9px;color:#665f55}.quote{border-left:3px solid #b13c2e;padding-left:9px;font:12px/1.4 Georgia,"Songti SC",serif}.c-score{font:32px Georgia,serif;color:#b13c2e}.c-rule{border-top:1px solid #938a7d;margin:13px 0}.c-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0 13px}.c-news{border-top:1px solid #aaa095;padding:8px 0}.c-news h3{font:700 11px/1.3 Georgia,"Songti SC",serif;margin:0 0 4px}.c-news p{font-size:8px;color:#716a61;margin:0}.c-pending{margin-top:10px;background:#e8e0d5;padding:9px}.c-pending h4{font:700 10px Georgia,serif;margin:0 0 4px}.c-pending p{font-size:8px;color:#71695f;margin:3px 0}
+    .caption{padding:15px 17px;border-top:1px solid var(--line)}.caption b{font-size:13px}.caption p{font-size:11px;color:var(--muted);margin:4px 0 0}
+    @media(max-width:1050px){.choices{grid-template-columns:1fr}.mock{height:620px}.page{padding:18px}}
+  </style>
+</head>
+<body>
+<main class="page">
+  <div class="intro">
+    <div><h1>新闻雷达页面结构 · 选择一个方向</h1><p>三个方案都取消首屏长索引，先展示重点方向；待核验统一降级为紧凑附录。</p></div>
+    <div class="hint">点击整张方案卡选择</div>
+  </div>
+  <section class="choices">
+    <article class="choice" data-choice="a" onclick="toggleSelect(this)">
+      <header class="choice-head"><div class="letter">A</div><div><h2>主线优先 · 研究终端</h2><p>题材排行榜 → 核心新闻 → 其他与待核</p></div><span class="recommend">推荐</span></header>
+      <div class="mock a-layout">
+        <aside class="side"><div class="brand">RADAR</div><div class="day active">08·11<br>盘前</div><div class="day">08·10</div><div class="day">08·03</div></aside>
+        <div class="main">
+          <div class="topline"><div><div class="eyebrow">A-SHARE PREMARKET</div><div class="title">盘前新闻雷达</div></div><div class="cut">截至 08:30 北京时间</div></div>
+          <div class="direction-grid"><div class="direction primary"><b>AI算力 / 存储</b><strong>420</strong><small>5 条催化 · 本轮最强</small></div><div class="direction"><b>中东 / 油气</b><strong>184</strong><small>2 条 · 风险事件</small></div><div class="direction"><b>低空经济</b><strong>166</strong><small>2 条 · 海外映射</small></div><div class="direction"><b>A股回购</b><strong>165</strong><small>2 条 · 公司行为</small></div><div class="direction"><b>人形机器人</b><strong>161</strong><small>2 条 · 事件催化</small></div></div>
+          <div class="section-title">AI算力 / 半导体 / 存储芯片 <span class="tag">420 · 5条</span></div>
+          <div class="story"><div class="story-row"><span class="rank">05</span><div><h3>江波龙半年净利同比高增，经营现金流为负并拟回购</h3><p>中国市场盘前 · 89分 · 财报与现金流信号同时展示</p><div class="tags"><span class="tag">完整来源</span><span class="tag">市场反馈</span></div></div></div></div>
+          <div class="story"><div class="story-row"><span class="rank">06</span><div><h3>英伟达相关融资与电力基础设施投入升温</h3><p>美国市场时段 · 89分 · 两条产业链催化合并阅读</p></div></div></div>
+          <div class="index-link">查看全部 24 条单条新闻索引 ↓（默认收起）</div>
+          <div class="pending"><h4>待核验线索 <span class="tag">5</span></h4><div class="pending-line">豆包酒店抽成回应 · 缺截点前永久原文</div><div class="pending-line">马斯克关注 FEL 光源 · 待官方原帖确认</div></div>
+        </div>
+      </div>
+      <footer class="caption"><b>信息密度与可读性最平衡</b><p>首屏立刻回答“今天重点看什么”；完整新闻仍在题材下展开，索引移到后方。</p></footer>
+    </article>
+
+    <article class="choice" data-choice="b" onclick="toggleSelect(this)">
+      <header class="choice-head"><div class="letter">B</div><div><h2>极致紧凑 · 情报终端</h2><p>左侧强度仪表，右侧事件流水</p></div></header>
+      <div class="mock b-layout">
+        <div class="b-top"><div class="eyebrow">MARKET NEWS / 08:30 BJT</div><div class="title">A股盘前情报终端</div><div class="ticker"><span class="on">重点方向 5</span><span>新闻 24</span><span>待核 5</span><span>来源 32</span></div></div>
+        <div class="b-columns">
+          <div class="b-panel"><h3>Theme intensity</h3><div class="bar"><label><b>AI算力 / 存储</b><span class="score">420</span></label><i><em style="width:100%"></em></i></div><div class="bar"><label><b>中东 / 油气</b><span>184</span></label><i><em style="width:44%"></em></i></div><div class="bar"><label><b>低空经济</b><span>166</span></label><i><em style="width:40%"></em></i></div><div class="bar"><label><b>A股回购</b><span>165</span></label><i><em style="width:39%"></em></i></div><div class="bar"><label><b>人形机器人</b><span>161</span></label><i><em style="width:38%"></em></i></div><h3 style="margin-top:18px">Risk boundary</h3><p style="font-size:8px;color:#98a5b9">题材分可跨主题重复，不得合计为市场总分。代表股不继承分数。</p></div>
+          <div class="b-panel"><h3>Priority stream</h3><div class="signal"><b>05 · 江波龙盈利高增 / 现金流背离</b><span class="score" style="float:right">89</span><p>中国盘前 · 财报 · 回购 · 3个核验源</p></div><div class="signal"><b>06 · 英伟达融资与电力基建</b><span class="score" style="float:right">89</span><p>美国时段 · 产业投资 · 2个核验源</p></div><div class="signal"><b>13 · Intel资本与业务节点</b><span class="score" style="float:right">83</span><p>美国时段 · 半导体 · 反馈待观察</p></div><div class="signal"><b>14 · 阿里云AIDC扩张线索</b><span class="score" style="float:right">82</span><p>中国盘前 · 算力基础设施</p></div><div class="b-pending"><b>PENDING / 5</b><br>豆包酒店抽成回应 — 截点前原文缺失<br>FEL 光源 — 待官方原帖<br>英伟达电力项目 — 待原始文件</div></div>
+        </div>
+      </div>
+      <footer class="caption"><b>屏效最高，但风格更强</b><p>适合高频扫盘；暗色终端感明显，与现有浅色历史页的视觉跨度较大。</p></footer>
+    </article>
+
+    <article class="choice" data-choice="c" onclick="toggleSelect(this)">
+      <header class="choice-head"><div class="letter">C</div><div><h2>晨报阅读 · 编辑部版</h2><p>头条叙事，主题像报纸栏目</p></div></header>
+      <div class="mock c-layout">
+        <div class="c-mast"><div><div class="eyebrow">MARKET INTELLIGENCE</div><div class="title">盘前新闻晨报</div></div><small>2026·08·11<br>北京时间 08:30</small></div>
+        <div class="c-lead"><div><div class="eyebrow">今日第一主线 · 5条催化</div><h2>AI算力、半导体与存储芯片形成最密集信息簇</h2><p>江波龙盈利与现金流出现强烈反差，海外融资、电力基础设施与云端AIDC扩张在同一窗口形成产业链共振。</p></div><div><div class="c-score">420</div><div class="quote">主题分来自五条完整新闻，跨题材事件会明确标注重复贡献。</div></div></div>
+        <div class="c-rule"></div>
+        <div class="c-grid"><div class="c-news"><h3>江波龙半年净利大幅增长，但经营现金流为负</h3><p>05 · 89分 · 中国市场盘前</p></div><div class="c-news"><h3>中东局势与油气风险升温</h3><p>主题 184 · 两条事件</p></div><div class="c-news"><h3>英伟达资本开支延伸至电力基础设施</h3><p>06 · 89分 · 美国市场时段</p></div><div class="c-news"><h3>低空经济的海外事件映射</h3><p>主题 166 · 两条事件</p></div><div class="c-news"><h3>A股回购与资本运作</h3><p>主题 165 · 两条事件</p></div><div class="c-news"><h3>人形机器人产业事件</h3><p>主题 161 · 两条事件</p></div></div>
+        <div class="c-pending"><h4>待核验线索 · 5</h4><p>豆包酒店抽成回应：截点前未取得官方永久页</p><p>马斯克 FEL 光源：待原始发布核验</p><p>其余 3 条默认折叠，仅保留标题与缺口</p></div>
+      </div>
+      <footer class="caption"><b>阅读感最好，扫描效率略低</b><p>更像高质量晨报，适合慢读；对盘前快速比较题材强弱不如 A、B 直接。</p></footer>
+    </article>
+  </section>
+</main>
+</body>
+</html>

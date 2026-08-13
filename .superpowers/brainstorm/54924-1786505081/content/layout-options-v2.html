@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>新闻雷达 · 核心方向优先</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef1f5;color:#192131;font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}.page{max-width:1220px;margin:auto;padding:28px}.intro h1{font-size:24px;margin:0}.intro p{color:#697386;margin:5px 0 18px}.choices{display:grid;grid-template-columns:1fr 1fr;gap:22px}.choice{background:#fff;border:2px solid transparent;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(30,39,58,.08);cursor:pointer}.choice:hover{border-color:#a9b8d8}.choice.selected{border-color:#2457d6;box-shadow:0 0 0 4px rgba(36,87,214,.12)}.choice-head{display:flex;align-items:center;gap:11px;padding:15px 18px;border-bottom:1px solid #e3e7ee}.letter{width:30px;height:30px;border-radius:8px;background:#1c2940;color:#fff;display:grid;place-items:center;font-weight:800}.choice-head h2{font-size:15px;margin:0}.choice-head p{font-size:11px;color:#7a8494;margin:1px 0 0}.rec{margin-left:auto;font-size:10px;color:#2250bf;background:#edf2ff;padding:3px 8px;border-radius:99px;font-weight:700}.mock{height:720px;background:#f8f9fb;display:flex}.side{width:68px;background:#1c2940;color:#93a0b5;padding:15px 8px}.brand{color:#fff;font-weight:800;margin-bottom:20px}.day{font-size:9px;padding:7px 5px;margin:4px 0;border-radius:6px}.day.on{background:#2a5de0;color:#fff}.content{flex:1;min-width:0;padding:19px 22px}.top{display:flex;justify-content:space-between;align-items:end;padding-bottom:13px;border-bottom:1px solid #dfe4ec}.eyebrow{font-size:9px;letter-spacing:.12em;color:#7c8798}.title{font-size:19px;font-weight:800}.cut{font-size:9px;color:#8a94a4}.label{font-size:9px;color:#7f8998;letter-spacing:.08em;margin:16px 0 6px}.directions{background:#fff;border:1px solid #e0e5ed;border-radius:11px;padding:3px 13px}.dir{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #edf0f4}.dir:last-child{border:0}.num{font:700 11px Georgia,serif;color:#8b95a4}.dir h3{font-size:13px;margin:0 0 2px}.dir p{font-size:9px;color:#6f7a8c;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{font-size:8px;color:#9aa3b0;text-align:right}.meta b{font-size:9px;color:#798392;font-weight:600}.theme-head{margin:18px 0 8px;display:flex;align-items:baseline;gap:7px}.theme-head h3{font-size:15px;margin:0}.micro{font-size:8px;color:#939cab}.news{background:#fff;border:1px solid #e0e5ed;border-radius:10px;padding:11px 12px;margin:7px 0}.news b{font-size:11px}.news p{font-size:9px;color:#6b7687;margin:3px 0}.chip{font-size:8px;color:#305ab8;background:#edf2ff;border-radius:99px;padding:2px 5px}.pending{margin-top:14px;padding-top:9px;border-top:1px solid #dfe3e9}.pending summary{font-size:10px;color:#647084;font-weight:700}.pending p{font-size:8px;color:#8992a0;margin:5px 0 0}.caption{padding:15px 18px;border-top:1px solid #e2e6ed}.caption b{font-size:13px}.caption p{font-size:11px;color:#707b8c;margin:4px 0 0}
+.b-content{padding:19px 22px;flex:1}.jump{display:flex;gap:13px;padding:11px 0 13px;border-bottom:1px solid #dfe4ea;overflow:hidden}.jump a{font-size:10px;color:#657185;white-space:nowrap}.jump a:first-child{color:#1e4fc9;font-weight:800}.lead{padding:18px 0 12px}.lead .rankline{font-size:9px;color:#2654c1;font-weight:700}.lead h2{font-size:23px;line-height:1.16;margin:4px 0 8px;letter-spacing:-.02em}.lead p{font-size:10px;color:#596578;margin:0;max-width:94%}.tiny-score{font-size:8px;color:#9aa2ae;margin-left:5px;font-weight:400}.story-list{border-top:2px solid #1f2b3e}.story-row{display:grid;grid-template-columns:28px 1fr;gap:8px;padding:11px 0;border-bottom:1px solid #e1e5eb}.story-row .r{font:12px Georgia,serif;color:#919aa8}.story-row h3{font-size:12px;margin:0 0 3px}.story-row p{font-size:9px;color:#6c7788;margin:0}.other-theme{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.other-theme div{border-top:1px solid #cfd5df;padding-top:7px}.other-theme b{font-size:10px}.other-theme span{font-size:8px;color:#939ba8;display:block}.b-pending{margin-top:13px;background:#f0f2f5;border-radius:7px;padding:8px 10px;color:#7d8796;font-size:8px}.b-pending b{font-size:9px;color:#566174}
+@media(max-width:900px){.choices{grid-template-columns:1fr}.page{padding:16px}.mock{height:650px}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="intro"><h1>新版：只突出核心板块 / 概念</h1><p>没有强度仪表、统计胶囊、大号分数。分数只作为排序后的微型注释。</p></div>
+<section class="choices">
+<article class="choice" data-choice="a2" onclick="toggleSelect(this)">
+ <header class="choice-head"><div class="letter">A</div><div><h2>方向清单 → 进入正文</h2><p>先用五行说明今天关注什么</p></div><span class="rec">推荐</span></header>
+ <div class="mock">
+  <aside class="side"><div class="brand">RADAR</div><div class="day on">08·11<br>盘前</div><div class="day">08·10</div><div class="day">08·03</div></aside>
+  <div class="content">
+   <div class="top"><div><div class="eyebrow">A-SHARE PREMARKET</div><div class="title">盘前新闻雷达</div></div><div class="cut">截至 08:30 北京时间</div></div>
+   <div class="label">今日核心方向</div>
+   <div class="directions">
+    <div class="dir"><span class="num">01</span><div><h3>AI算力 / 半导体 / 存储芯片</h3><p>盈利与现金流分化，海外融资、电力基建与AIDC扩张共振</p></div><span class="meta">5条<br><b>420</b></span></div>
+    <div class="dir"><span class="num">02</span><div><h3>中东局势 / 油气</h3><p>海峡事件与赔偿表态共同抬升油气风险溢价</p></div><span class="meta">2条<br><b>184</b></span></div>
+    <div class="dir"><span class="num">03</span><div><h3>低空经济 / 航空AI</h3><p>海外航空AI与eVTOL事件形成产业映射</p></div><span class="meta">2条<br><b>166</b></span></div>
+    <div class="dir"><span class="num">04</span><div><h3>A股回购 / 资本运作</h3><p>多家公司回购与资本动作集中披露</p></div><span class="meta">2条<br><b>165</b></span></div>
+    <div class="dir"><span class="num">05</span><div><h3>人形机器人 / 具身智能</h3><p>宇树发行节点与天津产业会议构成事件催化</p></div><span class="meta">2条<br><b>161</b></span></div>
+   </div>
+   <div class="theme-head"><h3>AI算力 / 半导体 / 存储芯片</h3><span class="micro">5条 · 内部热度 420</span></div>
+   <div class="news"><b>江波龙半年净利高增，经营现金流为负并拟回购</b><p>中国市场盘前 · 财报与现金流信号同时展示</p><span class="chip">完整详情</span></div>
+   <div class="news"><b>英伟达相关融资与电力基础设施投入升温</b><p>美国市场时段 · 产业链资本开支</p></div>
+   <details class="pending"><summary>待核验线索 · 5（默认收起）</summary><p>仅显示标题与缺口，小号字体；点击后才展开来源与说明。</p></details>
+  </div>
+ </div>
+ <footer class="caption"><b>最直接表达“先看什么”</b><p>方向名称和一句核心催化是唯一重点；分数缩成灰色脚注，正文紧接其后。</p></footer>
+</article>
+
+<article class="choice" data-choice="b2" onclick="toggleSelect(this)">
+ <header class="choice-head"><div class="letter">B</div><div><h2>第一主线直接开篇</h2><p>方向导航只保留一行文字链接</p></div></header>
+ <div class="mock">
+  <aside class="side"><div class="brand">RADAR</div><div class="day on">08·11<br>盘前</div><div class="day">08·10</div><div class="day">08·03</div></aside>
+  <div class="b-content">
+   <div class="top"><div><div class="eyebrow">A-SHARE PREMARKET</div><div class="title">盘前新闻雷达</div></div><div class="cut">截至 08:30</div></div>
+   <nav class="jump"><a>AI算力 / 存储</a><a>中东 / 油气</a><a>低空经济</a><a>A股回购</a><a>机器人</a></nav>
+   <div class="lead"><div class="rankline">核心方向 01</div><h2>AI算力 / 半导体 / 存储芯片 <span class="tiny-score">5条 · 420</span></h2><p>盈利与现金流分化，海外融资、电力基础设施与云端AIDC扩张在同一窗口形成产业链共振。</p></div>
+   <div class="story-list">
+    <div class="story-row"><span class="r">05</span><div><h3>江波龙半年净利高增，经营现金流为负并拟回购</h3><p>中国市场盘前 · 完整来源、反馈、边界与热度变化</p></div></div>
+    <div class="story-row"><span class="r">06</span><div><h3>英伟达相关融资与电力基础设施投入升温</h3><p>美国市场时段 · 产业资本开支</p></div></div>
+    <div class="story-row"><span class="r">13</span><div><h3>Intel资本与业务节点</h3><p>美国市场时段 · 半导体</p></div></div>
+   </div>
+   <div class="label">接下来的方向</div>
+   <div class="other-theme"><div><b>02 中东局势 / 油气</b><span>2条 · 184</span></div><div><b>03 低空经济 / 航空AI</b><span>2条 · 166</span></div><div><b>04 A股回购 / 资本运作</b><span>2条 · 165</span></div><div><b>05 人形机器人 / 具身智能</b><span>2条 · 161</span></div></div>
+   <div class="b-pending"><b>待核验线索 · 5</b>　默认折叠，仅作为报告末尾附录，不参与首屏视觉。</div>
+  </div>
+ </div>
+ <footer class="caption"><b>最少组件，正文最快出现</b><p>首屏直接进入第一主线；其他方向只是一行跳转，适合已经接受排序结果的用户。</p></footer>
+</article>
+</section>
+</main>
+</body>
+</html>

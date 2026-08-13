@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>新闻雷达 · 最终结构确认</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#edf1f6;color:#182033;font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}.page{max-width:980px;margin:auto;padding:27px}.note{margin-bottom:15px}.note h1{font-size:22px;margin:0}.note p{color:#6d788a;margin:4px 0}.mock{background:#f8f9fb;border:2px solid #cad3e1;border-radius:16px;overflow:hidden;box-shadow:0 16px 40px rgba(30,40,60,.10);display:flex;height:950px}.side{width:76px;background:#1c2940;color:#94a1b5;padding:17px 9px;flex:none}.brand{color:#fff;font-weight:800;margin-bottom:22px}.day{font-size:10px;padding:8px 6px;border-radius:7px;margin:4px 0}.day.on{background:#2b5ee0;color:#fff}.main{min-width:0;flex:1;padding:23px 28px;overflow:hidden}.top{display:flex;justify-content:space-between;align-items:end;padding-bottom:15px;border-bottom:1px solid #dce2ea}.eyebrow{font-size:9px;letter-spacing:.12em;color:#7f8999}.title{font-size:21px;font-weight:800}.cut{font-size:9px;color:#8d96a5}.jump{display:flex;gap:16px;overflow:hidden;padding:12px 0;border-bottom:1px solid #dce2ea}.jump a{font-size:10px;color:#667285;white-space:nowrap}.jump a.on{color:#1f52cc;font-weight:800}.direction{padding:23px 0 15px}.direction+.direction{border-top:6px solid #edf0f4}.direction-label{font-size:9px;color:#2457d2;font-weight:800}.direction h2{font-size:25px;line-height:1.15;letter-spacing:-.02em;margin:4px 0 7px}.meta{font-size:8px;color:#929baa;font-weight:400;margin-left:7px}.catalyst{font-size:10px;color:#5e697b;margin:0}.stories{border-top:2px solid #253047;margin-top:14px}.story{display:grid;grid-template-columns:30px 1fr;gap:9px;padding:12px 0;border-bottom:1px solid #dfe4eb}.rank{font:12px Georgia,serif;color:#929cab}.story h3{font-size:12px;margin:0 0 3px}.story p{font-size:9px;color:#707b8c;margin:0}.collapsed{font-size:9px;color:#7c8797;padding:10px 0}.pending{margin-top:18px;border-top:1px solid #d8dee7;padding-top:10px}.pending summary{font-size:10px;font-weight:700;color:#647084}.pending p{font-size:8px;color:#8a93a1}.legend{display:flex;gap:18px;margin-top:13px;color:#6e798a;font-size:11px}.legend b{color:#202a3c}
+@media(max-width:700px){.page{padding:12px}.side{display:none}.main{padding:18px}.mock{height:860px}.direction h2{font-size:21px}}
+</style>
+</head>
+<body>
+<main class="page">
+ <div class="note"><h1>最终结构：核心方向依次完整排列</h1><p>没有长索引，也没有“接下来的方向”汇总块；核心方向 01 后直接排列核心方向 02。</p></div>
+ <div class="mock">
+  <aside class="side"><div class="brand">RADAR</div><div class="day on">08·11<br>盘前</div><div class="day">08·10</div><div class="day">08·03</div></aside>
+  <div class="main">
+   <header class="top"><div><div class="eyebrow">A-SHARE PREMARKET</div><div class="title">盘前新闻雷达</div></div><div class="cut">截至 08:30 北京时间</div></header>
+   <nav class="jump"><a class="on">AI算力 / 存储</a><a>中东 / 油气</a><a>低空经济</a><a>A股回购</a><a>机器人</a></nav>
+   <section class="direction"><div class="direction-label">核心方向 01</div><h2>AI算力 / 半导体 / 存储芯片 <span class="meta">5条 · 420</span></h2><p class="catalyst">盈利与现金流分化，海外融资、电力基础设施与云端AIDC扩张形成产业链共振。</p><div class="stories"><article class="story"><span class="rank">05</span><div><h3>江波龙半年净利高增，经营现金流为负并拟回购</h3><p>中国市场盘前 · 完整来源、反馈、边界与热度变化</p></div></article><article class="story"><span class="rank">06</span><div><h3>英伟达相关融资与电力基础设施投入升温</h3><p>美国市场时段 · 产业链资本开支</p></div></article><div class="collapsed">其余 3 条新闻继续在本方向内完整排列 ↓</div></div></section>
+   <section class="direction"><div class="direction-label">核心方向 02</div><h2>中东局势 / 油气 <span class="meta">2条 · 184</span></h2><p class="catalyst">海峡事件与赔偿表态共同抬升油气风险溢价。</p><div class="stories"><article class="story"><span class="rank">01</span><div><h3>霍尔木兹海峡事件持续传播</h3><p>美国市场时段 · 油价与风险资产反馈</p></div></article><article class="story"><span class="rank">07</span><div><h3>特朗普再次要求伊朗赔偿</h3><p>美国市场时段 · 地缘风险线索</p></div></article></div></section>
+   <section class="direction"><div class="direction-label">核心方向 03</div><h2>低空经济 / 航空AI <span class="meta">2条 · 166</span></h2><p class="catalyst">后续仍按同样结构展示完整新闻；方向 04、05 依次向下排列。</p></section>
+   <details class="pending"><summary>待核验线索 · 5（默认收起）</summary><p>小字号附录；仅在展开后显示标题、已知信息、缺口和来源。</p></details>
+  </div>
+ </div>
+ <div class="legend"><span><b>主视觉：</b>核心方向名称与催化</span><span><b>辅助：</b>分数、条数、原排名均小字</span><span><b>末尾：</b>待核验默认收起</span></div>
+</main>
+</body>
+</html>
