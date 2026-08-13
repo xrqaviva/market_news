@@ -262,6 +262,66 @@ def _pending_items(document: ReportDocument) -> str:
     ).format(_escape(len(document.pending_items)), "".join(rows))
 
 
+def _report_note_spans(spans: tuple) -> str:
+    rendered = []
+    for span in spans:
+        url = renderable_source_url(span.url) if span.url else None
+        text = _escape(span.text).replace("Local Storage", "Local&#32;Storage")
+        if url:
+            rendered.append(
+                '<a href="{}" rel="noopener noreferrer">{}</a>'.format(
+                    _escape(url), text
+                )
+            )
+        else:
+            rendered.append(text)
+    return "".join(rendered)
+
+
+def _report_note_blocks(blocks: tuple) -> str:
+    rendered = []
+    index = 0
+    while index < len(blocks):
+        block = blocks[index]
+        if block.kind in {"list-item", "table-row"}:
+            kind = block.kind
+            rows = []
+            while index < len(blocks) and blocks[index].kind == kind:
+                rows.append("<li>{}</li>".format(_report_note_spans(blocks[index].spans)))
+                index += 1
+            class_name = "report-note-list" if kind == "list-item" else "report-note-table"
+            rendered.append('<ul class="{}">{}</ul>'.format(class_name, "".join(rows)))
+            continue
+        rendered.append("<p>{}</p>".format(_report_note_spans(block.spans)))
+        index += 1
+    return "".join(rendered)
+
+
+def _report_notes(document: ReportDocument) -> str:
+    if not document.intro_blocks and not document.report_sections:
+        return ""
+    intro = ""
+    if document.intro_blocks:
+        intro = '<div class="report-note-intro" aria-label="报告口径">{}</div>'.format(
+            _report_note_blocks(document.intro_blocks)
+        )
+    sections = "".join(
+        '<section class="report-note-section" data-component="report-note-section" '
+        'aria-label="{}"><h3>{}</h3>{}</section>'.format(
+            _escape(section.title),
+            _escape(section.title),
+            _report_note_blocks(section.blocks),
+        )
+        for section in document.report_sections
+    )
+    return (
+        '<section class="report-notes" data-component="report-notes" '
+        'aria-labelledby="report-notes-title">'
+        '<header><p>补充口径</p><h2 id="report-notes-title">报告说明</h2></header>'
+        '{}{}</section>'
+    ).format(intro, sections)
+
+
 def _archive_slot_label(report: dict) -> str:
     label = str(report.get("label", ""))
     return "盘后" if label == "收盘" else label
@@ -378,7 +438,7 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
             ))
             if not document.themes else ""
         ),
-        "PENDING_ITEMS": _pending_items(document),
+        "PENDING_ITEMS": _report_notes(document) + _pending_items(document),
     }
     template_placeholders = set(re.findall(r"{{[^{}]+}}", template))
     expected_placeholders = {"{{" + name + "}}" for name in replacements}

@@ -361,6 +361,29 @@ try {
     );
     await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
     const sourceList = firstDetail.querySelector("[data-component='sources']");
+    const reportNotes = document.querySelector("[data-component='report-notes']");
+    const reportNoteTitle = reportNotes.querySelector("h2");
+    const reportNoteSectionTitles = Array.from(reportNotes.querySelectorAll(".report-note-section h3"));
+    const reportNoteBody = reportNotes.querySelector(".report-note-intro, .report-note-section p, .report-note-section li");
+    const reportNoteLinks = Array.from(reportNotes.querySelectorAll("a"));
+    const otherImportant = document.querySelector("[data-component='other-important-news']");
+    const pendingList = document.querySelector("[data-component='pending-list']");
+    const reportNoteContract = {
+      visible: reportNotes.getClientRects().length > 0 && reportNotes.getBoundingClientRect().height > 0,
+      title: reportNoteTitle.textContent.trim(),
+      sectionCount: reportNoteSectionTitles.length,
+      titleFontSize: parseFloat(getComputedStyle(reportNoteTitle).fontSize),
+      sectionTitleMaximumFontSize: Math.max(
+        ...reportNoteSectionTitles.map((title) => parseFloat(getComputedStyle(title).fontSize)),
+      ),
+      bodyFontSize: parseFloat(getComputedStyle(reportNoteBody).fontSize),
+      afterOther: otherImportant.getBoundingClientRect().bottom <= reportNotes.getBoundingClientRect().top,
+      beforePending: reportNotes.getBoundingClientRect().bottom <= pendingList.getBoundingClientRect().top,
+      linkCount: reportNoteLinks.length,
+      unsafeHrefCount: reportNoteLinks.filter(
+        (link) => !["http:", "https:"].includes(new URL(link.href).protocol),
+      ).length,
+    };
     const commonLeftLine = {
       checkedCount: 0,
       violations: [],
@@ -450,6 +473,7 @@ try {
       associationLeft: association.getBoundingClientRect().left,
       firstDetailLeft: firstDetail.getBoundingClientRect().left,
       firstSourceLeft: sourceList.getBoundingClientRect().left,
+      reportNoteContract,
       commonLeftLine,
       disclosure,
       initialNavigationCurrent,
@@ -505,7 +529,20 @@ try {
         }
       });
     });
-    return { rowCount: rows.length, checkedCount, violations };
+    const reportNoteLinks = Array.from(
+      document.querySelectorAll("[data-component='report-notes'] a"),
+    );
+    return {
+      rowCount: rows.length,
+      checkedCount,
+      violations,
+      reportNoteLinkSafety: {
+        linkCount: reportNoteLinks.length,
+        unsafeHrefCount: reportNoteLinks.filter(
+          (link) => !["http:", "https:"].includes(new URL(link.href).protocol),
+        ).length,
+      },
+    };
   })()`);
 
   await navigate(cdp, "about:blank");
@@ -693,6 +730,7 @@ try {
       count: results.length,
       results,
       minimum: Math.min(...results.map((result) => result.ratio)),
+      reportNoteCount: results.filter((result) => result.path.includes("report-note")).length,
       mutation: {
         path: mutationPath,
         result: mutationResults.find((result) => result.path === mutationPath),
@@ -714,6 +752,8 @@ try {
     const body = document.querySelector(".pending-body");
     const items = Array.from(document.querySelectorAll(".pending-item"));
     const newsDetails = Array.from(document.querySelectorAll(".news-detail"));
+    const reportNotes = document.querySelector("[data-component='report-notes']");
+    const reportNoteSections = Array.from(reportNotes.querySelectorAll("[data-component='report-note-section']"));
     const beforePrint = {
       mediaMatches: matchMedia("print").matches,
       detailsOpen: details.open,
@@ -725,6 +765,11 @@ try {
         (detail) => detail.getClientRects().length > 0 && detail.getBoundingClientRect().height > 0,
       ).length,
       newsDetailCount: newsDetails.length,
+      reportNotesVisible: reportNotes.getClientRects().length > 0,
+      visibleReportNoteSectionCount: reportNoteSections.filter(
+        (section) => section.getClientRects().length > 0,
+      ).length,
+      reportNoteSectionCount: reportNoteSections.length,
     };
     dispatchEvent(new Event("beforeprint"));
     const duringPrint = {
@@ -734,6 +779,10 @@ try {
       visibleItemCount: items.filter((item) => item.getClientRects().length > 0).length,
       visibleNewsDetailCount: newsDetails.filter(
         (detail) => detail.getClientRects().length > 0 && detail.getBoundingClientRect().height > 0,
+      ).length,
+      reportNotesVisible: reportNotes.getClientRects().length > 0,
+      visibleReportNoteSectionCount: reportNoteSections.filter(
+        (section) => section.getClientRects().length > 0,
       ).length,
     };
     dispatchEvent(new Event("afterprint"));
@@ -823,6 +872,8 @@ try {
     const navigation = document.querySelector(".theme-navigation");
     const navigationLinks = Array.from(navigation.querySelectorAll("a"));
     const themeTitle = document.querySelector(".theme-heading-line h2");
+    const reportNotes = document.querySelector("[data-component='report-notes']");
+    const reportNotesRect = reportNotes.getBoundingClientRect();
     const target = document.querySelectorAll(".theme-group")[4];
     const link = document.querySelector('.theme-navigation a[href="#' + target.id + '"]');
     const initialCurrentLinks = navigationLinks.filter(
@@ -858,6 +909,10 @@ try {
       clickedNavigationCurrentHref: navigationLinks.find(
         (candidate) => candidate.getAttribute("aria-current") === "location",
       )?.getAttribute("href") ?? null,
+      reportNotesClientWidth: reportNotes.clientWidth,
+      reportNotesScrollWidth: reportNotes.scrollWidth,
+      reportNotesLeft: reportNotesRect.left,
+      reportNotesRight: reportNotesRect.right,
     };
   })()`);
 
@@ -1086,12 +1141,37 @@ try {
     failures.push(`visible direct-text contrast below 4.5:1: ${JSON.stringify(lowContrast)}`);
   }
   if (
+    !desktop.reportNoteContract.visible
+    || desktop.reportNoteContract.title !== "报告说明"
+    || desktop.reportNoteContract.sectionCount < 1
+    || desktop.reportNoteContract.titleFontSize > 14
+    || desktop.reportNoteContract.sectionTitleMaximumFontSize > 10
+    || desktop.reportNoteContract.bodyFontSize > 10
+    || !desktop.reportNoteContract.afterOther
+    || !desktop.reportNoteContract.beforePending
+    || desktop.reportNoteContract.unsafeHrefCount !== 0
+  ) {
+    failures.push(`report-note contract mismatch: ${JSON.stringify(desktop.reportNoteContract)}`);
+  }
+  if (
+    sourceOnlyAlignment.reportNoteLinkSafety.linkCount < 1
+    || sourceOnlyAlignment.reportNoteLinkSafety.unsafeHrefCount !== 0
+  ) {
+    failures.push(
+      `report-note link safety mismatch: ${JSON.stringify(sourceOnlyAlignment.reportNoteLinkSafety)}`,
+    );
+  }
+  if (
     !print.beforePrint.mediaMatches
     || !print.duringPrint.detailsOpen
     || print.duringPrint.bodyHeight <= 0
     || print.duringPrint.visibleItemCount !== print.beforePrint.itemCount
     || print.beforePrint.visibleNewsDetailCount !== print.beforePrint.newsDetailCount
     || print.duringPrint.visibleNewsDetailCount !== print.beforePrint.newsDetailCount
+    || !print.beforePrint.reportNotesVisible
+    || !print.duringPrint.reportNotesVisible
+    || print.beforePrint.visibleReportNoteSectionCount !== print.beforePrint.reportNoteSectionCount
+    || print.duringPrint.visibleReportNoteSectionCount !== print.beforePrint.reportNoteSectionCount
     || print.restoredOpen
   ) {
     failures.push(
@@ -1153,6 +1233,22 @@ try {
   if (mobile.scrollWidth > mobile.clientWidth) {
     failures.push(`mobile page overflows: ${mobile.scrollWidth}px > ${mobile.clientWidth}px`);
   }
+  if (
+    mobile.reportNotesScrollWidth > mobile.reportNotesClientWidth
+    || mobile.reportNotesLeft < 0
+    || mobile.reportNotesRight > mobile.clientWidth
+  ) {
+    failures.push(`mobile report notes overflow: ${JSON.stringify({
+      clientWidth: mobile.clientWidth,
+      noteClientWidth: mobile.reportNotesClientWidth,
+      noteScrollWidth: mobile.reportNotesScrollWidth,
+      noteLeft: mobile.reportNotesLeft,
+      noteRight: mobile.reportNotesRight,
+    })}`);
+  }
+  if (contrast.reportNoteCount < 1) {
+    failures.push(`contrast scan missed report-note text: ${contrast.reportNoteCount}`);
+  }
   if (browserProblems.length) failures.push(`browser console: ${browserProblems.join(" | ")}`);
 
   console.log(JSON.stringify({
@@ -1195,6 +1291,7 @@ try {
       clickedNavigationCurrent: desktop.clickedNavigationCurrent,
       currentNavigationLink: desktop.currentNavigationLink,
       inactiveNavigationLink: desktop.inactiveNavigationLink,
+      reportNoteContract: desktop.reportNoteContract,
       targetTop: desktop.targetTop,
     },
     directHashNavigation,
@@ -1203,6 +1300,7 @@ try {
       count: contrast.count,
       minimum: contrast.minimum,
       mutation: contrast.mutation,
+      reportNoteCount: contrast.reportNoteCount,
       lowContrast,
     },
     print,

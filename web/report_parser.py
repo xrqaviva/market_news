@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Iterable, List, Tuple
 
 from web.report_model import (
-    NewsIndexEntry, NewsItem, PendingItem, ReportDocument, ReportMeta, SourceLink,
-    StockMapping, ThemeGroup,
+    NewsIndexEntry, NewsItem, PendingItem, ReportBlock, ReportDocument, ReportInline,
+    ReportMeta, ReportSection, SourceLink, StockMapping, ThemeGroup,
 )
 from web.url_policy import renderable_source_url
 
@@ -166,6 +166,123 @@ def _inline_sources(text: str) -> Tuple[SourceLink, ...]:
     return tuple(sources)
 
 
+def _merged_sources(block: str) -> Tuple[SourceLink, ...]:
+    merged = []
+    seen_urls = set()
+    for source in _sources_from_table(block) + _inline_sources(block):
+        if source.url in seen_urls:
+            continue
+        seen_urls.add(source.url)
+        merged.append(source)
+    return tuple(merged)
+
+
+def _note_plain(value: str) -> str:
+    value = html.unescape(value)
+    value = re.sub(r"<[^>]*>", "", value)
+    value = re.sub(r"[*`]", "", value)
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def _note_spans(value: str) -> Tuple[ReportInline, ...]:
+    spans = []
+    cursor = 0
+    for match in _LINK.finditer(value):
+        before = _note_plain(value[cursor:match.start()])
+        if before:
+            spans.append(ReportInline(before))
+        label = _note_plain(match.group(1))
+        url = renderable_source_url(match.group(2)) or ""
+        if label:
+            spans.append(ReportInline(label, url))
+        cursor = match.end()
+    after = _note_plain(value[cursor:])
+    if after:
+        spans.append(ReportInline(after))
+    return tuple(spans)
+
+
+def _note_blocks(value: str) -> Tuple[ReportBlock, ...]:
+    blocks = []
+    for raw_line in value.splitlines():
+        line = raw_line.strip().rstrip()
+        if not line:
+            continue
+        kind = "paragraph"
+        if line.startswith("|"):
+            columns = [part.strip() for part in line.strip("|").split("|")]
+            if set("".join(columns)) <= {"-", ":"}:
+                continue
+            line = " · ".join(columns)
+            kind = "table-row"
+        else:
+            list_item = re.match(r"^[-*]\s+(.+)$", line)
+            if list_item:
+                line = list_item.group(1)
+                kind = "list-item"
+            elif line.startswith(">"):
+                line = line[1:].strip()
+        spans = _note_spans(line)
+        if spans:
+            blocks.append(ReportBlock(kind, spans))
+    return tuple(blocks)
+
+
+def _intro_without_meta(line: str, window: str) -> str:
+    line = line.strip()
+    if line.startswith(">"):
+        line = line[1:].strip()
+    line = line.rstrip()
+    if re.match(r"^截止：", line):
+        return ""
+    standard_window = re.match(r"^\*\*(?:新闻窗口|窗口)：\*\*\s*(.+)$", line)
+    if standard_window and _plain(standard_window.group(1)) == window:
+        return ""
+    legacy_window = re.match(r"^\*\*(?:新闻窗口|事件窗口)：[^*]+\*\*\s*(.*)$", line)
+    if legacy_window:
+        return legacy_window.group(1).lstrip("。；;｜| ")
+    cutoff = re.match(
+        r"^\*\*(?:实际截点|生成任务启动)：\*\*\s*[^。；;]+[。；;]?\s*(.*)$",
+        line,
+    )
+    if cutoff:
+        return cutoff.group(1)
+    line = re.sub(r"(?:[｜|]\s*)?北京时间截点：[^｜|*]+", "", line)
+    return line.strip("。；;｜| ")
+
+
+def _intro_blocks(text: str, window: str) -> Tuple[ReportBlock, ...]:
+    title = re.search(r"^#\s+.+$", text, re.MULTILINE)
+    if not title:
+        return tuple()
+    first_section = re.search(r"^##\s+", text[title.end():], re.MULTILINE)
+    end = title.end() + first_section.start() if first_section else len(text)
+    lines = []
+    for line in text[title.end():end].splitlines():
+        cleaned = _intro_without_meta(line, window)
+        if cleaned:
+            lines.append(cleaned)
+    return _note_blocks("\n".join(lines))
+
+
+def _report_sections(text: str) -> Tuple[ReportSection, ...]:
+    sections = []
+    structural = {"单条新闻热榜索引", "题材主线", "其他重要新闻"}
+    for raw_title, body in _SECTION.findall(text):
+        title = _plain(raw_title)
+        if (
+            re.match(r"^\d+\.\s+", raw_title)
+            or re.match(r"^\d+—\d+\.\s+", raw_title)
+            or title in structural
+            or title.startswith("待核验线索")
+        ):
+            continue
+        blocks = _note_blocks(body)
+        if blocks:
+            sections.append(ReportSection(title, blocks))
+    return tuple(sections)
+
+
 def _top_sections(text: str) -> Iterable[Tuple[int, str, str]]:
     headings = list(_HEADING.finditer(text))
     for index, heading in enumerate(headings):
@@ -205,9 +322,7 @@ def _make_top_item(rank: int, title: str, block: str) -> NewsItem:
     title = _plain(re.sub(r"｜\d+/100$", "", title))
     core = _field(block, "核心信息") or _field(block, "消息详情")
     supplemental_details = _legacy_supplemental_details(block)
-    sources = _sources_from_table(block)
-    if not sources:
-        sources = _inline_sources(block)
+    sources = _merged_sources(block)
     return NewsItem(
         rank=rank, title=title, core=core, score=score, score_breakdown=breakdown,
         signal=_field(block, "关键信号/预期差"),
@@ -316,10 +431,15 @@ def _parse_nested_news_blocks(text: str) -> Tuple[NewsItem, ...]:
         end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
         rank, event_id, title, score = heading.groups()
         block = text[heading.end():end]
-        sources = _sources_from_table(block) or _inline_sources(block)
+        sources = _merged_sources(block)
+        score_match = _SCORE.search(block)
+        breakdown = (
+            _plain(score_match.group(2) or "")
+            if score_match and score_match.lastindex and score_match.lastindex >= 2 else ""
+        )
         item = NewsItem(
             rank=int(rank), event_id=_plain(event_id), title=_plain(title), score=int(score),
-            core=_field(block, "核心信息"), score_breakdown="",
+            core=_field(block, "核心信息"), score_breakdown=breakdown,
             signal=_field(block, "关键信号/预期差"),
             market_feedback=(
                 _field(block, "带时间市场反馈") or _field(block, "财报市场反馈")
@@ -465,6 +585,7 @@ def _parse_themed_report(text: str, meta: ReportMeta) -> ReportDocument:
     return ReportDocument(
         meta=meta, items=items, pending_items=_pending_items(text), news_index=news_index,
         themes=themes, other_items=other_items,
+        intro_blocks=_intro_blocks(text, meta.window), report_sections=_report_sections(text),
     )
 
 
@@ -545,4 +666,6 @@ def parse_report(path: Path, entry: CatalogEntry) -> ReportDocument:
         meta=meta,
         items=items,
         pending_items=_pending_items(text),
+        intro_blocks=_intro_blocks(text, meta.window),
+        report_sections=_report_sections(text),
     )

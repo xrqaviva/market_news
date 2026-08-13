@@ -23,7 +23,7 @@
 
 ## Discovery and Baseline
 
-- Repository root: `/Users/aviva/Projects/market_news/.worktrees/news-radar-web`.
+- Repository root: `<repo>` (resolve with `git rev-parse --show-toplevel`).
 - Branch: `codex/news-radar-web`, linked worktree under `.worktrees/news-radar-web`.
 - Design commit: `901c6fa docs: specify high-fidelity report shell`.
 - Existing production boundaries: `web/templates/report.html`, `web/build.py::render_report`, `web/assets/app.css`, `web/assets/app.js`.
@@ -284,8 +284,8 @@ Run:
 
 ```bash
 python3 -m web.build \
-  --project-root /Users/aviva/Projects/market_news/.worktrees/news-radar-web \
-  --output /Users/aviva/Projects/market_news/.worktrees/news-radar-web/web/dist
+  --project-root . \
+  --output web/dist
 ```
 
 Expected: 7 report pages generated from the isolated worktree without importing main-checkout untracked candidates.

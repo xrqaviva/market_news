@@ -1,5 +1,7 @@
 import json
-from html import escape
+from collections import Counter
+from dataclasses import replace
+from html import escape, unescape
 from pathlib import Path
 import re
 import subprocess
@@ -12,8 +14,11 @@ from web.report_model import (
     NewsIndexEntry,
     NewsItem,
     PendingItem,
+    ReportBlock,
     ReportDocument,
+    ReportInline,
     ReportMeta,
+    ReportSection,
     SourceLink,
     StockMapping,
     ThemeGroup,
@@ -131,6 +136,149 @@ class WebBuildTest(unittest.TestCase):
         self.assertNotIn('class="filter-bar"', page)
         self.assertNotIn('class="filter-actions"', page)
         self.assertNotIn('class="filter-button', page)
+
+    def test_report_notes_render_after_news_before_pending_with_safe_semantics(self):
+        document = replace(
+            self._themed_document(),
+            intro_blocks=(
+                ReportBlock("paragraph", (
+                    ReportInline('顶部 <口径> & "风险"'),
+                    ReportInline("安全链接", "https://example.com/method"),
+                    ReportInline("危险链接", "javascript:alert(1)"),
+                )),
+            ),
+            report_sections=(
+                ReportSection("覆盖 <边界>", (
+                    ReportBlock("list-item", (ReportInline("第一项"),)),
+                    ReportBlock("table-row", (ReportInline("渠道 · 已覆盖"),)),
+                )),
+            ),
+            pending_items=(PendingItem("待核", "已知", "原因"),),
+        )
+
+        page = render_report(document, [{
+            "id": "themed-report", "date": "2026-08-11", "label": "盘前",
+            "url": "reports/2026-08-11-0800.html",
+        }])
+
+        self.assertEqual(1, page.count('data-component="report-notes"'))
+        self.assertEqual(1, page.count('<h2 id="report-notes-title">报告说明</h2>'))
+        self.assertLess(page.index("其他重要新闻"), page.index('data-component="report-notes"'))
+        self.assertLess(page.index('data-component="report-notes"'), page.index('data-component="pending-list"'))
+        self.assertIn('顶部 &lt;口径&gt; &amp; &quot;风险&quot;', page)
+        self.assertIn('<a href="https://example.com/method" rel="noopener noreferrer">安全链接</a>', page)
+        self.assertIn("危险链接", page)
+        self.assertNotIn('href="javascript:', page)
+        self.assertIn('<h3>覆盖 &lt;边界&gt;</h3>', page)
+        self.assertIn('<ul class="report-note-list"><li>第一项</li></ul>', page)
+        self.assertIn('<ul class="report-note-table"><li>渠道 · 已覆盖</li></ul>', page)
+
+    def test_all_report_note_sections_and_direct_content_reach_fresh_html(self):
+        expected_titles = {
+            "2026-07-29-1800.html": ("渠道状态与本轮增量", "完整性边界"),
+            "2026-07-30-0800.html": ("覆盖边界",),
+            "2026-07-30-1500.html": ("7月31日08:00比较基线", "覆盖与安全边界"),
+            "2026-07-31-0800.html": ("来源覆盖与限制",),
+            "2026-08-03-0800.html": ("盘前待补节点", "来源覆盖与限制"),
+            "2026-08-10-0800.html": ("08:00正式版待补节点", "来源覆盖与限制"),
+            "2026-08-11-0800.html": ("来源覆盖与核验缺口",),
+        }
+        source_by_output = {
+            "2026-07-29-1800.html": ROOT / "reports/2026-07-29-pure-news-hot-ranking-v4.md",
+            "2026-07-30-0800.html": ROOT / "reports/2026-07-30-premarket-news-ranking-v6-depth-test.md",
+            "2026-07-30-1500.html": ROOT / "reports/2026-07-30-1500-next-trading-day-news-baseline.md",
+            "2026-07-31-0800.html": ROOT / "reports/2026-07-31-0800-premarket-news-ranking.md",
+            "2026-08-03-0800.html": ROOT / "reports/2026-08-03-0800-premarket-news-ranking.md",
+            "2026-08-10-0800.html": ROOT / "reports/2026-08-10-0800-premarket-news-ranking.md",
+            "2026-08-11-0800.html": ROOT / "reports/2026-08-11-0800-premarket-news-ranking.md",
+        }
+
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            rendered_section_count = 0
+            for filename, titles in expected_titles.items():
+                page = (output / "reports" / filename).read_text(encoding="utf-8")
+                notes = re.search(
+                    r'<section class="report-notes".*?</section>\s*(?=<section class="pending-section"|</main>)',
+                    page,
+                    re.DOTALL,
+                )
+                self.assertIsNotNone(notes, filename)
+                notes_html = notes.group(0)
+                self.assertEqual(1, notes_html.count('<h2 id="report-notes-title">报告说明</h2>'))
+                self.assertNotIn("**", notes_html)
+                for title in titles:
+                    self.assertEqual(1, notes_html.count("<h3>{}</h3>".format(title)))
+                    rendered_section_count += 1
+                    source = source_by_output[filename].read_text(encoding="utf-8")
+                    body = re.search(
+                        r"^## {}\n(.*?)(?=^## |\Z)".format(re.escape(title)),
+                        source,
+                        re.MULTILINE | re.DOTALL,
+                    ).group(1)
+                    for label, url in re.findall(r"\[([^\]]+)\]\((https?://[^)]+)\)", body):
+                        self.assertIn('href="{}"'.format(escape(url, quote=True)), notes_html)
+                        self.assertIn(escape(label, quote=True), notes_html)
+                    for raw_line in body.splitlines():
+                        line = raw_line.strip()
+                        if not line or set(line.replace("|", "")) <= {"-", ":"}:
+                            continue
+                        if line.startswith("|"):
+                            line = " · ".join(part.strip() for part in line.strip("|").split("|"))
+                        line = re.sub(r"^[-*]\s+", "", line)
+                        fragments = re.split(r"\[[^\]]+\]\([^)]+\)", line)
+                        for fragment in fragments:
+                            fragment = re.sub(r"[*`]", "", fragment)
+                            fragment = re.sub(r"\s+", " ", fragment).strip()
+                            if fragment:
+                                rendered_fragment = escape(fragment, quote=True).replace(
+                                    "Local Storage", "Local&#32;Storage"
+                                )
+                                self.assertIn(rendered_fragment, notes_html)
+            self.assertEqual(11, rendered_section_count)
+
+    def test_all_25_themed_markdown_instances_render_score_breakdown_once(self):
+        source = (ROOT / "reports/2026-08-11-0800-premarket-news-ranking.md").read_text(
+            encoding="utf-8"
+        )
+        headings = list(re.finditer(
+            r"^#### 新闻：\d+｜([^｜]+)｜.+?｜\d+/100$", source, re.MULTILINE
+        ))
+        expected = Counter()
+        for index, heading in enumerate(headings):
+            end = headings[index + 1].start() if index + 1 < len(headings) else len(source)
+            next_section = re.search(r"^## ", source[heading.end():end], re.MULTILINE)
+            if next_section:
+                end = heading.end() + next_section.start()
+            score = re.search(
+                r"\*\*热点权重：\d+/100\*\*（([^）]+)）", source[heading.end():end]
+            )
+            self.assertIsNotNone(score, heading.group(1))
+            expected[(heading.group(1), score.group(1))] += 1
+        self.assertEqual(25, sum(expected.values()))
+
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            page = (output / "reports/2026-08-11-0800.html").read_text(encoding="utf-8")
+            actual = Counter()
+            for article in re.findall(
+                r'(<article(?=[^>]*data-event-id="[^"]+")[^>]*>.*?</article>)', page, re.DOTALL
+            ):
+                event_id = re.search(r'data-event-id="([^"]+)"', article).group(1)
+                values = re.findall(r"<p><strong>热点构成</strong>(.*?)</p>", article, re.DOTALL)
+                self.assertEqual(1, len(values), event_id)
+                actual[(event_id, unescape(values[0]))] += 1
+            self.assertEqual(expected, actual)
+
+    def test_postclose_unique_inline_ap_source_is_clickable_in_fresh_html(self):
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            page = (output / "reports/2026-07-30-1500.html").read_text(encoding="utf-8")
+            article = self._article(page, 1)
+            self.assertIn(
+                'href="https://apnews.com/article/stock-markets-rates-korea-ai-oil-99b5702d93a2b5c6e513fb952ccdcc92"',
+                article,
+            )
 
     def test_report_shell_matches_reference_structure(self):
         page = render_report(self._themed_document(), [{

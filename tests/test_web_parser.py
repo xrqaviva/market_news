@@ -373,6 +373,119 @@ class WebReportParserTest(unittest.TestCase):
             self.assertEqual((("时间", "新闻时间。"),), item.supplemental_details)
             self.assertEqual(["https://example.com/news"], [source.url for source in item.sources])
 
+    def test_report_level_notes_preserve_source_order_top_disclosures_and_links(self):
+        documents = self._documents()
+        expected_titles = {
+            "20260729-1800": ("渠道状态与本轮增量", "完整性边界"),
+            "20260730-0800": ("覆盖边界",),
+            "20260730-1500": ("7月31日08:00比较基线", "覆盖与安全边界"),
+            "20260731-0800": ("来源覆盖与限制",),
+            "20260803-0800": ("盘前待补节点", "来源覆盖与限制"),
+            "20260810-0800": ("08:00正式版待补节点", "来源覆盖与限制"),
+            "20260811-0800": ("来源覆盖与核验缺口",),
+        }
+        self.assertEqual(11, sum(len(titles) for titles in expected_titles.values()))
+
+        for report_id, titles in expected_titles.items():
+            with self.subTest(report_id=report_id):
+                document = documents[report_id]
+                self.assertEqual(titles, tuple(section.title for section in document.report_sections))
+                self.assertTrue(document.intro_blocks)
+                intro_text = " ".join(
+                    span.text for block in document.intro_blocks for span in block.spans
+                )
+                if document.meta.window:
+                    self.assertNotIn(document.meta.window, intro_text)
+                if document.meta.cutoff:
+                    self.assertNotIn(document.meta.cutoff, intro_text)
+
+        july29_intro = " ".join(
+            span.text
+            for block in documents["20260729-1800"].intro_blocks
+            for span in block.spans
+        )
+        self.assertIn("对比基准：V3", july29_intro)
+        self.assertIn("本报告仅作新闻传播排序", july29_intro)
+        self.assertNotIn("截止：2026-07-29 18:08", july29_intro)
+
+        postclose_intro = documents["20260730-1500"].intro_blocks
+        postclose_text = " ".join(span.text for block in postclose_intro for span in block.spans)
+        self.assertIn("交易日闸门：通过", postclose_text)
+        self.assertIn("窗口外旧闻只有在本窗口出现新增传播", postclose_text)
+        self.assertNotIn("事件窗口：2026-07-30 00:00—15:00", postclose_text)
+        self.assertEqual(
+            ["https://www.sse.com.cn/disclosure/dealinstruc/closed/"],
+            [span.url for block in postclose_intro for span in block.spans if span.url],
+        )
+        expected_intro_snippets = {
+            "20260730-0800": "前10条增加深度信息",
+            "20260731-0800": "财报反馈口径",
+            "20260803-0800": "仅取得日期的来源保留日期粒度",
+            "20260810-0800": "本稿提前生成，不冒充8月10日08:00实时快照",
+            "20260811-0800": "证券基础信息降级",
+        }
+        for report_id, snippet in expected_intro_snippets.items():
+            intro_text = " ".join(
+                span.text
+                for block in documents[report_id].intro_blocks
+                for span in block.spans
+            )
+            self.assertIn(snippet, intro_text)
+
+    def test_table_and_inline_sources_merge_in_stable_order_and_dedupe_by_url(self):
+        with TemporaryDirectory() as tmp:
+            report_path = Path(tmp) / "2026-08-01-0800-source-merge.md"
+            report_path.write_text(
+                "# 来源合并测试\n\n"
+                "## 1. 示例新闻\n\n"
+                "**热点权重：50/100**（覆盖10 + 变化10）\n\n"
+                "**核心信息：** [表内重复](https://example.com/table)；"
+                "[独有内联](https://example.com/inline)；"
+                "[危险链接](javascript:alert(1))。\n\n"
+                "| 传播渠道 | 北京时间 | 消息或热度 |\n"
+                "|---|---:|---|\n"
+                "| 官方 | 08:00 | [表格来源](https://example.com/table) |\n",
+                encoding="utf-8",
+            )
+            entry = CatalogEntry(
+                report_id="20260801-0800", path=report_path.name,
+                report_date="2026-08-01", slot="0800", label="盘前",
+            )
+
+            item = parse_report(report_path, entry).items[0]
+
+            self.assertEqual(
+                ["https://example.com/table", "https://example.com/inline"],
+                [source.url for source in item.sources],
+            )
+            self.assertEqual(("官方", "08:00", "表格来源"), (
+                item.sources[0].channel, item.sources[0].time_bj, item.sources[0].label,
+            ))
+
+    def test_actual_postclose_rank_one_keeps_unique_inline_ap_source(self):
+        item = self._documents()["20260730-1500"].items[0]
+        urls = [source.url for source in item.sources]
+
+        self.assertIn(
+            "https://apnews.com/article/stock-markets-rates-korea-ai-oil-99b5702d93a2b5c6e513fb952ccdcc92",
+            urls,
+        )
+        self.assertEqual(len(urls), len(set(urls)))
+
+    def test_themed_news_parses_score_breakdown_and_rejects_cross_theme_drift(self):
+        text = self._themed_report()
+        text = text.replace(
+            "**核心信息：** 共享核心。",
+            "**热点权重：90/100**（覆盖25 + 变化30）\n\n**核心信息：** 共享核心。",
+        )
+        document = self._parse_themed_report(text)
+        self.assertEqual("覆盖25 + 变化30", document.themes[0].items[0].score_breakdown)
+        self.assertEqual("", document.themes[0].items[1].score_breakdown)
+
+        drifted = text.replace("覆盖25 + 变化30", "覆盖24 + 变化30", 1)
+        with self.assertRaisesRegex(ValueError, "inconsistent event"):
+            self._parse_themed_report(drifted)
+
     def test_legacy_market_feedback_and_variable_labels_map_to_existing_fields(self):
         documents = self._documents()
         for report_id in ("20260730-0800", "20260730-1500"):
@@ -385,9 +498,9 @@ class WebReportParserTest(unittest.TestCase):
         items = [item for document in self._documents().values() for item in document.items]
 
         self.assertEqual(169, len(items))
-        self.assertEqual(316, sum(len(item.sources) for item in items))
+        self.assertEqual(317, sum(len(item.sources) for item in items))
         self.assertEqual(169, sum(bool(item.core) for item in items))
-        self.assertEqual(85, sum(bool(item.score_breakdown) for item in items))
+        self.assertEqual(109, sum(bool(item.score_breakdown) for item in items))
         self.assertEqual(74, sum(bool(item.signal) for item in items))
         self.assertEqual(74, sum(bool(item.market_feedback) for item in items))
         self.assertEqual(74, sum(bool(item.boundary) for item in items))

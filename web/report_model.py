@@ -56,6 +56,24 @@ class PendingItem:
 
 
 @dataclass(frozen=True)
+class ReportInline:
+    text: str
+    url: str = ""
+
+
+@dataclass(frozen=True)
+class ReportBlock:
+    kind: str
+    spans: Tuple[ReportInline, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class ReportSection:
+    title: str
+    blocks: Tuple[ReportBlock, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
 class ReportMeta:
     report_id: str
     report_date: str
@@ -88,3 +106,5 @@ class ReportDocument:
     news_index: Tuple[NewsIndexEntry, ...] = field(default_factory=tuple)
     themes: Tuple[ThemeGroup, ...] = field(default_factory=tuple)
     other_items: Tuple[NewsItem, ...] = field(default_factory=tuple)
+    intro_blocks: Tuple[ReportBlock, ...] = field(default_factory=tuple)
+    report_sections: Tuple[ReportSection, ...] = field(default_factory=tuple)
