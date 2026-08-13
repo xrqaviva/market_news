@@ -309,3 +309,11 @@ V2报告最终检查结果：
 - 题材内与“其他重要新闻”均保留单条完整详情、具体直链、北京时间、相关市场发布时段、可观察市场反应和边界。直接映射/板块代表分开，均不计分、不继承分数。待核验线索不计入任何排名或题材分。
 - 每轮先完成来源广度、财经/政策子流、海外宏观、半导体融资/基础设施、同义词扩展和最终候选处置对账六项控制。来源条目只可处于`ranked`、`merged_into:<event_id>`、`excluded:<明确原因>`或`pending_verification`，无状态即不能交付。
 - 题材报告行为、解析和渲染实现位于本地根目录与隔离网页工作树，尚未整合、推送、部署或发布。2026-08-11最终口径为24条连续主榜、五题材（420/184/166/165/161）和5条待核；豆包争议因缺截点前官方/主流媒体具体页转入待核，原“并购重组”因共同催化不足被拆解。现有权威记录仍称三项自动任务暂停，但本轮缺少Codex app自动化只读接口，未独立确认运行时状态；本轮未调用任何启停接口。用户裁定不新增对人类说明文字做固定措辞匹配的伪文档契约测试。
+
+## 14. 新闻雷达静态站早间运维（2026-08-01）
+
+- 手动构建：`python3 -m web.build --project-root /Users/aviva/Projects/market_news --output web/dist`。
+- 默认仅校验发布同步（dry-run）：`/Users/aviva/Projects/market_news/scripts/run_morning_site.sh`。该入口先构建 HTML，再调用 Python 发布器进行只读差异检查。
+- 只有显式设置 `SITE_PUBLISH_MODE=apply` 时才会完整发布：`SITE_PUBLISH_MODE=apply /Users/aviva/Projects/market_news/scripts/run_morning_site.sh`。该模式通过已测试的 Python 发布器完成校验后的同步、提交和普通 push（固定传入 `--apply --commit --push`）；脚本本身不含 Git 命令或凭据。
+- Markdown 报告的生成成功会被保留；如果 HTML 构建或站点发布失败，入口会以失败状态退出，但不会删除或回滚已经存在的 Markdown 报告。
+- 中午与盘后自动任务继续保持暂停。本入口不创建、修改或恢复任何自动任务。

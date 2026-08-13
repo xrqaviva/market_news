@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{PAGE_TITLE}}</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-report-id="{{REPORT_ID}}">
+  <div class="page-shell">
+    <section class="report-card">
+      <aside class="report-sidebar" data-component="report-archive"><div class="brand" aria-label="A股新闻雷达">RADAR</div>{{REPORT_ARCHIVE}}</aside>
+      <div class="report-workspace">
+        <header class="topbar">{{TOPBAR}}</header>
+        <label class="mobile-report-control">
+          <span>切换报告</span>
+          <select class="mobile-report-select" aria-label="切换报告"></select>
+        </label>
+        <main class="report-main">
+          {{FILTER_BAR}}{{THEME_CONTENT}}{{NEWS_ITEMS}}{{PENDING_ITEMS}}
+        </main>
+      </div>
+    </section>
+  </div>
+  <template id="news-toggle-template">
+    <button class="news-toggle" type="button" aria-expanded="false" aria-controls="">展开详情</button>
+  </template>
+  <script src="../assets/app.js" defer></script>
+</body>
+</html>
