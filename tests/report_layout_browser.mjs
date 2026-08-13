@@ -1,4 +1,4 @@
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -8,6 +8,25 @@ import { promisify } from "node:util";
 
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname), "..");
 const execFileAsync = promisify(execFile);
+const EXPECTED_REPORT_OUTPUT_BY_INPUT = new Map([
+  ["reports/2026-07-29-pure-news-hot-ranking-v4.md", "reports/2026-07-29-1800.html"],
+  ["reports/2026-07-30-1500-next-trading-day-news-baseline.md", "reports/2026-07-30-1500.html"],
+  ["reports/2026-07-30-premarket-news-ranking-v6-depth-test.md", "reports/2026-07-30-0800.html"],
+  ["reports/2026-07-31-0800-premarket-news-ranking.md", "reports/2026-07-31-0800.html"],
+  ["reports/2026-08-03-0800-premarket-news-ranking.md", "reports/2026-08-03-0800.html"],
+  ["reports/2026-08-10-0800-premarket-news-ranking.md", "reports/2026-08-10-0800.html"],
+  ["reports/2026-08-11-0800-premarket-news-ranking.md", "reports/2026-08-11-0800.html"],
+]);
+
+function assertSameStringSet(label, actual, expected) {
+  const actualSorted = [...actual].sort();
+  const expectedSorted = [...expected].sort();
+  if (JSON.stringify(actualSorted) !== JSON.stringify(expectedSorted)) {
+    throw new Error(
+      `${label} mismatch: ${JSON.stringify({ actual: actualSorted, expected: expectedSorted })}`,
+    );
+  }
+}
 
 async function findChrome() {
   const candidates = [
@@ -102,6 +121,7 @@ async function navigate(cdp, url) {
 const scratch = await mkdtemp(join(tmpdir(), "news-radar-layout-"));
 const freshDist = join(scratch, "dist");
 const report = join(freshDist, "reports/2026-08-11-0800.html");
+const sourceOnlyReport = join(freshDist, "reports/2026-08-10-0800.html");
 const profile = join(scratch, "chrome-profile");
 let chrome;
 let cdp;
@@ -117,6 +137,22 @@ try {
     throw new Error(`browser build root is not the isolated worktree: ${gitRoot}`);
   }
 
+  const [{ stdout: gitDirOutput }, { stdout: gitCommonDirOutput }, { stdout: superprojectOutput }] =
+    await Promise.all([
+      execFileAsync("git", ["rev-parse", "--git-dir"], { cwd: ROOT }),
+      execFileAsync("git", ["rev-parse", "--git-common-dir"], { cwd: ROOT }),
+      execFileAsync("git", ["rev-parse", "--show-superproject-working-tree"], { cwd: ROOT }),
+    ]);
+  const gitDir = resolve(gitRoot, gitDirOutput.trim());
+  const gitCommonDir = resolve(gitRoot, gitCommonDirOutput.trim());
+  if (gitDir === gitCommonDir || superprojectOutput.trim()) {
+    throw new Error(`browser build root must be a linked non-submodule worktree: ${JSON.stringify({
+      gitDir,
+      gitCommonDir,
+      superproject: superprojectOutput.trim(),
+    })}`);
+  }
+
   const { stdout: trackedReportOutput } = await execFileAsync(
     "git",
     ["ls-files", "reports/*.md"],
@@ -128,6 +164,30 @@ try {
       `fresh browser build must use exactly 7 tracked report Markdown files, got ${trackedReports.length}`,
     );
   }
+  assertSameStringSet(
+    "tracked report inputs",
+    trackedReports,
+    EXPECTED_REPORT_OUTPUT_BY_INPUT.keys(),
+  );
+  await Promise.all(trackedReports.map((relativePath) => access(join(gitRoot, relativePath))));
+
+  const diskReports = (await readdir(join(gitRoot, "reports")))
+    .filter((name) => /^\d{4}-\d{2}-\d{2}-.+\.md$/.test(name))
+    .map((name) => `reports/${name}`);
+  assertSameStringSet("tracked and on-disk standard report inputs", diskReports, trackedReports);
+  let untrackedMutationRejected = false;
+  try {
+    assertSameStringSet(
+      "controlled untracked standard report mutation",
+      [...diskReports, "reports/2099-12-31-untracked-mutation.md"],
+      trackedReports,
+    );
+  } catch {
+    untrackedMutationRejected = true;
+  }
+  if (!untrackedMutationRejected) {
+    throw new Error("report input guard accepted a controlled untracked standard report mutation");
+  }
 
   await execFileAsync("python3", [
     "-m",
@@ -137,6 +197,15 @@ try {
     "--output",
     freshDist,
   ], { cwd: gitRoot });
+
+  const manifest = JSON.parse(await readFile(join(freshDist, "reports.json"), "utf8"));
+  const manifestReports = manifest.reports.map((entry) => entry.url);
+  const builtReportPages = (await readdir(join(freshDist, "reports")))
+    .filter((name) => name.endsWith(".html"))
+    .map((name) => `reports/${name}`);
+  const expectedReportPages = [...EXPECTED_REPORT_OUTPUT_BY_INPUT.values()];
+  assertSameStringSet("fresh manifest report outputs", manifestReports, expectedReportPages);
+  assertSameStringSet("fresh HTML report outputs", builtReportPages, expectedReportPages);
 
   const chromePath = await findChrome();
   chrome = spawn(chromePath, [
@@ -218,6 +287,9 @@ try {
         borderBottomColor: style.borderBottomColor,
         borderLeftColor: style.borderLeftColor,
         borderTopStyle: style.borderTopStyle,
+        borderRightStyle: style.borderRightStyle,
+        borderBottomStyle: style.borderBottomStyle,
+        borderLeftStyle: style.borderLeftStyle,
         borderTopWidth: style.borderTopWidth,
         borderRightWidth: style.borderRightWidth,
         borderBottomWidth: style.borderBottomWidth,
@@ -284,7 +356,56 @@ try {
     };
     toggle.click();
     await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+    Array.from(document.querySelectorAll(".news-toggle[aria-expanded='false']")).forEach(
+      (candidate) => candidate.click(),
+    );
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
     const sourceList = firstDetail.querySelector("[data-component='sources']");
+    const commonLeftLine = {
+      checkedCount: 0,
+      violations: [],
+      coverage: {
+        detailRows: 0,
+        sourceOnlyRows: 0,
+        otherImportantRows: 0,
+        associationPaths: 0,
+        sourcePaths: 0,
+      },
+    };
+    document.querySelectorAll(".news-row").forEach((row) => {
+      const content = row.querySelector(".news-content");
+      const contentLeft = content.getBoundingClientRect().left;
+      if (row.dataset.detailKind === "analysis") commonLeftLine.coverage.detailRows += 1;
+      if (row.dataset.detailKind === "sources-inline") commonLeftLine.coverage.sourceOnlyRows += 1;
+      if (row.closest(".other-important-news")) commonLeftLine.coverage.otherImportantRows += 1;
+      commonLeftLine.coverage.associationPaths += content.querySelectorAll(
+        ":scope > .news-associations",
+      ).length;
+      commonLeftLine.coverage.sourcePaths += content.querySelectorAll(
+        ":scope > [data-component='sources'], :scope > .news-detail > [data-component='sources']",
+      ).length;
+
+      const alignedElements = [
+        ...content.querySelectorAll(
+          ":scope > h2, :scope > .news-summary, :scope > .news-associations, "
+          + ":scope > .news-detail, :scope > [data-component='sources'], "
+          + ":scope > .news-detail > [data-component='sources']",
+        ),
+        row.querySelector(".news-score"),
+      ].filter(Boolean);
+      alignedElements.forEach((element) => {
+        const left = element.getBoundingClientRect().left;
+        commonLeftLine.checkedCount += 1;
+        if (Math.abs(left - contentLeft) > 1) {
+          commonLeftLine.violations.push({
+            row: row.id,
+            element: element.className || element.tagName,
+            contentLeft,
+            left,
+          });
+        }
+      });
+    });
     const navState = () => ({
       currentCount: navigationLinks.filter(
         (candidate) => candidate.getAttribute("aria-current") === "location",
@@ -329,6 +450,7 @@ try {
       associationLeft: association.getBoundingClientRect().left,
       firstDetailLeft: firstDetail.getBoundingClientRect().left,
       firstSourceLeft: sourceList.getBoundingClientRect().left,
+      commonLeftLine,
       disclosure,
       initialNavigationCurrent,
       firstNavigationHref: navigationLinks[0].getAttribute("href"),
@@ -363,6 +485,30 @@ try {
     };
   })()`);
 
+  await navigate(cdp, pathToFileURL(sourceOnlyReport).href);
+  const sourceOnlyAlignment = await evaluate(cdp, `(() => {
+    const rows = Array.from(document.querySelectorAll(
+      ".news-row[data-detail-kind='sources-inline']",
+    ));
+    const violations = [];
+    let checkedCount = 0;
+    rows.forEach((row) => {
+      const content = row.querySelector(".news-content");
+      const contentLeft = content.getBoundingClientRect().left;
+      content.querySelectorAll(
+        ":scope > h2, :scope > .news-summary, :scope > [data-component='sources']",
+      ).forEach((element) => {
+        const left = element.getBoundingClientRect().left;
+        checkedCount += 1;
+        if (Math.abs(left - contentLeft) > 1) {
+          violations.push({ row: row.id, element: element.className, contentLeft, left });
+        }
+      });
+    });
+    return { rowCount: rows.length, checkedCount, violations };
+  })()`);
+
+  await navigate(cdp, "about:blank");
   await navigate(cdp, `${pathToFileURL(report).href}#${desktop.directTargetId}`);
   const directHashNavigation = await evaluate(cdp, `(() => {
     const links = Array.from(document.querySelectorAll(".theme-navigation a"));
@@ -374,33 +520,87 @@ try {
     };
   })()`);
 
-  const contrast = await evaluate(cdp, `(() => {
-    const selectors = [
-      ".report-eyebrow",
-      ".report-cutoff",
-      ".theme-navigation a",
-      ".theme-kicker",
-      ".theme-total",
-      ".theme-catalyst",
-      ".theme-risk",
-      ".theme-mappings",
-      ".news-rank",
-      ".news-summary",
-      ".news-score",
-      ".theme-association",
-      ".news-toggle",
-      ".news-detail p",
-      "[data-component='sources'] li",
-      "[data-component='sources'] a",
-      ".pending-details summary",
-      ".pending-body > p",
-      ".pending-item p",
-      "[data-component='pending-sources'] li",
-      "[data-component='pending-sources'] a",
+  const guardedClickNavigation = await evaluate(cdp, `(() => {
+    const links = Array.from(document.querySelectorAll(".theme-navigation a"));
+    const target = links[0];
+    const state = (label) => {
+      const current = links.filter((link) => link.getAttribute("aria-current") === "location");
+      return {
+        label,
+        hash: location.hash,
+        currentCount: current.length,
+        currentHref: current[0]?.getAttribute("href") ?? null,
+      };
+    };
+    const dispatchGuarded = (label, init, preventAtTarget = false) => {
+      const cancel = (event) => event.preventDefault();
+      (preventAtTarget ? target : document).addEventListener("click", cancel, { once: true });
+      target.dispatchEvent(new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        ...init,
+      }));
+      return state(label);
+    };
+    return [
+      state("initial"),
+      dispatchGuarded("defaultPrevented", {}, true),
+      dispatchGuarded("non-primary", { button: 1 }),
+      dispatchGuarded("ctrl", { ctrlKey: true }),
+      dispatchGuarded("meta", { metaKey: true }),
+      dispatchGuarded("shift", { shiftKey: true }),
+      dispatchGuarded("alt", { altKey: true }),
     ];
-    const parse = (color) => color.match(/[\\d.]+/g).map(Number);
+  })()`);
+
+  await evaluate(cdp, `(async () => {
+    const archiveLink = document.querySelector(
+      ".archive-date-group[data-report-date='2026-08-11'] .archive-date-link",
+    );
+    const changed = new Promise((resolvePromise) =>
+      addEventListener("hashchange", resolvePromise, { once: true })
+    );
+    archiveLink.click();
+    await changed;
+    document.querySelectorAll(".news-toggle[aria-expanded='false']").forEach(
+      (toggle) => toggle.click(),
+    );
+    document.querySelector(".pending-details").open = true;
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+  })()`);
+
+  const contrast = await evaluate(cdp, `(() => {
+    const parse = (color) => {
+      const channels = color.match(/[\\d.]+/g)?.map(Number) ?? [];
+      return {
+        red: channels[0] ?? 0,
+        green: channels[1] ?? 0,
+        blue: channels[2] ?? 0,
+        alpha: channels[3] ?? 1,
+      };
+    };
+    const composite = (foreground, background) => {
+      const alpha = foreground.alpha + background.alpha * (1 - foreground.alpha);
+      if (alpha === 0) return { red: 0, green: 0, blue: 0, alpha: 0 };
+      return {
+        red: (
+          foreground.red * foreground.alpha
+          + background.red * background.alpha * (1 - foreground.alpha)
+        ) / alpha,
+        green: (
+          foreground.green * foreground.alpha
+          + background.green * background.alpha * (1 - foreground.alpha)
+        ) / alpha,
+        blue: (
+          foreground.blue * foreground.alpha
+          + background.blue * background.alpha * (1 - foreground.alpha)
+        ) / alpha,
+        alpha,
+      };
+    };
     const luminance = (rgb) => {
-      const values = rgb.map((value) => {
+      const values = [rgb.red, rgb.green, rgb.blue].map((value) => {
         const channel = value / 255;
         return channel <= 0.04045
           ? channel / 12.92
@@ -408,40 +608,99 @@ try {
       });
       return 0.2126 * values[0] + 0.7152 * values[1] + 0.0722 * values[2];
     };
-    const effectiveBackground = (element) => {
+    const path = (element) => {
+      const parts = [];
       let node = element;
-      while (node) {
-        const background = getComputedStyle(node).backgroundColor;
-        const channels = parse(background);
-        if (channels.length < 4 || channels[3] > 0) return background;
+      while (node && node.nodeType === Node.ELEMENT_NODE) {
+        let part = node.tagName.toLowerCase();
+        if (node.id) {
+          part += '#' + node.id;
+          parts.unshift(part);
+          break;
+        }
+        const classes = Array.from(node.classList).slice(0, 2);
+        if (classes.length) part += '.' + classes.join('.');
+        const siblings = node.parentElement
+          ? Array.from(node.parentElement.children).filter(
+            (sibling) => sibling.tagName === node.tagName,
+          )
+          : [];
+        if (siblings.length > 1) part += ':nth-of-type(' + (siblings.indexOf(node) + 1) + ')';
+        parts.unshift(part);
         node = node.parentElement;
       }
-      return "rgb(255, 255, 255)";
+      return parts.join(' > ');
     };
-    const results = selectors.flatMap((selector) =>
-      Array.from(document.querySelectorAll(selector), (element, index) => {
-        const foreground = getComputedStyle(element).color;
+    const effectiveBackground = (element) => {
+      const ancestors = [];
+      for (let node = element; node; node = node.parentElement) ancestors.unshift(node);
+      return ancestors.reduce(
+        (background, node) => composite(parse(getComputedStyle(node).backgroundColor), background),
+        { red: 255, green: 255, blue: 255, alpha: 1 },
+      );
+    };
+    const scan = () => {
+      const seen = new Set();
+      const results = [];
+      document.querySelectorAll("*").forEach((element) => {
+        if (seen.has(element)) return;
+        seen.add(element);
+        const directText = Array.from(element.childNodes)
+          .filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim())
+          .map((node) => node.textContent.trim())
+          .join(" ");
+        if (!directText) return;
+        const style = getComputedStyle(element);
+        if (
+          parseFloat(style.fontSize) >= 18
+          || style.display === "none"
+          || style.visibility === "hidden"
+          || parseFloat(style.opacity) === 0
+          || element.getClientRects().length === 0
+        ) return;
         const background = effectiveBackground(element);
-        const foregroundLuminance = luminance(parse(foreground).slice(0, 3));
-        const backgroundLuminance = luminance(parse(background).slice(0, 3));
-        return {
-          selector,
-          index,
-          text: element.textContent.trim().slice(0, 40),
-          foreground,
-          background,
-          fontSize: getComputedStyle(element).fontSize,
+        const color = parse(style.color);
+        const foreground = composite(color, background);
+        const foregroundLuminance = luminance(foreground);
+        const backgroundLuminance = luminance(background);
+        results.push({
+          path: path(element),
+          text: directText.slice(0, 60),
+          foreground: style.color,
+          background: [background.red, background.green, background.blue, background.alpha],
+          fontSize: style.fontSize,
           ratio: (Math.max(foregroundLuminance, backgroundLuminance) + 0.05)
             / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05),
-        };
-      })
-    );
+        });
+      });
+      return results;
+    };
+
+    const mutationTarget = document.querySelector(".news-content h2");
+    const originalStyle = mutationTarget.getAttribute("style");
+    const mutationRow = mutationTarget.closest(".news-row");
+    const originalRowStyle = mutationRow.getAttribute("style");
+    mutationRow.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+    mutationTarget.style.color = "rgb(146, 156, 171)";
+    const mutationResults = scan();
+    const mutationPath = path(mutationTarget);
+    if (originalStyle === null) mutationTarget.removeAttribute("style");
+    else mutationTarget.setAttribute("style", originalStyle);
+    if (originalRowStyle === null) mutationRow.removeAttribute("style");
+    else mutationRow.setAttribute("style", originalRowStyle);
+    const results = scan();
     return {
       count: results.length,
       results,
       minimum: Math.min(...results.map((result) => result.ratio)),
+      mutation: {
+        path: mutationPath,
+        result: mutationResults.find((result) => result.path === mutationPath),
+      },
     };
   })()`);
+
+  await navigate(cdp, pathToFileURL(report).href);
 
   await evaluate(cdp, `(() => {
     const conservativeDetailsUa = document.createElement("style");
@@ -487,6 +746,17 @@ try {
     const group = document.querySelector(".archive-date-group[data-report-date='2026-08-11']");
     const link = group.querySelector(".archive-date-link");
     const slots = document.getElementById(link.getAttribute("aria-controls"));
+    const themeLinks = Array.from(document.querySelectorAll(".theme-navigation a"));
+    const themeCurrent = () => {
+      const current = themeLinks.filter(
+        (candidate) => candidate.getAttribute("aria-current") === "location",
+      );
+      return {
+        count: current.length,
+        href: current[0]?.getAttribute("href") ?? null,
+        firstHref: themeLinks[0].getAttribute("href"),
+      };
+    };
     const initial = {
       expanded: link.getAttribute("aria-expanded"),
       slotsHidden: slots.hidden,
@@ -501,6 +771,7 @@ try {
         hash: location.hash,
         expanded: link.getAttribute("aria-expanded"),
         slotsHidden: slots.hidden,
+        themeCurrent: themeCurrent(),
       },
     };
   })()`);
@@ -603,7 +874,12 @@ try {
     failures.push("desktop canvas/card background mismatch");
   }
   if (
-    desktop.card.borderTopStyle !== "solid"
+    [
+      desktop.card.borderTopStyle,
+      desktop.card.borderRightStyle,
+      desktop.card.borderBottomStyle,
+      desktop.card.borderLeftStyle,
+    ].some((value) => value !== "solid")
     || [
       desktop.card.borderTopWidth,
       desktop.card.borderRightWidth,
@@ -631,8 +907,17 @@ try {
   ) {
     failures.push("desktop sidebar padding/background mismatch");
   }
-  if (!desktop.bodyFont.includes("PingFang SC") || desktop.bodyFont.toLowerCase().includes("inter")) {
-    failures.push(`body font stack must prioritize Chinese system fonts and reject Inter: ${desktop.bodyFont}`);
+  const normalizedBodyFont = desktop.bodyFont.split(",").map(
+    (font) => font.trim().replace(/^['\"]|['\"]$/g, ""),
+  );
+  if (JSON.stringify(normalizedBodyFont) !== JSON.stringify([
+    "-apple-system",
+    "system-ui",
+    "Segoe UI",
+    "PingFang SC",
+    "sans-serif",
+  ])) {
+    failures.push(`body font stack order mismatch: ${JSON.stringify(normalizedBodyFont)}`);
   }
   if (desktop.reportTitleFontSize !== "21px") failures.push("report title size mismatch");
   if (desktop.themeTitleFontSize !== "25px") failures.push("theme title size mismatch");
@@ -660,6 +945,7 @@ try {
   if (
     desktop.secondTheme.borderTopWidth !== "6px"
     || desktop.secondTheme.borderTopColor !== "rgb(237, 240, 244)"
+    || desktop.secondTheme.borderTopStyle !== "solid"
   ) {
     failures.push("desktop adjacent themes need a 6px #edf0f4 separator");
   }
@@ -681,7 +967,8 @@ try {
   if (desktop.themeTotal.fontSize !== "8px") failures.push("desktop theme metadata size mismatch");
   if (desktop.newsList.borderTopWidth !== "2px") failures.push("desktop news list divider mismatch");
   if (
-    desktop.newsRow.gridTemplateColumns.split(" ")[0] !== "30px"
+    desktop.newsRow.gridTemplateColumns.trim().split(/\s+/).length !== 2
+    || desktop.newsRow.gridTemplateColumns.trim().split(/\s+/)[0] !== "30px"
     || Math.abs(desktop.newsRank.width - 30) > 1
     || desktop.newsRow.columnGap !== "9px"
     || desktop.newsRow.paddingTop !== "12px"
@@ -692,6 +979,23 @@ try {
     failures.push("desktop news rank typography mismatch");
   }
   if (desktop.newsSummary.fontSize !== "9px") failures.push("desktop news summary size mismatch");
+  if (
+    desktop.commonLeftLine.violations.length
+    || desktop.commonLeftLine.checkedCount < 1
+    || desktop.commonLeftLine.coverage.detailRows < 1
+    || desktop.commonLeftLine.coverage.otherImportantRows < 1
+    || desktop.commonLeftLine.coverage.associationPaths < 1
+    || desktop.commonLeftLine.coverage.sourcePaths < 1
+  ) {
+    failures.push(`news common left-line coverage/alignment mismatch: ${JSON.stringify(desktop.commonLeftLine)}`);
+  }
+  if (
+    sourceOnlyAlignment.rowCount < 1
+    || sourceOnlyAlignment.checkedCount < 1
+    || sourceOnlyAlignment.violations.length
+  ) {
+    failures.push(`source-only news common left-line mismatch: ${JSON.stringify(sourceOnlyAlignment)}`);
+  }
   if (
     !desktop.disclosure.closed.hidden
     || desktop.disclosure.closed.ariaExpanded !== "false"
@@ -746,27 +1050,40 @@ try {
   ) {
     failures.push(`direct-hash theme current state is wrong: ${JSON.stringify(directHashNavigation)}`);
   }
-  const lowContrast = contrast.results.filter((result) => result.ratio < 4.5);
-  const contrastBySelector = Object.values(contrast.results.reduce((summary, result) => {
-    const current = summary[result.selector] ?? {
-      selector: result.selector,
-      count: 0,
-      minimum: Infinity,
-      foreground: result.foreground,
-      background: result.background,
-    };
-    current.count += 1;
-    if (result.ratio < current.minimum) {
-      current.minimum = result.ratio;
-      current.foreground = result.foreground;
-      current.background = result.background;
-    }
-    summary[result.selector] = current;
-    return summary;
-  }, {}));
-  const lowContrastSummary = contrastBySelector.filter((result) => result.minimum < 4.5);
+  if (guardedClickNavigation.some((state) => (
+    state.hash !== `#${desktop.directTargetId}`
+    || state.currentCount !== 1
+    || state.currentHref !== `#${desktop.directTargetId}`
+  ))) {
+    failures.push(`guarded theme clicks polluted current state: ${JSON.stringify(guardedClickNavigation)}`);
+  }
+  if (!contrast.mutation.result || contrast.mutation.result.ratio >= 4.5) {
+    failures.push(`all-visible contrast scanner missed its controlled mutant: ${JSON.stringify(contrast.mutation)}`);
+  }
+  const expectedMutationBackground = [124, 124.5, 125.5, 1];
+  if (
+    !contrast.mutation.result
+    || contrast.mutation.result.background.some(
+      (channel, index) => Math.abs(channel - expectedMutationBackground[index]) > 0.01,
+    )
+  ) {
+    failures.push(`contrast scanner alpha composition is wrong: ${JSON.stringify({
+      actual: contrast.mutation.result?.background,
+      expected: expectedMutationBackground,
+    })}`);
+  }
+  const lowContrast = contrast.results
+    .filter((result) => result.ratio < 4.5)
+    .map(({ path, text, foreground, background, fontSize, ratio }) => ({
+      path,
+      text,
+      foreground,
+      background,
+      fontSize,
+      ratio,
+    }));
   if (lowContrast.length) {
-    failures.push(`small-text contrast below 4.5:1: ${JSON.stringify(lowContrastSummary)}`);
+    failures.push(`visible direct-text contrast below 4.5:1: ${JSON.stringify(lowContrast)}`);
   }
   if (
     !print.beforePrint.mediaMatches
@@ -787,6 +1104,9 @@ try {
     || archiveFirstClick.afterClick.hash !== "#archive-2026-08-11"
     || archiveFirstClick.afterClick.expanded !== "true"
     || archiveFirstClick.afterClick.slotsHidden
+    || archiveFirstClick.afterClick.themeCurrent.count !== 1
+    || archiveFirstClick.afterClick.themeCurrent.href
+      !== archiveFirstClick.afterClick.themeCurrent.firstHref
     || archiveSecondClick.hash !== "#archive-2026-08-10"
     || archiveSecondClick.firstDate.expanded !== "false"
     || !archiveSecondClick.firstDate.slotsHidden
@@ -836,7 +1156,17 @@ try {
   if (browserProblems.length) failures.push(`browser console: ${browserProblems.join(" | ")}`);
 
   console.log(JSON.stringify({
-    buildScope: { gitRoot, trackedReports },
+    buildScope: {
+      gitRoot,
+      gitDir,
+      gitCommonDir,
+      superproject: superprojectOutput.trim(),
+      trackedReports,
+      diskReports,
+      manifestReports,
+      builtReportPages,
+      untrackedMutationRejected,
+    },
     desktop: {
       shell: desktop.shell,
       card: desktop.card,
@@ -858,6 +1188,8 @@ try {
       bodyFont: desktop.bodyFont,
       bodyBackground: desktop.bodyBackground,
       contentLeftEdges: { newsContent: desktop.newsContentLeft, ...contentLeftEdges },
+      commonLeftLine: desktop.commonLeftLine,
+      sourceOnlyAlignment,
       disclosure: desktop.disclosure,
       initialNavigationCurrent: desktop.initialNavigationCurrent,
       clickedNavigationCurrent: desktop.clickedNavigationCurrent,
@@ -866,7 +1198,13 @@ try {
       targetTop: desktop.targetTop,
     },
     directHashNavigation,
-    contrast: { count: contrast.count, minimum: contrast.minimum, bySelector: contrastBySelector },
+    guardedClickNavigation,
+    contrast: {
+      count: contrast.count,
+      minimum: contrast.minimum,
+      mutation: contrast.mutation,
+      lowContrast,
+    },
     print,
     archiveFirstClick,
     archiveSecondClick,

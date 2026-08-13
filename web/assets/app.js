@@ -91,7 +91,7 @@
   function applyThemeNavigationCurrent(hash = window.location.hash) {
     const links = Array.from(document.querySelectorAll(".theme-navigation a[href^='#']"));
     const current = links.find((link) => link.getAttribute("href") === hash)
-      ?? (hash ? null : links[0]);
+      ?? links[0];
 
     links.forEach((link) => {
       if (link === current) link.setAttribute("aria-current", "location");
@@ -134,7 +134,17 @@
 
   document.addEventListener("click", (event) => {
     const themeLink = event.target.closest(".theme-navigation a[href^='#']");
-    if (themeLink) applyThemeNavigationCurrent(themeLink.getAttribute("href"));
+    if (
+      themeLink
+      && !event.defaultPrevented
+      && event.button === 0
+      && !event.ctrlKey
+      && !event.metaKey
+      && !event.shiftKey
+      && !event.altKey
+    ) {
+      applyThemeNavigationCurrent(themeLink.getAttribute("href"));
+    }
 
     const toggle = event.target.closest(".news-toggle");
     if (toggle) {
