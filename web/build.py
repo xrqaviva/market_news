@@ -341,14 +341,19 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
             document.meta.slot_label,
         ) if part
     )
+    report_window = (
+        '<p class="report-eyebrow">报告窗口 · {}</p>'.format(_escape(document.meta.window))
+        if document.meta.window else ""
+    )
     replacements = {
         "PAGE_TITLE": _escape(document.meta.title),
         "REPORT_ID": _escape(document.meta.report_id),
         "TOPBAR": (
-            '<div class="report-heading"><p class="report-eyebrow">{}</p>'
+            '<div class="report-heading"><p class="report-eyebrow">{}</p>{}'
             '<h1>{}</h1></div><p class="report-cutoff">截至 {}</p>'
         ).format(
             _escape(topbar_meta),
+            report_window,
             _escape(document.meta.title),
             _escape(document.meta.cutoff),
         ),

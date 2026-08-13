@@ -139,10 +139,14 @@ class WebBuildTest(unittest.TestCase):
 
         self.assertIn('<div class="page-shell">', page)
         self.assertIn('<section class="report-card">', page)
-        self.assertRegex(
-            page,
-            r'<aside class="report-sidebar"[^>]*>.*?class="brand".*?'
-            r'</aside>\s*<div class="report-workspace">',
+        self.assertIsNotNone(
+            re.search(
+                r'<aside class="report-sidebar"[^>]*>.*?class="brand".*?'
+                r'</aside>\s*<div class="report-workspace">',
+                page,
+                re.DOTALL,
+            ),
+            "report sidebar and workspace must remain siblings inside the report card",
         )
         self.assertIn('<p class="report-eyebrow">2026-08-11 · 盘前</p>', page)
         self.assertIn('<h1>题材测试</h1>', page)
@@ -470,10 +474,14 @@ if (scoreCell.innerHTML.includes('<strong>')) {
         instance_ids = re.findall(r'data-instance-id="([^"]+)"', page)
         self.assertEqual(24, len(set(event_ids)))
         self.assertEqual(len(instance_ids), len(set(instance_ids)))
+        self.assertIn('data-component="other-important-news"', page)
+        self.assertGreaterEqual(page.count('data-component="news-detail"'), 25)
+        for marker in ("发布时段", "关键信号/预期差", "市场反馈", "判断边界", "热度变化"):
+            self.assertIn(marker, page)
         self.assertEqual(25, page.count("<strong>发布时段</strong>"))
         self.assertIn(
-            '<div class="filter-meta"><span>数据截止</span>'
-            '<span>2026-08-11 08:30:39（北京时间，Asia/Shanghai）</span></div>',
+            '<p class="report-cutoff">截至 '
+            '2026-08-11 08:30:39（北京时间，Asia/Shanghai）</p>',
             page,
         )
         self.assertNotIn('class="filter-actions"', page)
@@ -634,6 +642,35 @@ if (scoreCell.innerHTML.includes('<strong>')) {
                     page = (output / "reports" / filename).read_text(encoding="utf-8")
                     for visible_value in visible_values:
                         self.assertIn(visible_value, page)
+
+    def test_fresh_build_preserves_every_nonempty_report_window(self):
+        expected_windows = {
+            "2026-07-30-0800.html": "2026-07-29 00:00—2026-07-30 10:00（北京时间）",
+            "2026-07-30-1500.html": "2026-07-30 00:00—15:00（北京时间）",
+            "2026-07-31-0800.html": "2026-07-30 00:00—2026-07-31 08:29（北京时间）",
+            "2026-08-03-0800.html": (
+                "2026-07-31 00:00—2026-08-02 16:34（北京时间）。这是周日提前生成的可读版本，"
+                "不冒充8月3日08:00实时快照；周日晚至周一08:00的新消息尚未覆盖。"
+            ),
+            "2026-08-10-0800.html": (
+                "2026-08-07 00:00—2026-08-09 19:44:27（北京时间），"
+                "完整覆盖前一交易日及周末已发生信息。"
+            ),
+            "2026-08-11-0800.html": (
+                "2026-08-10 00:00:00—2026-08-11 08:30:39（北京时间，Asia/Shanghai）；"
+                "前一交易日 2026-08-10 当天完整纳入。"
+            ),
+        }
+
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            for filename, report_window in expected_windows.items():
+                with self.subTest(filename=filename):
+                    page = (output / "reports" / filename).read_text(encoding="utf-8")
+                    self.assertIn(
+                        '<p class="report-eyebrow">报告窗口 · {}</p>'.format(report_window),
+                        page,
+                    )
 
     def test_rendered_rows_keep_title_and_core_categories_for_filtering(self):
         with TemporaryDirectory() as tmp:
