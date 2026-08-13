@@ -1,5 +1,7 @@
 # A股短线新闻雷达项目交接
 
+> **当前操作入口：** 新会话、Codex CLI 或迁移环境请先完整阅读 [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md)。该文件是 Markdown 生成、HTML 构建、验收、发布和安全边界的单一权威操作手册；本文以下内容保留为历史交接与背景。
+
 > 交接时间：2026-07-29（Asia/Shanghai）
 > 工作目录：`/Users/aviva/Projects/market_news`
 > 当前环境：Codex桌面客户端，Chrome控制已连接；目录不是 Git 仓库。

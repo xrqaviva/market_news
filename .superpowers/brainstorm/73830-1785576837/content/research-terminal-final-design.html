@@ -1,0 +1,53 @@
+<style>
+  .terminal-shell{border:1px solid #d8dee9;border-radius:20px;overflow:hidden;background:#eef2f7;box-shadow:0 22px 60px rgba(15,23,42,.14);color:#152033}
+  .terminal-top{height:58px;background:#0b1220;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+  .terminal-brand{display:flex;align-items:center;gap:10px;font-weight:850;letter-spacing:.03em}.terminal-brand i{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#2563eb;font-style:normal}
+  .terminal-meta{display:flex;gap:17px;color:#94a3b8;font-size:12px}.terminal-meta b{color:#fff}
+  .terminal-body{display:grid;grid-template-columns:205px minmax(0,1fr);min-height:620px}
+  .archive{background:#111827;color:#9aa7b9;padding:18px 14px}.archive-title{font-size:10px;letter-spacing:.14em;color:#64748b;font-weight:800;margin:12px 8px 8px}
+  .archive-item{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-radius:9px;font-size:12px;margin:2px 0}.archive-item.active{background:#223047;color:#fff}.archive-item small{color:#64748b}.archive-item.active small{color:#93c5fd}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;padding:0 18px 13px}.filter{border:1px solid #dce2ea;background:#fff;color:#536074;border-radius:999px;padding:6px 10px;font-size:11px}.filter.on{background:#172033;color:#fff;border-color:#172033}
+  .content-head{padding:18px 18px 11px;display:flex;align-items:flex-end;justify-content:space-between}.content-head h3{font-size:20px;margin:0 0 3px}.content-head p{margin:0;color:#718096;font-size:12px}.cutoff{background:#fff;border:1px solid #dce2ea;border-radius:10px;padding:7px 10px;font-size:11px;color:#526175}
+  .list{margin:0 18px 18px;border:1px solid #dce2ea;border-radius:14px;overflow:hidden;background:#fff}.row{display:grid;grid-template-columns:30px minmax(0,1fr) 58px;gap:9px;padding:12px 13px;border-bottom:1px solid #edf0f4;align-items:start}.row:last-child{border-bottom:0}.row.expanded{background:#fbfdff;box-shadow:inset 3px 0 #2563eb}.rank{width:25px;height:25px;display:grid;place-items:center;border-radius:8px;background:#edf3ff;color:#1d4ed8;font-size:11px;font-weight:850}.title{font-size:13px;font-weight:790;line-height:1.35}.summary{font-size:11px;color:#657287;line-height:1.5;margin-top:4px}.trail{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.chip{font-size:9px;color:#596579;background:#f1f4f8;border-radius:5px;padding:3px 5px}.chip.up{color:#11734b;background:#eaf8f1}.chip.down{color:#b42318;background:#fff0f0}.chip.split{color:#8a4f0a;background:#fff6df}.score{text-align:right;font-size:17px;font-weight:860;color:#172033}.score small{display:block;color:#8995a8;font-size:8px;font-weight:600;margin-top:1px}.details{grid-column:2/4;margin-top:3px;background:#f5f8fc;border:1px solid #dbe4ef;border-radius:10px;padding:10px 11px}.details-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.detail{font-size:10px;line-height:1.5;color:#566377}.detail b{display:block;font-size:9px;letter-spacing:.06em;color:#1f2937;margin-bottom:2px}.sources{margin-top:8px;padding-top:8px;border-top:1px solid #dbe4ef;display:flex;gap:6px;flex-wrap:wrap}.source{font-size:9px;text-decoration:underline;color:#2457c5}.mobile-note{margin-top:16px;padding:13px 15px;border:1px dashed var(--border);border-radius:13px;color:var(--muted);font-size:13px}.approve{margin-top:18px;display:flex;justify-content:flex-end}.approve button{border:0;border-radius:10px;background:#2563eb;color:#fff;padding:11px 18px;font-weight:750;cursor:pointer}
+  @media(max-width:850px){.terminal-body{grid-template-columns:1fr}.archive{display:none}.terminal-meta{display:none}.details-grid{grid-template-columns:1fr}.row{grid-template-columns:28px minmax(0,1fr) 48px}.terminal-shell{border-radius:14px}}
+</style>
+
+<h2>B方案精修稿：A股新闻雷达研究终端</h2>
+<p class="subtitle">模板固定，日报只替换内容。桌面端以报告档案为主导航，移动端折叠为顶部日期/时段选择器。</p>
+
+<div class="terminal-shell">
+  <div class="terminal-top">
+    <div class="terminal-brand"><i>R</i><span>A股新闻雷达</span></div>
+    <div class="terminal-meta"><span>当前报告 <b>2026-07-31 08:00盘前</b></span><span>截点 <b>08:29 CST</b></span></div>
+  </div>
+  <div class="terminal-body">
+    <aside class="archive">
+      <div class="archive-title">报告档案</div>
+      <div class="archive-item active"><span>07月31日 · 盘前</span><small>22</small></div>
+      <div class="archive-item"><span>07月30日 · 盘后</span><small>18</small></div>
+      <div class="archive-item"><span>07月30日 · 盘前</span><small>20</small></div>
+      <div class="archive-item"><span>07月29日 · 收盘</span><small>35</small></div>
+      <div class="archive-title">快捷筛选</div>
+      <div class="archive-item"><span>政策与宏观</span><small>4</small></div>
+      <div class="archive-item"><span>公司与财报</span><small>7</small></div>
+      <div class="archive-item"><span>产业与主题</span><small>8</small></div>
+      <div class="archive-item"><span>旧闻异动</span><small>3</small></div>
+    </aside>
+    <main>
+      <div class="content-head"><div><h3>盘前热点主榜</h3><p>热点权重统一排序 · 所有时间为北京时间</p></div><div class="cutoff">07-30 00:00 → 07-31 08:29</div></div>
+      <div class="filters"><span class="filter on">全部 22</span><span class="filter">政策</span><span class="filter">财报</span><span class="filter">产业</span><span class="filter">热度异动</span></div>
+      <div class="list">
+        <div class="row"><span class="rank">1</span><div><div class="title">政治局部署增量政策、逆周期调节和“人工智能+”</div><div class="summary">部署下半年经济工作，提出及时谋划增量政策并深入实施“人工智能+”。</div><div class="trail"><span class="chip">新华社 07-30</span><span class="chip up">NewsNow 第1</span><span class="chip">跨平台新出现</span></div></div><div class="score">96<small>热点权重</small></div></div>
+        <div class="row expanded"><span class="rank">2</span><div><div class="title">微软单日上涨15.5%，美股科技和存储股同步反弹</div><div class="summary">Azure收入增长43%，年度Azure收入首次超过1000亿美元。</div><div class="trail"><span class="chip">财报 04:00</span><span class="chip up">即时定价：正向</span><span class="chip">次日 +15.5%</span></div></div><div class="score">94<small>热点权重</small></div><div class="details"><div class="details-grid"><div class="detail"><b>财报后反馈</b>同期不同来源盘后快照约+9% / +2.4%，后续约+8%；次日常规收盘+15.5%。</div><div class="detail"><b>判断边界</b>微软财报可解释自身波动，半导体群体反弹还包含各公司财报、估值和仓位因素。</div></div><div class="sources"><span class="source">微软IR · 04:00</span><span class="source">AP · 05:20</span><span class="source">Axios · 05:23</span><span class="source">财联社 · 08:21</span></div></div></div>
+        <div class="row"><span class="rank">3</span><div><div class="title">亚马逊AWS增长37%，年度资本开支指引升至2200亿美元</div><div class="summary">AWS创18个季度最快增速，盘后一度上涨逾9%。</div><div class="trail"><span class="chip">AP 04:26</span><span class="chip up">即时定价：正向</span></div></div><div class="score">91<small>热点权重</small></div></div>
+        <div class="row"><span class="rank">4</span><div><div class="title">胡塞武装宣布封锁沙特航运，曼德海峡通行量下降30%</div><div class="summary">风险从霍尔木兹扩散至红海—曼德海峡替代运输链。</div><div class="trail"><span class="chip">AP 01:01</span><span class="chip">百度第6</span></div></div><div class="score">89<small>热点权重</small></div></div>
+        <div class="row"><span class="rank">5</span><div><div class="title">苹果第三财季收入1094亿美元，EPS含0.11美元关税退款</div><div class="summary">业绩超过一致预期，但盘后价格反馈由-2.3%扩大至约-4%。</div><div class="trail"><span class="chip">AP 04:54</span><span class="chip down">即时定价：负向</span></div></div><div class="score">85<small>热点权重</small></div></div>
+        <div class="row"><span class="rank">6</span><div><div class="title">三星电子第二季度营业利润达到89.5万亿韩元</div><div class="summary">收盘-0.7%，同期KOSPI-1.2%，绝对偏弱、相对略强。</div><div class="trail"><span class="chip">AP 08:55</span><span class="chip split">即时定价：分化</span></div></div><div class="score">82<small>热点权重</small></div></div>
+        <div class="row"><span class="rank">9</span><div><div class="title">宇树科技8月5日初步询价、8月10日申购</div><div class="summary">股票代码688836，网上申购代码787836；当前发行安排未列上市日期。</div><div class="trail"><span class="chip">法定披露 07-31</span><span class="chip">IPO日程</span></div></div><div class="score">76<small>热点权重</small></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="mobile-note"><b>移动端：</b>左侧档案折叠为顶部“日期 / 时段”选择器；新闻仍按单列紧凑展示，点击展开详情，所有核验链接保持可点。</div>
+<div class="approve"><button data-choice="approve-terminal" onclick="toggleSelect(this)">确认采用此模板</button></div>

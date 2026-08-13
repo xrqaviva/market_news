@@ -143,6 +143,22 @@ class ProjectGuideContractTest(unittest.TestCase):
         self.assertIn("GitHub Pages", text)
         self.assertIn("暂停", text)
 
+    def test_zero_silent_drop_and_recall_reconciliation_are_mandatory(self):
+        text = GUIDE.read_text(encoding="utf-8")
+        for phrase in (
+            "零静默丢弃",
+            "ranked",
+            "merged_into:<event_id>",
+            "excluded:<明确原因>",
+            "pending_verification",
+            "主体 + 动作 + 对象 + 发生时间",
+            "跨媒体覆盖对账",
+            "Top 10只决定深度",
+            "不得冻结来源发现",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, text)
+
     def test_security_boundaries_are_explicit(self):
         text = GUIDE.read_text(encoding="utf-8")
         for forbidden_source in ("密码", "Cookie", "Token", "Local Storage", "浏览器历史"):

@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "report_id": "2026-08-11-0800-manual",
+  "actual_cutoff_bjt": "2026-08-11T08:30:39+08:00",
+  "window_bjt": {
+    "start": "2026-08-10T00:00:00+08:00",
+    "end": "2026-08-11T08:30:39+08:00"
+  },
+  "historical_baseline": "evidence/2026-08-10-0800-heat-baseline.json",
+  "comparison_rule": "Only the same permanent URL and the same metric at two timestamps are comparable.",
+  "strict_comparable_urls": 9,
+  "platform_status": {
+    "weibo": "logged_in_fixed_posts_collectable_and_public_rank_snapshot_available",
+    "x": "logged_in_fixed_posts_collectable",
+    "hotflashnews": "public_rank_pages_and_daily_archive_available",
+    "newsnow": "dynamic_page_loaded_but_current_body_not_reproducible",
+    "xueqiu": "no_new_specific_node_obtained",
+    "taoguba": "no_new_specific_node_obtained",
+    "eastmoney_popularity": "no_new_specific_node_obtained",
+    "jiuyan": "no_new_specific_node_obtained",
+    "kaipanla": "no_new_specific_node_obtained"
+  },
+  "rank_snapshots": {
+    "weibo_observed_bjt": "2026-08-11T08:19:42+08:00",
+    "weibo": {
+      "iphone18pro_leak": 8,
+      "apple_september_event": 18,
+      "trump_demands_iran_compensation": 25,
+      "ai_jobs_commentary": 29
+    },
+    "baidu_observed_bjt": "2026-08-11T08:01:31+08:00",
+    "baidu": {
+      "doubao_hotel_commission_response": 4,
+      "us_chip_optical_selloff": 15
+    },
+    "zhihu_observed_bjt": "2026-08-11T08:19:42+08:00",
+    "zhihu": {
+      "bytedance_robotics_head_joins_xiaomi": 11,
+      "berkshire_q2": 14
+    }
+  },
+  "items": [
+    {
+      "event": "beijing_housing_policy",
+      "platform": "weibo",
+      "url": "https://weibo.com/2803301701/RckAe76DZ",
+      "published_bjt": "2026-08-07T21:26:00+08:00",
+      "observed_bjt": "2026-08-11T08:27:00+08:00",
+      "metrics": {"reposts": 162, "comments": 223, "likes": 1053},
+      "previous_metrics": {"reposts": 160, "comments": 222, "likes": 1030},
+      "change": {"reposts": 2, "comments": 1, "likes": 23},
+      "label": "long_tail_accumulation"
+    },
+    {
+      "event": "beijing_housing_policy",
+      "platform": "weibo",
+      "url": "https://weibo.com/1699432410/RckytnBZ1",
+      "published_bjt": "2026-08-07T21:22:00+08:00",
+      "observed_bjt": "2026-08-11T08:27:00+08:00",
+      "metrics": {"reposts": 365, "comments": 115, "likes": 646},
+      "previous_metrics": {"reposts": 367, "comments": 114, "likes": 642},
+      "change": {"reposts": -2, "comments": 1, "likes": 4},
+      "label": "flat_metric_cleanup_possible"
+    },
+    {
+      "event": "unitree_ipo",
+      "platform": "weibo",
+      "url": "https://weibo.com/1896820725/Rcy5YaEEe",
+      "published_bjt": "2026-08-09T07:50:00+08:00",
+      "observed_bjt": "2026-08-11T08:27:00+08:00",
+      "metrics": {"reposts": 17, "comments": 57, "likes": 1347},
+      "previous_metrics": {"reposts": 17, "comments": 53, "likes": 1136},
+      "change": {"reposts": 0, "comments": 4, "likes": 211, "likes_pct": 18.57},
+      "label": "vertical_heat_rising"
+    },
+    {
+      "event": "unitree_strategic_placement",
+      "platform": "weibo",
+      "url": "https://weibo.com/1896820725/RceX0f4do",
+      "published_bjt": "2026-08-07T07:06:00+08:00",
+      "observed_bjt": "2026-08-11T08:27:00+08:00",
+      "metrics": {"reposts": 5, "comments": 37, "likes": 1197},
+      "previous_metrics": {"reposts": 5, "comments": 37, "likes": 1192},
+      "change": {"reposts": 0, "comments": 0, "likes": 5},
+      "label": "flat"
+    },
+    {
+      "event": "ai_cluster_100k",
+      "platform": "weibo",
+      "url": "https://weibo.com/5707192315/RcBqUddSY",
+      "published_bjt": "2026-08-09T16:20:00+08:00",
+      "observed_bjt": "2026-08-11T08:27:00+08:00",
+      "metrics": {"reposts": null, "comments": 1, "likes": 21},
+      "previous_metrics": {"reposts": null, "comments": 1, "likes": 15},
+      "change": {"comments": 0, "likes": 6},
+      "label": "low_level_accumulation"
+    },
+    {
+      "event": "ai_cluster_100k",
+      "platform": "weibo",
+      "url": "https://weibo.com/2134003760/Rbv4IFwgC",
+      "published_bjt": "2026-08-02T10:19:00+08:00",
+      "observed_bjt": "2026-08-11T08:27:00+08:00",
+      "metrics": {"reposts": 209, "comments": 5, "likes": 623},
+      "previous_metrics": {"reposts": 209, "comments": 5, "likes": 623},
+      "change": {"reposts": 0, "comments": 0, "likes": 0},
+      "label": "flat"
+    },
+    {
+      "event": "us_jobs",
+      "platform": "x",
+      "url": "https://x.com/KobeissiLetter/status/2085705690794856885",
+      "published_bjt": "2026-08-07T20:32:00+08:00",
+      "observed_bjt": "2026-08-11T08:28:00+08:00",
+      "metrics": {"replies": 510, "reposts": 1732, "likes": 9789, "views": 1985974},
+      "previous_metrics": {"replies": 507, "reposts": 1727, "likes": 9775, "views": 1952233},
+      "change": {"replies": 3, "reposts": 5, "likes": 14, "views": 33741, "views_pct": 1.73},
+      "label": "long_tail_accumulation"
+    },
+    {
+      "event": "us_jobs",
+      "platform": "x",
+      "url": "https://x.com/byHeatherLong/status/2085706928231944558",
+      "published_bjt": "2026-08-07T20:37:00+08:00",
+      "observed_bjt": "2026-08-11T08:28:00+08:00",
+      "metrics": {"replies": 270, "reposts": 1481, "likes": 2529, "views": 552931},
+      "previous_metrics": {"replies": 263, "reposts": 1462, "likes": 2498, "views": 539483},
+      "change": {"replies": 7, "reposts": 19, "likes": 31, "views": 13448, "views_pct": 2.49},
+      "label": "long_tail_accumulation"
+    },
+    {
+      "event": "hormuz_conditions",
+      "platform": "x",
+      "url": "https://x.com/HormuzReport/status/2086126445051687039",
+      "published_bjt": "2026-08-09T00:24:00+08:00",
+      "observed_bjt": "2026-08-11T08:28:00+08:00",
+      "metrics": {"replies": 820, "reposts": 2712, "likes": 8493, "views": 811817},
+      "previous_metrics": {"replies": 772, "reposts": 2538, "likes": 7968, "views": 710118},
+      "change": {"replies": 48, "reposts": 174, "likes": 525, "views": 101699, "views_pct": 14.32},
+      "label": "clearly_rising_not_surge",
+      "note": "Engagement is verifiable; factual conditions require authoritative-source confirmation."
+    }
+  ],
+  "conclusion": "Nine URLs have strict same-field comparisons. Hormuz and Unitree are rising; no item is labeled as an explosive surge."
+}

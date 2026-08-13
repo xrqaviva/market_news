@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "report_id": "2026-08-10-0800-premarket",
+  "actual_cutoff_bjt": "2026-08-09T19:44:27+08:00",
+  "intended_slot_bjt": "2026-08-10T08:00:00+08:00",
+  "window_bjt": {
+    "start": "2026-08-07T00:00:00+08:00",
+    "end": "2026-08-09T19:44:27+08:00"
+  },
+  "historical_baseline": "evidence/2026-08-03-0800-heat-baseline.json",
+  "comparison_rule": "Only the same permanent URL and the same metric at two timestamps are comparable.",
+  "strict_dual_time_comparisons": 0,
+  "platform_status": {
+    "weibo": "logged_in_and_collectable",
+    "x": "logged_in_and_collectable",
+    "xueqiu": "logged_in_dynamic_search_unstable",
+    "taoguba": "not_logged_in",
+    "newsnow": "public_page_working",
+    "cls": "public_fields_working_no_membership",
+    "kaipanla": "app_first_unavailable"
+  },
+  "items": [
+    {
+      "event": "beijing_housing_policy",
+      "platform": "weibo",
+      "url": "https://weibo.com/2803301701/RckAe76DZ",
+      "published_bjt": "2026-08-07T21:26:00+08:00",
+      "observed_bjt": "2026-08-09T19:44:27+08:00",
+      "metrics": {"reposts": 160, "comments": 222, "likes": 1030},
+      "comparable": false,
+      "change": null
+    },
+    {
+      "event": "beijing_housing_policy",
+      "platform": "weibo",
+      "url": "https://weibo.com/1699432410/RckytnBZ1",
+      "published_bjt": "2026-08-07T21:22:00+08:00",
+      "observed_bjt": "2026-08-09T19:44:27+08:00",
+      "metrics": {"reposts": 367, "comments": 114, "likes": 642},
+      "comparable": false,
+      "change": null
+    },
+    {
+      "event": "unitree_ipo",
+      "platform": "weibo",
+      "url": "https://weibo.com/1896820725/Rcy5YaEEe",
+      "published_bjt": "2026-08-09T07:50:00+08:00",
+      "observed_bjt": "2026-08-09T19:44:27+08:00",
+      "metrics": {"reposts": 17, "comments": 53, "likes": 1136},
+      "comparable": false,
+      "change": null
+    },
+    {
+      "event": "unitree_strategic_placement",
+      "platform": "weibo",
+      "url": "https://weibo.com/1896820725/RceX0f4do",
+      "published_bjt": "2026-08-07T07:06:00+08:00",
+      "observed_bjt": "2026-08-09T19:44:27+08:00",
+      "metrics": {"reposts": 5, "comments": 37, "likes": 1192},
+      "comparable": false,
+      "change": null
+    },
+    {
+      "event": "ai_cluster_100k",
+      "platform": "weibo",
+      "url": "https://weibo.com/5707192315/RcBqUddSY",
+      "published_bjt": "2026-08-09T16:20:00+08:00",
+      "observed_bjt": "2026-08-09T19:44:27+08:00",
+      "metrics": {"reposts": null, "comments": 1, "likes": 15},
+      "comparable": false,
+      "change": null
+    },
+    {
+      "event": "ai_cluster_100k",
+      "platform": "weibo",
+      "url": "https://weibo.com/2134003760/Rbv4IFwgC",
+      "published_bjt": "2026-08-02T10:19:00+08:00",
+      "observed_bjt": "2026-08-09T19:44:27+08:00",
+      "metrics": {"reposts": 209, "comments": 5, "likes": 623},
+      "comparable": false,
+      "change": null,
+      "note": "Older related post, not the same URL as the new official propagation node."
+    },
+    {
+      "event": "us_jobs",
+      "platform": "x",
+      "url": "https://x.com/KobeissiLetter/status/2085705690794856885",
+      "published_bjt": "2026-08-07T20:30:00+08:00",
+      "observed_bjt": "2026-08-09T19:44:27+08:00",
+      "metrics": {"replies": 507, "reposts": 1727, "likes": 9775, "views": 1952233},
+      "comparable": false,
+      "change": null
+    },
+    {
+      "event": "us_jobs",
+      "platform": "x",
+      "url": "https://x.com/byHeatherLong/status/2085706928231944558",
+      "published_bjt": "2026-08-07T20:35:00+08:00",
+      "observed_bjt": "2026-08-09T19:44:27+08:00",
+      "metrics": {"replies": 263, "reposts": 1462, "likes": 2498, "views": 539483},
+      "comparable": false,
+      "change": null
+    },
+    {
+      "event": "hormuz_conditions",
+      "platform": "x",
+      "url": "https://x.com/HormuzReport/status/2086126445051687039",
+      "published_bjt": "2026-08-09T00:44:00+08:00",
+      "observed_bjt": "2026-08-09T19:44:27+08:00",
+      "metrics": {"replies": 772, "reposts": 2538, "likes": 7968, "views": 710118},
+      "comparable": false,
+      "change": null,
+      "note": "Engagement only; factual conditions are verified against AP."
+    }
+  ],
+  "newsnow_snapshot": {
+    "observed_bjt": "2026-08-09T19:44:27+08:00",
+    "baidu": {
+      "typhoon_yuhuan": 1,
+      "ai_cluster_100k": 3,
+      "iran_leaders_meeting": 6,
+      "typhoon_yueqing": 7,
+      "former_bytedance_robotics_head_joins_xiaomi": 20
+    },
+    "cls": {
+      "tariff_refunds": 1,
+      "us_critical_minerals": 2,
+      "unitree_ipo": 3,
+      "beijing_housing": 4,
+      "apple_qwen_jiangbolong": 5,
+      "us_week": 6,
+      "ai_hardware_rental": 7,
+      "weekend_roundup": 8,
+      "berkshire": 9,
+      "us_close": 10,
+      "china_cpi_ppi": 11
+    }
+  },
+  "conclusion": "No event has a valid same-URL, same-field two-time comparison in this run. New and reheated nodes participate in ranking without being labeled as strict surges."
+}

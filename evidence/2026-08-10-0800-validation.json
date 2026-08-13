@@ -1,0 +1,37 @@
+{
+  "report": "reports/2026-08-10-0800-premarket-news-ranking.md",
+  "validated_at_bjt": "2026-08-09",
+  "result": "pass",
+  "checks": {
+    "trading_day_gate": {
+      "pass": true,
+      "source": "https://www.sse.com.cn/disclosure/dealinstruc/closed/c/c_20251222_10802510.shtml",
+      "previous_trading_day": "2026-08-07",
+      "target_trading_day": "2026-08-10"
+    },
+    "actual_cutoff_disclosed": true,
+    "future_snapshot_not_claimed": true,
+    "all_times_beijing": true,
+    "total_items": 25,
+    "top10_items": 10,
+    "compact_items": 15,
+    "scores_descending": true,
+    "top10_component_sums_valid": true,
+    "top10_depth_complete": true,
+    "ipo_schedule_complete": true,
+    "earnings_market_feedback_present": true,
+    "strict_dual_time_comparisons": 0,
+    "strict_surge_claims_made": false,
+    "external_link_count": 39,
+    "social_homepages_used_as_post_verification": false,
+    "source_failures_and_degradations_disclosed": true,
+    "html_generated": false,
+    "github_pushed": false,
+    "automations_changed": false
+  },
+  "notes": [
+    "The official 08:00 run must collect the delta from 2026-08-09 19:44:27 through 2026-08-10 08:00 and rerank.",
+    "NewsNow public rankings were available in this run.",
+    "Xueqiu dynamic search was unstable and Taoguba was not logged in; empty results were not treated as zero heat."
+  ]
+}

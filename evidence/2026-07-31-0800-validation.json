@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-07-31-0800-manual",
+  "validated_at_bj": "2026-07-31T08:34:34+08:00",
+  "delivery_completed_at_bj": "2026-07-31T08:35:36+08:00",
+  "correction_validated_at_bj": "2026-08-01T12:45:49+08:00",
+  "elapsed_seconds": 956,
+  "within_15_minute_sla": false,
+  "continued_until_complete": true,
+  "report": "reports/2026-07-31-0800-premarket-news-ranking.md",
+  "evidence": "evidence/2026-07-31-0800-news-radar-evidence.md",
+  "heat_baseline": "evidence/2026-07-31-0800-heat-baseline.json",
+  "passed": true,
+  "checks": {
+    "top10_titles": true,
+    "compact_items_11_to_22": true,
+    "score_count_22": true,
+    "scores_descending": true,
+    "top10_breakdown_sums": true,
+    "top10_depth_fields": true,
+    "top10_channel_tables": true,
+    "specific_link_count_at_least_40": true,
+    "titles_exclude_heat_judgments": true,
+    "no_trading_advice": true,
+    "heat_baseline_json_valid": true,
+    "independent_review_fixes_applied": true,
+    "earnings_reaction_contract": true,
+    "unitree_subscription_schedule": true,
+    "short_term_reaction_not_long_term_endorsement": true
+  },
+  "independent_review": {
+    "initial_result": "blocking_issues_found",
+    "fixes": [
+      "Removed high-heat wording from Xiaomi title",
+      "Removed concentrated-propagation wording from buyback title",
+      "Replaced Mideast risk wording with the Houthi blockade claim and a 30% transit decline",
+      "Kept Amazon AP article as the permanent evidence page and identified the Amazon IR URL as a call entry"
+    ],
+    "post_fix_validation": "passed"
+  },
+  "correction_review": {
+    "reviewer": "independent read-only financial reviewer",
+    "initial_result": "one_blocking_and_two_non_blocking_findings",
+    "fixes": [
+      "Added Apple's 04:57 Axios after-hours snapshot after the 04:54 AP snapshot",
+      "Changed Samsung to a differentiated absolute-versus-relative market reaction",
+      "Added Microsoft and Meta AP snapshots as same-period differing-source observations",
+      "Clarified that article publish time is not the exact quote sampling time",
+      "Clarified that Unitree's current issuance schedule does not list a listing date"
+    ],
+    "post_fix_validation": "passed"
+  },
+  "sla_note": "The 15-minute checkpoint was 08:34:40. Independent review fixes and final file-level verification continued until all artifacts were complete at 08:35:36."
+}

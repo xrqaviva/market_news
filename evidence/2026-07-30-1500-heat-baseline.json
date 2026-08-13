@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "automation_id": "a-15-00",
+  "report_date": "2026-07-30",
+  "next_trade_date": "2026-07-31",
+  "event_cutoff_bj": "2026-07-30T15:00:00+08:00",
+  "snapshot_notice": "Actual reads were collected after the 15:00 cutoff and are only the comparison baseline for 2026-07-31 08:00.",
+  "snapshots": [
+    {
+      "event_id": "EVT-01",
+      "platform": "weibo",
+      "url": "https://weibo.com/1216826604/Rb1cNzbJ4",
+      "captured_at_bj": "2026-07-30T16:15:30+08:00",
+      "fields": {"reposts": 15, "comments": 179, "likes": 7700, "comparable_total": 7894},
+      "comparison_rule": "Compare the same four fields only."
+    },
+    {
+      "event_id": "EVT-02",
+      "platform": "weibo",
+      "url": "https://weibo.com/1896820725/Rb0Yva7x2",
+      "captured_at_bj": "2026-07-30T16:19:00+08:00",
+      "fields": {"reposts": 4, "comments": 35, "likes": 1061, "comparable_total": 1100},
+      "comparison_rule": "Compare the same four fields only."
+    },
+    {
+      "event_id": "EVT-03",
+      "platform": "weibo",
+      "url": "https://weibo.com/2868676035/Rb1gAyAPd",
+      "captured_at_bj": "2026-07-30T16:19:00+08:00",
+      "fields": {"reposts": 37, "comments": 4, "likes": 59, "comparable_total": 100},
+      "comparison_rule": "Compare the same four fields only."
+    },
+    {
+      "event_id": "EVT-04",
+      "platform": "weibo",
+      "url": "https://weibo.com/2868676035/RaWuDotab",
+      "captured_at_bj": "2026-07-30T16:19:00+08:00",
+      "fields": {"reposts": 50, "comments": 41, "likes": 246, "comparable_total": 337},
+      "comparison_rule": "Compare the same four fields only."
+    },
+    {
+      "event_id": "EVT-06",
+      "platform": "newsnow_cls",
+      "url": "https://www.cls.cn/detail/2440762",
+      "captured_at_bj": "2026-07-30T16:17:30+08:00",
+      "fields": {"rank": 3, "visible_list_size": 13},
+      "comparison_rule": "Compare only the same CLS ranking list and the same article URL."
+    },
+    {
+      "event_id": "EVT-09",
+      "platform": "weibo",
+      "url": "https://weibo.com/2868676035/RaW2ZetkX",
+      "captured_at_bj": "2026-07-30T16:17:00+08:00",
+      "fields": {"reposts": 21, "comments": 2, "likes": 48, "comparable_total": 71},
+      "comparison_rule": "Compare the same four fields only."
+    },
+    {
+      "event_id": "EVT-10",
+      "platform": "xueqiu",
+      "url": "https://xueqiu.com/6238316110/402667020",
+      "captured_at_bj": "2026-07-30T16:16:00+08:00",
+      "fields": {"reposts": 3, "discussions": 294, "likes": 204, "comparable_total": 501},
+      "excluded_fields": {"favorites": 38},
+      "comparison_rule": "Compare reposts, discussions, likes and comparable_total; favorites lack a prior comparable baseline."
+    },
+    {
+      "event_id": "EVT-11",
+      "platform": "xueqiu",
+      "url": "https://xueqiu.com/1213759028/402735276",
+      "captured_at_bj": "2026-07-30T16:17:00+08:00",
+      "fields": {"reposts": 1, "discussions": 69, "likes": 138, "comparable_total": 208},
+      "excluded_fields": {"favorites": 113},
+      "comparison_rule": "Compare reposts, discussions, likes and comparable_total; favorites are excluded unless the next run stores the same field explicitly."
+    }
+  ],
+  "source_failures": [
+    {"platform": "x", "captured_at_bj": "2026-07-30T16:18:00+08:00", "status": "Loading timeline; no comparable interaction fields obtained."}
+  ]
+}

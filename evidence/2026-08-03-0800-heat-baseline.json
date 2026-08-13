@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "report_id": "2026-08-03-0800-premarket-test",
+  "actual_cutoff_bjt": "2026-08-02T16:27:36+08:00",
+  "historical_baseline": {
+    "path": "/Users/aviva/Projects/market_news/evidence/2026-07-31-0800-heat-baseline.json",
+    "cutoff_bjt": "2026-07-31T08:29:00+08:00",
+    "stale_across_weekend": true,
+    "comparison_rule": "Only the same permanent URL and same named field are comparable. Changes are absolute deltas; no percentages are manufactured."
+  },
+  "window_bjt": {
+    "from": "2026-07-31T00:00:00+08:00",
+    "to": "2026-08-02T16:27:36+08:00"
+  },
+  "platform_status": [
+    {
+      "platform": "weibo",
+      "login_status": "logged_in",
+      "collection_status": "success",
+      "evidence": "Navigation showed the signed-in profile name; hot list, topic search and permanent post pages were visible."
+    },
+    {
+      "platform": "xueqiu",
+      "login_status": "logged_in",
+      "collection_status": "success",
+      "evidence": "Navigation showed the signed-in profile and account center links; search results and permanent posts were visible."
+    },
+    {
+      "platform": "x",
+      "login_status": "logged_in",
+      "collection_status": "success",
+      "evidence": "The account menu, profile link and full post analytics were visible in the existing Chrome session."
+    },
+    {
+      "platform": "taoguba",
+      "login_status": "not_logged_in",
+      "collection_status": "success_public_fields",
+      "evidence": "Pages displayed Login/Register, but public permanent posts exposed publication time, views and comments."
+    }
+  ],
+  "items": [
+    {
+      "platform": "weibo",
+      "url": "https://weibo.com/1216826604/Rb1cNzbJ4",
+      "field": ["reposts", "comments", "likes", "comparable_total"],
+      "current": {"reposts": 17, "comments": 178, "likes": 7755, "comparable_total": 7950},
+      "current_at": "2026-08-02T16:20:00+08:00",
+      "previous": {"reposts": 15, "comments": 177, "likes": 7726, "comparable_total": 7918},
+      "previous_at": "2026-07-31T08:17:00+08:00",
+      "comparable": true,
+      "change": {"reposts": 2, "comments": 1, "likes": 29, "comparable_total": 32},
+      "notes": "wu2198; Fed held rates unchanged; published 2026-07-30 06:16 BJT."
+    },
+    {
+      "platform": "weibo",
+      "url": "https://weibo.com/1896820725/Rb0Yva7x2",
+      "field": ["reposts", "comments", "likes", "comparable_total"],
+      "current": {"reposts": 4, "comments": 35, "likes": 1075, "comparable_total": 1114},
+      "current_at": "2026-08-02T16:20:00+08:00",
+      "previous": {"reposts": 4, "comments": 35, "likes": 1072, "comparable_total": 1111},
+      "previous_at": "2026-07-31T08:18:00+08:00",
+      "comparable": true,
+      "change": {"reposts": 0, "comments": 0, "likes": 3, "comparable_total": 3},
+      "notes": "天津股侠; US-Iran tension and oil; published 2026-07-30 05:41 BJT."
+    },
+    {
+      "platform": "weibo",
+      "url": "https://weibo.com/2868676035/Rb1gAyAPd",
+      "field": ["reposts", "comments", "likes", "comparable_total"],
+      "current": {"reposts": 34, "comments": 4, "likes": 59, "comparable_total": 97},
+      "current_at": "2026-08-02T16:20:00+08:00",
+      "previous": {"reposts": 37, "comments": 4, "likes": 59, "comparable_total": 100},
+      "previous_at": "2026-07-31T08:18:00+08:00",
+      "comparable": true,
+      "change": {"reposts": -3, "comments": 0, "likes": 0, "comparable_total": -3},
+      "notes": "财联社APP; Micron and US semiconductor selloff; published 2026-07-30 06:25 BJT. Repost count can fall after deletions or platform reconciliation."
+    },
+    {
+      "platform": "weibo",
+      "url": "https://weibo.com/2868676035/RaWuDotab",
+      "field": ["reposts", "comments", "likes", "comparable_total"],
+      "current": {"reposts": 50, "comments": 42, "likes": 248, "comparable_total": 340},
+      "current_at": "2026-08-02T16:20:00+08:00",
+      "previous": {"reposts": 50, "comments": 42, "likes": 246, "comparable_total": 338},
+      "previous_at": "2026-07-31T08:19:00+08:00",
+      "comparable": true,
+      "change": {"reposts": 0, "comments": 0, "likes": 2, "comparable_total": 2},
+      "notes": "财联社APP; MLCC suppliers announced price rises; published 2026-07-29 18:16 BJT."
+    },
+    {
+      "platform": "weibo",
+      "url": "https://weibo.com/2868676035/RaW2ZetkX",
+      "field": ["reposts", "comments", "likes", "comparable_total"],
+      "current": {"reposts": 21, "comments": 2, "likes": 48, "comparable_total": 71},
+      "current_at": "2026-08-02T16:20:00+08:00",
+      "previous": {"reposts": 21, "comments": 2, "likes": 48, "comparable_total": 71},
+      "previous_at": "2026-07-31T08:19:00+08:00",
+      "comparable": true,
+      "change": {"reposts": 0, "comments": 0, "likes": 0, "comparable_total": 0},
+      "notes": "财联社APP; Kimi financing; published 2026-07-29 17:08 BJT."
+    },
+    {
+      "platform": "weibo",
+      "url": "https://s.weibo.com/weibo?q=%23%E6%96%B0%E4%B8%80%E4%BB%A3%E9%80%9A%E4%BF%A1%E7%BD%91%E5%BB%BA%E8%AE%BE%E5%8A%A0%E5%BF%AB%23&t=31&band_rank=3&Refer=top",
+      "field": ["hot_rank", "hot_value", "reads_display", "discussions"],
+      "current": {"hot_rank": 3, "hot_value": 1129412, "reads_display": "136.1万", "discussions": 266},
+      "current_at": "2026-08-02T16:19:30+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "Topic/search node, not a single post. New appearance; no percentage or cross-URL comparison."
+    },
+    {
+      "platform": "weibo",
+      "url": "https://weibo.com/2258727970/Rbw852h7s",
+      "field": ["video_views_display", "reposts", "comments", "likes"],
+      "current": {"video_views_display": "2.1万", "reposts": 37, "comments": 9, "likes": 85},
+      "current_at": "2026-08-02T16:20:30+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "央视财经; next-generation communications network; published 2026-08-02 13:00 BJT. New permanent URL."
+    },
+    {
+      "platform": "weibo",
+      "url": "https://weibo.com/2868676035/Rbwmm16oM",
+      "field": ["reposts", "comments", "likes"],
+      "current": {"reposts": 11, "comments": 6, "likes": 31},
+      "current_at": "2026-08-02T16:20:30+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "财联社APP; next-generation communications network; published 2026-08-02 13:35 BJT. New permanent URL."
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/KobeissiLetter/status/2082919746077389265",
+      "field": ["replies", "reposts", "likes", "views"],
+      "current": {"replies": 79, "reposts": 183, "likes": 2633, "views": 214101},
+      "current_at": "2026-08-02T16:21:15+08:00",
+      "previous": {"replies": 60, "reposts": 129, "likes": 1743, "views": 142513},
+      "previous_at": "2026-07-31T08:24:00+08:00",
+      "comparable": true,
+      "change": {"replies": 19, "reposts": 54, "likes": 890, "views": 71588},
+      "notes": "The Kobeissi Letter; Microsoft best day since 2008; published 2026-07-31 04:02 BJT."
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/oragnes/status/2082974648007025061",
+      "field": ["replies", "reposts", "likes", "views"],
+      "current": {"replies": 4, "reposts": 0, "likes": 3, "views": 2756},
+      "current_at": "2026-08-02T16:21:30+08:00",
+      "previous": {"replies": 3, "reposts": 0, "likes": 1, "views": 842},
+      "previous_at": "2026-07-31T08:24:00+08:00",
+      "comparable": true,
+      "change": {"replies": 1, "reposts": 0, "likes": 2, "views": 1914},
+      "notes": "比特币橙子Trader; Microsoft and memory rally commentary; published 2026-07-31 07:40 BJT."
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/KobeissiLetter/status/2083738062694011177",
+      "field": ["replies", "reposts", "likes", "views"],
+      "current": {"replies": 969, "reposts": 1348, "likes": 6132, "views": 900008},
+      "current_at": "2026-08-02T16:22:00+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "Trump said the US attack on Iran was cancelled and a deal framework agreed; published 2026-08-02 10:14:02 BJT. New permanent URL."
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/KobeissiLetter/status/2083723707545997432",
+      "field": ["replies", "reposts", "likes", "views"],
+      "current": {"replies": 102, "reposts": 160, "likes": 1069, "views": 154688},
+      "current_at": "2026-08-02T16:22:10+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "US personal savings rate at 2.7%; published 2026-08-02 09:17:00 BJT. New permanent URL."
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/KobeissiLetter/status/2083707349672579380",
+      "field": ["replies", "reposts", "likes", "views"],
+      "current": {"replies": 100, "reposts": 127, "likes": 781, "views": 136889},
+      "current_at": "2026-08-02T16:22:20+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "China PMI slowdown commentary; published 2026-08-02 08:12:00 BJT. New permanent URL."
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/KobeissiLetter/status/2083686965392576892",
+      "field": ["replies", "reposts", "likes", "views"],
+      "current": {"replies": 80, "reposts": 55, "likes": 504, "views": 132547},
+      "current_at": "2026-08-02T16:22:30+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "US ETF launch boom; published 2026-08-02 06:51:00 BJT. New permanent URL."
+    },
+    {
+      "platform": "xueqiu",
+      "url": "https://xueqiu.com/6238316110/402667020",
+      "field": ["reposts", "discussions", "likes", "comparable_total"],
+      "current": {"reposts": 3, "discussions": 315, "likes": 210, "comparable_total": 528},
+      "current_at": "2026-08-02T16:23:10+08:00",
+      "previous": {"reposts": 3, "discussions": 317, "likes": 206, "comparable_total": 526},
+      "previous_at": "2026-07-31T08:20:00+08:00",
+      "comparable": true,
+      "change": {"reposts": 0, "discussions": -2, "likes": 4, "comparable_total": 2},
+      "notes": "因思明见; lithium carbonate inventory; modified 2026-07-29 15:30 BJT. Favorites rose from 40 to 42 but remain excluded from comparable_total as in the historical baseline."
+    },
+    {
+      "platform": "xueqiu",
+      "url": "https://xueqiu.com/1213759028/402735276",
+      "field": ["reposts", "discussions", "likes", "comparable_total"],
+      "current": {"reposts": 1, "discussions": 72, "likes": 145, "comparable_total": 218},
+      "current_at": "2026-08-02T16:23:30+08:00",
+      "previous": {"reposts": 1, "discussions": 71, "likes": 145, "comparable_total": 217},
+      "previous_at": "2026-07-31T08:21:00+08:00",
+      "comparable": true,
+      "change": {"reposts": 0, "discussions": 1, "likes": 0, "comparable_total": 1},
+      "notes": "mere感恩; Korean leveraged ETF risk explainer; published 2026-07-29 22:27 BJT. Favorites fell from 117 to 116 but remain excluded."
+    },
+    {
+      "platform": "xueqiu",
+      "url": "https://xueqiu.com/7437424816/403283421",
+      "field": ["likes", "favorites"],
+      "current": {"likes": 6, "favorites": 1},
+      "current_at": "2026-08-02T16:24:00+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "财联社; housing provident fund coverage expanded; published 2026-08-02 13:00 BJT. Repost/discussion showed labels without numeric values, so no zero was inferred."
+    },
+    {
+      "platform": "xueqiu",
+      "url": "https://xueqiu.com/8871682425/403286594",
+      "field": ["engagement_display"],
+      "current": {"engagement_display": "点赞/收藏/转发/讨论均未显示数值"},
+      "current_at": "2026-08-02T16:24:20+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "财闻; State Council passed draft revision of provident fund regulation; published 2026-08-02 14:10 BJT. Numeric zero was not inferred."
+    },
+    {
+      "platform": "xueqiu",
+      "url": "https://xueqiu.com/4235947987/403284318",
+      "field": ["engagement_display"],
+      "current": {"engagement_display": "点赞/收藏/转发/讨论均未显示数值"},
+      "current_at": "2026-08-02T16:24:40+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "地产姐与电力哥; provident fund coverage and property names; published 2026-08-02 13:18 BJT. Numeric zero was not inferred."
+    },
+    {
+      "platform": "taoguba",
+      "url": "https://www.tgb.cn/a/2tS3CoSVrlk",
+      "field": ["views", "comments"],
+      "current": {"views": 6814, "comments": 412},
+      "current_at": "2026-08-02T16:25:20+08:00",
+      "previous": {"views": 373, "comments": 19},
+      "previous_at": "2026-07-31T08:27:00+08:00",
+      "comparable": true,
+      "change": {"views": 6441, "comments": 393},
+      "notes": "今日长缨在手，何时缚住苍龙？; published 2026-07-31 07:51 BJT. Public page; not logged in."
+    },
+    {
+      "platform": "taoguba",
+      "url": "https://www.tgb.cn/a/2tVOquORAHN",
+      "field": ["views", "comments", "fuel_progress_display"],
+      "current": {"views": 2417, "comments": 235, "fuel_progress_display": "4/4"},
+      "current_at": "2026-08-02T16:26:00+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "米开朗基瑞; avoiding Friday auction traps; published 2026-08-02 14:09 BJT. New permanent URL."
+    },
+    {
+      "platform": "taoguba",
+      "url": "https://www.tgb.cn/a/2tVNvpAL51j",
+      "field": ["views", "comments", "fuel_progress_display"],
+      "current": {"views": 1566, "comments": 122, "fuel_progress_display": "9/9"},
+      "current_at": "2026-08-02T16:26:20+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "小土堆爆金币; July technology themes and August outlook; published 2026-08-02 13:56 BJT. New permanent URL."
+    },
+    {
+      "platform": "taoguba",
+      "url": "https://www.tgb.cn/a/2tVs41PausP",
+      "field": ["views", "comments", "fuel_progress_display"],
+      "current": {"views": 1130, "comments": 49, "fuel_progress_display": "0/0"},
+      "current_at": "2026-08-02T16:26:40+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "96阿明; August 2 review and technology-sector discussion; published 2026-08-02 08:56 BJT. New permanent URL."
+    },
+    {
+      "platform": "taoguba",
+      "url": "https://www.tgb.cn/a/2tVvaAqEkpA",
+      "field": ["views", "comments", "fuel_progress_display"],
+      "current": {"views": 1219, "comments": 24, "fuel_progress_display": "2/2"},
+      "current_at": "2026-08-02T16:27:20+08:00",
+      "previous": null,
+      "previous_at": null,
+      "comparable": false,
+      "change": null,
+      "notes": "海氏战法; August 3 premarket strategy post; published 2026-08-02 09:39 BJT. New permanent URL."
+    }
+  ]
+}

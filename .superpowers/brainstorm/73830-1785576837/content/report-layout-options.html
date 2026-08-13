@@ -1,0 +1,80 @@
+<style>
+  .layout-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}
+  .layout-card{border:1px solid var(--border);border-radius:18px;overflow:hidden;background:var(--surface);cursor:pointer;transition:.2s ease;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+  .layout-card:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(15,23,42,.12)}
+  .layout-card.selected{outline:3px solid #2563eb;outline-offset:2px}
+  .preview{height:420px;background:#f5f7fb;color:#172033;font-family:Inter,system-ui,sans-serif;overflow:hidden}
+  .preview *{box-sizing:border-box}
+  .topbar{height:38px;padding:8px 11px;background:#0f172a;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:space-between}
+  .brand{font-size:10px;font-weight:800;letter-spacing:.05em}
+  .switcher{display:flex;gap:3px;background:rgba(255,255,255,.09);padding:3px;border-radius:7px}
+  .switcher span{padding:3px 6px;border-radius:5px;color:#cbd5e1}
+  .switcher .active{background:#fff;color:#0f172a;font-weight:700}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:8px}
+  .metric{background:#fff;border:1px solid #e7eaf0;border-radius:8px;padding:6px;font-size:7px;color:#64748b}
+  .metric b{display:block;font-size:11px;color:#172033;margin-bottom:1px}
+  .news{margin:0 8px 6px;background:#fff;border:1px solid #e7eaf0;border-radius:10px;padding:8px}
+  .rank{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:6px;background:#e8efff;color:#1d4ed8;font-size:8px;font-weight:800;margin-right:5px}
+  .news strong{font-size:9px}.news p{font-size:7px;line-height:1.45;color:#64748b;margin:5px 0}
+  .tags{display:flex;gap:3px;flex-wrap:wrap}.tag{font-size:6px;background:#f1f5f9;border-radius:4px;padding:2px 4px}.up{background:#e9f8ef;color:#18794e}.down{background:#fff0f0;color:#b42318}
+  .timeline{height:4px;background:linear-gradient(90deg,#2563eb 0 35%,#22c55e 35% 62%,#f59e0b 62%);border-radius:4px;margin-top:6px}
+  .body-split{display:grid;grid-template-columns:72px 1fr;height:382px}
+  .side{background:#101827;color:#94a3b8;padding:10px 7px;font-size:7px}.side b{display:block;color:#fff;font-size:9px;margin-bottom:10px}.side span{display:block;padding:5px;border-radius:5px;margin-bottom:3px}.side .on{background:#1e293b;color:#fff}
+  .compact-row{display:grid;grid-template-columns:20px 1fr 34px;gap:6px;align-items:start;padding:7px 8px;border-bottom:1px solid #edf0f4;background:#fff}.compact-row strong{font-size:8px}.compact-row small{display:block;color:#6b7280;font-size:6px;margin-top:3px}.score{font-weight:800;color:#1d4ed8;font-size:8px;text-align:right}
+  .magazine{padding:9px}.lead{background:linear-gradient(135deg,#10213d,#1c4a6e);color:#fff;border-radius:12px;padding:12px;margin-bottom:7px}.lead .kicker{font-size:6px;color:#9ec5ff}.lead h4{font-size:12px;margin:5px 0}.lead p{font-size:7px;line-height:1.5;color:#dbeafe}.cols{display:grid;grid-template-columns:1fr 1fr;gap:7px}.story{background:#fff;border-radius:9px;padding:8px;border:1px solid #e8ebf0}.story strong{font-size:8px}.story p{font-size:6px;line-height:1.45;color:#6b7280}
+  .card-copy{padding:14px 15px 16px}.card-copy h3{margin:0 0 5px;font-size:17px}.card-copy p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+  .pill{display:inline-block;margin-top:10px;padding:4px 8px;border-radius:999px;background:#eef4ff;color:#2457c5;font-size:11px;font-weight:700}
+  @media(max-width:1000px){.layout-grid{grid-template-columns:1fr}.preview{height:390px}}
+</style>
+
+<h2>新闻雷达网页：选择整体布局</h2>
+<p class="subtitle">三套方案都支持顶部“日期 × 时段”切换。请重点比较阅读速度、信息密度和长期扩展性。</p>
+
+<div class="layout-grid">
+  <div class="layout-card" data-choice="a-command" onclick="toggleSelect(this)">
+    <div class="preview">
+      <div class="topbar"><span class="brand">MARKET RADAR</span><div class="switcher"><span>07/30 盘前</span><span>07/30 盘后</span><span class="active">07/31 盘前</span></div></div>
+      <div class="metrics"><div class="metric"><b>22</b>合格新闻</div><div class="metric"><b>08:29</b>报告截点</div><div class="metric"><b>5</b>新发财报</div><div class="metric"><b>3</b>热度异动</div></div>
+      <div class="news"><span class="rank">1</span><strong>政治局部署增量政策、逆周期调节和“人工智能+”</strong><p>部署下半年经济工作，提出及时谋划增量政策并深入实施“人工智能+”。</p><div class="tags"><span class="tag">新华社 07-30</span><span class="tag up">NewsNow 第1</span><span class="tag">96/100</span></div><div class="timeline"></div></div>
+      <div class="news"><span class="rank">2</span><strong>微软单日上涨15.5%，科技股同步反弹</strong><p>Azure增长43%；盘后多来源快照均为正向，次日常规收盘上涨15.5%。</p><div class="tags"><span class="tag">IR 04:00</span><span class="tag up">即时定价：正向</span><span class="tag">94/100</span></div></div>
+      <div class="news"><span class="rank">3</span><strong>亚马逊AWS增长37%，资本开支升至2200亿美元</strong><p>AWS创18个季度最快增速；盘后一度上涨逾9%。</p><div class="tags"><span class="tag">AP 04:26</span><span class="tag up">盘后 +9%</span><span class="tag">91/100</span></div></div>
+    </div>
+    <div class="card-copy"><h3>A · 指挥台</h3><p>推荐。顶部时段切换、关键指标、纵向事件卡。浏览最快，最适合每天多次刷新与对比。</p><span class="pill">高密度 · 易扩展</span></div>
+  </div>
+
+  <div class="layout-card" data-choice="b-terminal" onclick="toggleSelect(this)">
+    <div class="preview">
+      <div class="topbar"><span class="brand">A股新闻雷达</span><div class="switcher"><span>日期 07/31</span><span class="active">08:00 盘前</span></div></div>
+      <div class="body-split">
+        <div class="side"><b>报告档案</b><span class="on">07/31 08:00</span><span>07/30 15:00</span><span>07/30 08:00</span><span>07/29 18:00</span><span style="margin-top:12px">全部新闻</span><span>政策</span><span>财报</span><span>产业</span></div>
+        <div>
+          <div class="compact-row"><span class="rank">1</span><div><strong>政治局部署增量政策与人工智能+</strong><small>新华社 07-30 → 韭研 07:13 → 财联社 08:21</small></div><span class="score">96</span></div>
+          <div class="compact-row"><span class="rank">2</span><div><strong>微软单日上涨15.5%</strong><small>财报后反馈：+2.4% / +9% / 后续约+8%</small></div><span class="score">94</span></div>
+          <div class="compact-row"><span class="rank">3</span><div><strong>亚马逊AWS增长37%</strong><small>盘后一度+9% · 即时定价正向</small></div><span class="score">91</span></div>
+          <div class="compact-row"><span class="rank">4</span><div><strong>胡塞宣布封锁沙特航运</strong><small>曼德海峡通行量下降30%</small></div><span class="score">89</span></div>
+          <div class="compact-row"><span class="rank">5</span><div><strong>苹果第三财季收入1094亿美元</strong><small>盘后-2.3% → 约-4% · 即时定价负向</small></div><span class="score">85</span></div>
+          <div class="compact-row"><span class="rank">6</span><div><strong>三星二季度营业利润89.5万亿韩元</strong><small>绝对方向偏弱、相对表现略强</small></div><span class="score">82</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-copy"><h3>B · 研究终端</h3><p>左侧报告档案，右侧超紧凑列表。跨时点切换最直接，但首次阅读的视觉温度略低。</p><span class="pill">最高密度 · 强对比</span></div>
+  </div>
+
+  <div class="layout-card" data-choice="c-editorial" onclick="toggleSelect(this)">
+    <div class="preview">
+      <div class="topbar"><span class="brand">盘前 · 观察</span><div class="switcher"><span>07/30 15:00</span><span class="active">07/31 08:00</span></div></div>
+      <div class="magazine">
+        <div class="lead"><span class="kicker">TOP STORY · 96/100</span><h4>政治局部署增量政策与“人工智能+”</h4><p>政策方向由延续定调推进到增量政策、财政节奏与AI+治理。多渠道盘前同步传播。</p></div>
+        <div class="cols">
+          <div class="story"><strong>微软上涨15.5%</strong><p>Azure增长43%，盘后与次日反馈均为正向。</p><div class="tags"><span class="tag up">正向</span><span class="tag">94</span></div></div>
+          <div class="story"><strong>亚马逊AWS增长37%</strong><p>资本开支升至2200亿美元，盘后一度+9%。</p><div class="tags"><span class="tag up">正向</span><span class="tag">91</span></div></div>
+          <div class="story"><strong>苹果收入1094亿美元</strong><p>超预期但盘后跌幅扩大至约4%。</p><div class="tags"><span class="tag down">负向</span><span class="tag">85</span></div></div>
+          <div class="story"><strong>宇树8月10日申购</strong><p>8月5日询价，申购代码787836。</p><div class="tags"><span class="tag">IPO日程</span><span class="tag">76</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-copy"><h3>C · 财经编辑部</h3><p>主新闻突出、其余双栏编排。视觉更精致，适合阅读与分享，但跨报告逐条比较稍弱。</p><span class="pill">最美观 · 叙事感强</span></div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:18px">点击选择一个方案，也可以回复“以A为主，加入B的左侧档案”等组合意见。</p>

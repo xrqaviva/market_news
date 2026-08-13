@@ -1,0 +1,84 @@
+<h2>折叠日期树 · 点击日期打开当日最新报告</h2>
+<p class="subtitle">默认只显示日期；点击任一日期查看本地实际存在的时段</p>
+
+<div class="card" data-choice="archive-accordion-168" onclick="toggleSelect(this)">
+  <div class="card-image" style="padding:0; overflow:hidden; border-radius:8px; background:#eef2f7;">
+    <div style="display:grid; grid-template-columns:168px minmax(0,1fr); min-height:510px; color:#152033; font-family:Inter,ui-sans-serif,system-ui,sans-serif; text-align:left;">
+      <aside style="background:#111827; color:#cbd5e1; border-right:1px solid #263244;">
+        <div style="height:64px; display:flex; align-items:center; padding:0 16px; color:#93c5fd; border-bottom:1px solid #263244; font-family:ui-monospace,monospace; font-size:11px; font-weight:700; letter-spacing:.12em;">NEWS RADAR</div>
+        <div style="padding:17px 11px;">
+          <div style="margin:0 7px 12px; color:#7f8da3; font-size:11px; font-weight:700; letter-spacing:.1em;">报告归档</div>
+
+          <details name="archive-date" style="margin-bottom:5px;">
+            <summary style="padding:8px; color:#b9c5d6; cursor:pointer; font-family:ui-monospace,monospace; font-size:11px; font-weight:600;">2026-08-10</summary>
+            <div style="margin:0 0 5px 13px; padding-left:10px; border-left:1px solid #3b4a61;">
+              <a href="#" onclick="event.preventDefault()" style="display:block; padding:7px 8px; color:#fff; background:#223047; border-left:3px solid #60a5fa; border-radius:3px; font-size:12px; font-weight:700; text-decoration:none;">盘前</a>
+            </div>
+          </details>
+
+          <details name="archive-date" style="margin-bottom:5px;">
+            <summary style="padding:8px; color:#b9c5d6; cursor:pointer; font-family:ui-monospace,monospace; font-size:11px; font-weight:600;">2026-08-03</summary>
+            <div style="margin:0 0 5px 13px; padding-left:10px; border-left:1px solid #3b4a61;">
+              <a href="#" onclick="event.preventDefault()" style="display:block; padding:7px 8px; color:#fff; background:#223047; border-left:3px solid #60a5fa; border-radius:3px; font-size:12px; font-weight:700; text-decoration:none;">盘前</a>
+            </div>
+          </details>
+
+          <details name="archive-date" style="margin-bottom:5px;">
+            <summary style="padding:8px; color:#b9c5d6; cursor:pointer; font-family:ui-monospace,monospace; font-size:11px; font-weight:600;">2026-07-31</summary>
+            <div style="margin:0 0 5px 13px; padding-left:10px; border-left:1px solid #3b4a61;">
+              <a href="#" onclick="event.preventDefault()" style="display:block; padding:7px 8px; color:#fff; background:#223047; border-left:3px solid #60a5fa; border-radius:3px; font-size:12px; font-weight:700; text-decoration:none;">盘前</a>
+            </div>
+          </details>
+
+          <details name="archive-date" style="margin-bottom:5px;">
+            <summary style="padding:8px; color:#b9c5d6; cursor:pointer; font-family:ui-monospace,monospace; font-size:11px; font-weight:600;">2026-07-30</summary>
+            <div style="margin:0 0 5px 13px; padding-left:10px; border-left:1px solid #3b4a61;">
+              <a href="#" onclick="event.preventDefault()" style="display:block; padding:7px 8px; color:#cbd5e1; border-left:3px solid transparent; font-size:12px; text-decoration:none;">盘前</a>
+              <a href="#" onclick="event.preventDefault()" style="display:block; padding:7px 8px; color:#fff; background:#223047; border-left:3px solid #60a5fa; border-radius:3px; font-size:12px; font-weight:700; text-decoration:none;">盘后</a>
+            </div>
+          </details>
+
+          <details name="archive-date">
+            <summary style="padding:8px; color:#b9c5d6; cursor:pointer; font-family:ui-monospace,monospace; font-size:11px; font-weight:600;">2026-07-29</summary>
+            <div style="margin:0 0 5px 13px; padding-left:10px; border-left:1px solid #3b4a61;">
+              <a href="#" onclick="event.preventDefault()" style="display:block; padding:7px 8px; color:#fff; background:#223047; border-left:3px solid #60a5fa; border-radius:3px; font-size:12px; font-weight:700; text-decoration:none;">盘后</a>
+            </div>
+          </details>
+        </div>
+      </aside>
+
+      <main style="min-width:0; background:#eef2f7;">
+        <div style="height:64px; display:flex; align-items:center; padding:0 22px; color:#f8fafc; background:#111827; border-bottom:1px solid #263244;">
+          <div>
+            <div style="font-size:16px; font-weight:700;">当前选中的报告</div>
+            <div style="margin-top:3px; color:#aeb9ca; font-size:11px;">点击日期后，实际页面会立即切换到该日最新一份</div>
+          </div>
+        </div>
+        <div style="padding:15px 18px;">
+          <div style="padding:10px 12px; background:#fff; border:1px solid #dce2ea; border-radius:4px; color:#657287; font-size:11px;">默认入口：最新日期 · 最新报告</div>
+          <div style="margin-top:12px; background:#fff; border:1px solid #dce2ea; border-radius:4px; overflow:hidden;">
+            <div style="display:grid; grid-template-columns:32px 1fr 60px; gap:10px; padding:15px; border-bottom:1px solid #dce2ea;">
+              <span style="color:#778397; font-family:ui-monospace,monospace; font-size:12px;">01</span>
+              <div><strong style="font-size:14px;">默认所有日期收起</strong><p style="margin:5px 0 0; color:#516077; font-size:12px; line-height:1.6;">侧栏初始只占很少纵向空间，点击日期才出现子报告。</p></div>
+              <div style="text-align:right;"><strong style="display:block; font-size:17px;">96</strong><span style="color:#657287; font-size:9px;">热点权重</span></div>
+            </div>
+            <div style="display:grid; grid-template-columns:32px 1fr 60px; gap:10px; padding:15px; border-bottom:1px solid #dce2ea;">
+              <span style="color:#778397; font-family:ui-monospace,monospace; font-size:12px;">02</span>
+              <div><strong style="font-size:14px;">只显示真实存在的时段</strong><p style="margin:5px 0 0; color:#516077; font-size:12px; line-height:1.6;">7月30日只有盘前和盘后，因此不显示盘中占位。</p></div>
+              <div style="text-align:right;"><strong style="display:block; font-size:17px;">94</strong><span style="color:#657287; font-size:9px;">热点权重</span></div>
+            </div>
+            <div style="display:grid; grid-template-columns:32px 1fr 60px; gap:10px; padding:15px;">
+              <span style="color:#778397; font-family:ui-monospace,monospace; font-size:12px;">03</span>
+              <div><strong style="font-size:14px;">日期点击默认打开当日最新报告</strong><p style="margin:5px 0 0; color:#516077; font-size:12px; line-height:1.6;">点击7月30日后打开盘后，展开后盘后高亮；仍可切换盘前。</p></div>
+              <div style="text-align:right;"><strong style="display:block; font-size:17px;">91</strong><span style="color:#657287; font-size:9px;">热点权重</span></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="card-body">
+    <h3>方案 B · 168px 日期手风琴</h3>
+    <p>请点击左侧日期查看展开效果；每组子项均来自当前本地报告清单。</p>
+  </div>
+</div>

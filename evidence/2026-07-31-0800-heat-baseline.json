@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "automation_id": "a-08-00",
+  "report_date": "2026-07-31",
+  "event_cutoff_bj": "2026-07-31T08:29:00+08:00",
+  "comparison_notice": "Only compare the same permanent URL and the same named fields. New URLs are new appearances; do not manufacture a percentage.",
+  "snapshots": [
+    {
+      "event_id": "EVT-01",
+      "platform": "weibo",
+      "url": "https://weibo.com/1216826604/Rb1cNzbJ4",
+      "captured_at_bj": "2026-07-31T08:17:00+08:00",
+      "fields": {"reposts": 15, "comments": 177, "likes": 7726, "comparable_total": 7918}
+    },
+    {
+      "event_id": "EVT-02",
+      "platform": "weibo",
+      "url": "https://weibo.com/1896820725/Rb0Yva7x2",
+      "captured_at_bj": "2026-07-31T08:18:00+08:00",
+      "fields": {"reposts": 4, "comments": 35, "likes": 1072, "comparable_total": 1111}
+    },
+    {
+      "event_id": "EVT-03",
+      "platform": "weibo",
+      "url": "https://weibo.com/2868676035/Rb1gAyAPd",
+      "captured_at_bj": "2026-07-31T08:18:00+08:00",
+      "fields": {"reposts": 37, "comments": 4, "likes": 59, "comparable_total": 100}
+    },
+    {
+      "event_id": "EVT-04",
+      "platform": "weibo",
+      "url": "https://weibo.com/2868676035/RaWuDotab",
+      "captured_at_bj": "2026-07-31T08:19:00+08:00",
+      "fields": {"reposts": 50, "comments": 42, "likes": 246, "comparable_total": 338}
+    },
+    {
+      "event_id": "EVT-09",
+      "platform": "weibo",
+      "url": "https://weibo.com/2868676035/RaW2ZetkX",
+      "captured_at_bj": "2026-07-31T08:19:00+08:00",
+      "fields": {"reposts": 21, "comments": 2, "likes": 48, "comparable_total": 71}
+    },
+    {
+      "event_id": "EVT-10",
+      "platform": "xueqiu",
+      "url": "https://xueqiu.com/6238316110/402667020",
+      "captured_at_bj": "2026-07-31T08:20:00+08:00",
+      "fields": {"reposts": 3, "discussions": 317, "likes": 206, "comparable_total": 526},
+      "excluded_fields": {"favorites": 40}
+    },
+    {
+      "event_id": "EVT-11",
+      "platform": "xueqiu",
+      "url": "https://xueqiu.com/1213759028/402735276",
+      "captured_at_bj": "2026-07-31T08:21:00+08:00",
+      "fields": {"reposts": 1, "discussions": 71, "likes": 145, "comparable_total": 217},
+      "excluded_fields": {"favorites": 117}
+    },
+    {
+      "event_id": "EVT-MSFT-X",
+      "platform": "x",
+      "url": "https://x.com/KobeissiLetter/status/2082919746077389265",
+      "captured_at_bj": "2026-07-31T08:24:00+08:00",
+      "published_time_display": "4 hours ago",
+      "fields": {"replies": 60, "reposts": 129, "likes": 1743, "views": 142513}
+    },
+    {
+      "event_id": "EVT-MSFT-X-CN",
+      "platform": "x",
+      "url": "https://x.com/oragnes/status/2082974648007025061",
+      "captured_at_bj": "2026-07-31T08:24:00+08:00",
+      "published_time_display": "43 minutes ago",
+      "fields": {"replies": 3, "reposts": 0, "likes": 1, "views": 842}
+    },
+    {
+      "event_id": "EVT-MSFT-CLS",
+      "platform": "newsnow_cls",
+      "url": "https://www.cls.cn/detail/2441995",
+      "captured_at_bj": "2026-07-31T08:21:00+08:00",
+      "fields": {"rank": 4, "visible_list_size": 13}
+    },
+    {
+      "event_id": "EVT-POLICY-CLS",
+      "platform": "newsnow_cls",
+      "url": "https://www.cls.cn/detail/2441694",
+      "captured_at_bj": "2026-07-31T08:21:00+08:00",
+      "fields": {"rank": 1, "visible_list_size": 13}
+    },
+    {
+      "event_id": "EVT-BUYBACK-CLS",
+      "platform": "newsnow_cls",
+      "url": "https://www.cls.cn/detail/2441712",
+      "captured_at_bj": "2026-07-31T08:21:00+08:00",
+      "fields": {"rank": 2, "visible_list_size": 13}
+    },
+    {
+      "event_id": "EVT-AMZN-CLS",
+      "platform": "newsnow_cls",
+      "url": "https://www.cls.cn/detail/2442011",
+      "captured_at_bj": "2026-07-31T08:21:00+08:00",
+      "fields": {"rank": 9, "visible_list_size": 13}
+    },
+    {
+      "event_id": "EVT-XIAOMI-COOLAPK",
+      "platform": "newsnow_coolapk",
+      "url": "https://www.coolapk.com/feed/73011401",
+      "captured_at_bj": "2026-07-31T08:21:00+08:00",
+      "fields": {"rank": 1, "heat_display": "38.6万", "discussions": 285}
+    },
+    {
+      "event_id": "EVT-MSFT-TGB",
+      "platform": "taoguba",
+      "url": "https://www.tgb.cn/a/2tS3CoSVrlk",
+      "captured_at_bj": "2026-07-31T08:27:00+08:00",
+      "published_time_display": "34分钟前",
+      "fields": {"views": 373, "comments": 19}
+    },
+    {
+      "event_id": "EVT-MORNING-JIUYAN",
+      "platform": "jiuyangongshe",
+      "url": "https://www.jiuyangongshe.com/a/2z6ru91gjj1",
+      "published_at_bj": "2026-07-31T07:29:40+08:00",
+      "captured_at_bj": "2026-07-31T08:28:00+08:00",
+      "raw_card_values": [17, 14, 17, 0],
+      "field_notice": "Stored in visible order; do not relabel without a detail-page field mapping."
+    }
+  ],
+  "rank_snapshots": [
+    {
+      "platform": "eastmoney_popularity",
+      "captured_at_bj": "2026-07-31T08:26:00+08:00",
+      "page_updated_at_bj": "2026-07-31T08:16:00+08:00",
+      "table_order": ["德明利", "C长鑫", "兆易创新", "中际旭创", "风华高科"],
+      "explicit_rank_from_fourth_row": {"中际旭创": 4, "风华高科": 5},
+      "notice": "The first three rank-number cells were not rendered; table order is preserved without manufacturing numeric ranks."
+    }
+  ],
+  "source_status": [
+    {"platform": "weibo", "status": "success_logged_in"},
+    {"platform": "xueqiu", "status": "success_logged_in"},
+    {"platform": "x", "status": "success_logged_in_after_timeline_wait"},
+    {"platform": "newsnow", "status": "success_public_web"},
+    {"platform": "eastmoney_popularity", "status": "success_public_web_partial_rank_render"},
+    {"platform": "taoguba", "status": "success_public_fields_page_showed_login_register"},
+    {"platform": "jiuyangongshe", "status": "success"},
+    {"platform": "kaipanla", "status": "public_articles_only_realtime_app_fields_unavailable"}
+  ]
+}
