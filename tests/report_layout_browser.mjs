@@ -107,14 +107,36 @@ let chrome;
 let cdp;
 
 try {
+  const { stdout: gitRootOutput } = await execFileAsync(
+    "git",
+    ["rev-parse", "--show-toplevel"],
+    { cwd: ROOT },
+  );
+  const gitRoot = resolve(gitRootOutput.trim());
+  if (gitRoot !== ROOT) {
+    throw new Error(`browser build root is not the isolated worktree: ${gitRoot}`);
+  }
+
+  const { stdout: trackedReportOutput } = await execFileAsync(
+    "git",
+    ["ls-files", "reports/*.md"],
+    { cwd: ROOT },
+  );
+  const trackedReports = trackedReportOutput.trim().split("\n").filter(Boolean);
+  if (trackedReports.length !== 7) {
+    throw new Error(
+      `fresh browser build must use exactly 7 tracked report Markdown files, got ${trackedReports.length}`,
+    );
+  }
+
   await execFileAsync("python3", [
     "-m",
     "web.build",
     "--project-root",
-    ROOT,
+    gitRoot,
     "--output",
     freshDist,
-  ], { cwd: ROOT });
+  ], { cwd: gitRoot });
 
   const chromePath = await findChrome();
   chrome = spawn(chromePath, [
@@ -191,13 +213,25 @@ try {
         marginRight: style.marginRight,
         marginLeft: style.marginLeft,
         borderRadius: style.borderRadius,
+        borderTopColor: style.borderTopColor,
+        borderRightColor: style.borderRightColor,
+        borderBottomColor: style.borderBottomColor,
+        borderLeftColor: style.borderLeftColor,
+        borderTopStyle: style.borderTopStyle,
         borderTopWidth: style.borderTopWidth,
+        borderRightWidth: style.borderRightWidth,
         borderBottomWidth: style.borderBottomWidth,
+        borderLeftWidth: style.borderLeftWidth,
+        backgroundColor: style.backgroundColor,
+        boxShadow: style.boxShadow,
+        color: style.color,
         columnGap: style.columnGap,
         gridTemplateColumns: style.gridTemplateColumns,
         alignItems: style.alignItems,
+        overflowX: style.overflowX,
         fontFamily: style.fontFamily,
         fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
         lineHeight: style.lineHeight,
       };
     };
@@ -210,8 +244,11 @@ try {
     const reportTitle = document.querySelector(".report-heading h1");
     const cutoff = document.querySelector(".report-cutoff");
     const navigation = document.querySelector(".theme-navigation");
+    const navigationLinks = Array.from(navigation.querySelectorAll("a"));
     const firstTheme = document.querySelector(".theme-group");
+    const secondTheme = document.querySelectorAll(".theme-group")[1];
     const themeHeader = firstTheme.querySelector(".theme-header");
+    const themeKicker = themeHeader.querySelector(".theme-kicker");
     const themeHeading = firstTheme.querySelector(".theme-heading-line");
     const themeTitle = themeHeading.querySelector("h2");
     const themeTotal = themeHeading.querySelector(".theme-total");
@@ -221,10 +258,42 @@ try {
     const newsContent = newsRow.querySelector(".news-content");
     const newsTitle = newsContent.querySelector("h2");
     const newsSummary = newsContent.querySelector(".news-summary");
+    const association = newsContent.querySelector(".news-associations");
     const toggle = newsContent.querySelector(".news-toggle");
+    const firstDetail = newsContent.querySelector(".news-detail");
+    const disclosure = {
+      closed: {
+        hidden: firstDetail.hidden,
+        ariaExpanded: toggle.getAttribute("aria-expanded"),
+        height: firstDetail.getBoundingClientRect().height,
+      },
+    };
     toggle.click();
     await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
-    const firstDetail = newsContent.querySelector(".news-detail");
+    disclosure.open = {
+      hidden: firstDetail.hidden,
+      ariaExpanded: toggle.getAttribute("aria-expanded"),
+      height: firstDetail.getBoundingClientRect().height,
+    };
+    toggle.click();
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+    disclosure.closedAgain = {
+      hidden: firstDetail.hidden,
+      ariaExpanded: toggle.getAttribute("aria-expanded"),
+      height: firstDetail.getBoundingClientRect().height,
+    };
+    toggle.click();
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+    const sourceList = firstDetail.querySelector("[data-component='sources']");
+    const navState = () => ({
+      currentCount: navigationLinks.filter(
+        (candidate) => candidate.getAttribute("aria-current") === "location",
+      ).length,
+      currentHref: navigationLinks.find(
+        (candidate) => candidate.getAttribute("aria-current") === "location",
+      )?.getAttribute("href") ?? null,
+    });
+    const initialNavigationCurrent = navState();
     const geometry = {
       shell: metric(shell),
       card: metric(card),
@@ -236,7 +305,9 @@ try {
       cutoff: metric(cutoff),
       navigation: metric(navigation),
       theme: metric(firstTheme),
+      secondTheme: metric(secondTheme),
       themeHeader: metric(themeHeader),
+      themeKicker: metric(themeKicker),
       themeHeading: metric(themeHeading),
       themeTitle: metric(themeTitle),
       themeTotal: metric(themeTotal),
@@ -245,13 +316,22 @@ try {
       newsRank: metric(newsRank),
       newsTitle: metric(newsTitle),
       newsSummary: metric(newsSummary),
+      reportEyebrow: metric(document.querySelector(".report-eyebrow")),
       bodyFont: getComputedStyle(document.body).fontFamily,
+      bodyBackground: getComputedStyle(document.body).backgroundColor,
       workspacePaddingLeft: getComputedStyle(reportMain).paddingLeft,
       reportTitleFontSize: getComputedStyle(reportTitle).fontSize,
       themeTitleFontSize: getComputedStyle(themeTitle).fontSize,
       newsTitleFontSize: getComputedStyle(newsTitle).fontSize,
       newsContentLeft: newsContent.getBoundingClientRect().left,
+      newsTitleLeft: newsTitle.getBoundingClientRect().left,
+      newsSummaryLeft: newsSummary.getBoundingClientRect().left,
+      associationLeft: association.getBoundingClientRect().left,
       firstDetailLeft: firstDetail.getBoundingClientRect().left,
+      firstSourceLeft: sourceList.getBoundingClientRect().left,
+      disclosure,
+      initialNavigationCurrent,
+      firstNavigationHref: navigationLinks[0].getAttribute("href"),
       titleCutoffBottomDelta: Math.abs(
         reportTitle.getBoundingClientRect().bottom - cutoff.getBoundingClientRect().bottom
       ),
@@ -263,6 +343,11 @@ try {
     await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
     const headerRect = header.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
+    const clickedNavigationCurrent = navState();
+    const currentLink = navigationLinks.find(
+      (candidate) => candidate.getAttribute("aria-current") === "location",
+    );
+    const inactiveLink = navigationLinks.find((candidate) => candidate !== currentLink);
     return {
       ...geometry,
       headerBottom: headerRect.bottom,
@@ -271,12 +356,49 @@ try {
       targetTop: targetRect.top,
       anchorHash: location.hash,
       anchorTargetId: target.id,
+      directTargetId: document.querySelectorAll(".theme-group")[4].id,
+      clickedNavigationCurrent,
+      currentNavigationLink: currentLink ? metric(currentLink) : null,
+      inactiveNavigationLink: inactiveLink ? metric(inactiveLink) : null,
+    };
+  })()`);
+
+  await navigate(cdp, `${pathToFileURL(report).href}#${desktop.directTargetId}`);
+  const directHashNavigation = await evaluate(cdp, `(() => {
+    const links = Array.from(document.querySelectorAll(".theme-navigation a"));
+    const current = links.filter((link) => link.getAttribute("aria-current") === "location");
+    return {
+      hash: location.hash,
+      currentCount: current.length,
+      currentHref: current[0]?.getAttribute("href") ?? null,
     };
   })()`);
 
   const contrast = await evaluate(cdp, `(() => {
-    const element = document.querySelector(".theme-total");
-    const parse = (color) => color.match(/[\\d.]+/g).slice(0, 3).map(Number);
+    const selectors = [
+      ".report-eyebrow",
+      ".report-cutoff",
+      ".theme-navigation a",
+      ".theme-kicker",
+      ".theme-total",
+      ".theme-catalyst",
+      ".theme-risk",
+      ".theme-mappings",
+      ".news-rank",
+      ".news-summary",
+      ".news-score",
+      ".theme-association",
+      ".news-toggle",
+      ".news-detail p",
+      "[data-component='sources'] li",
+      "[data-component='sources'] a",
+      ".pending-details summary",
+      ".pending-body > p",
+      ".pending-item p",
+      "[data-component='pending-sources'] li",
+      "[data-component='pending-sources'] a",
+    ];
+    const parse = (color) => color.match(/[\\d.]+/g).map(Number);
     const luminance = (rgb) => {
       const values = rgb.map((value) => {
         const channel = value / 255;
@@ -286,21 +408,38 @@ try {
       });
       return 0.2126 * values[0] + 0.7152 * values[1] + 0.0722 * values[2];
     };
-    let backgroundNode = element;
-    let background = "rgba(0, 0, 0, 0)";
-    while (backgroundNode && /rgba\\([^)]*,\\s*0(?:\\.0+)?\\)$/.test(background)) {
-      backgroundNode = backgroundNode.parentElement;
-      background = backgroundNode ? getComputedStyle(backgroundNode).backgroundColor : "rgb(255, 255, 255)";
-    }
-    const foreground = getComputedStyle(element).color;
-    const foregroundLuminance = luminance(parse(foreground));
-    const backgroundLuminance = luminance(parse(background));
+    const effectiveBackground = (element) => {
+      let node = element;
+      while (node) {
+        const background = getComputedStyle(node).backgroundColor;
+        const channels = parse(background);
+        if (channels.length < 4 || channels[3] > 0) return background;
+        node = node.parentElement;
+      }
+      return "rgb(255, 255, 255)";
+    };
+    const results = selectors.flatMap((selector) =>
+      Array.from(document.querySelectorAll(selector), (element, index) => {
+        const foreground = getComputedStyle(element).color;
+        const background = effectiveBackground(element);
+        const foregroundLuminance = luminance(parse(foreground).slice(0, 3));
+        const backgroundLuminance = luminance(parse(background).slice(0, 3));
+        return {
+          selector,
+          index,
+          text: element.textContent.trim().slice(0, 40),
+          foreground,
+          background,
+          fontSize: getComputedStyle(element).fontSize,
+          ratio: (Math.max(foregroundLuminance, backgroundLuminance) + 0.05)
+            / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05),
+        };
+      })
+    );
     return {
-      foreground,
-      background,
-      fontSize: getComputedStyle(element).fontSize,
-      ratio: (Math.max(foregroundLuminance, backgroundLuminance) + 0.05)
-        / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05),
+      count: results.length,
+      results,
+      minimum: Math.min(...results.map((result) => result.ratio)),
     };
   })()`);
 
@@ -315,6 +454,7 @@ try {
     const details = document.querySelector(".pending-details");
     const body = document.querySelector(".pending-body");
     const items = Array.from(document.querySelectorAll(".pending-item"));
+    const newsDetails = Array.from(document.querySelectorAll(".news-detail"));
     const beforePrint = {
       mediaMatches: matchMedia("print").matches,
       detailsOpen: details.open,
@@ -322,6 +462,10 @@ try {
       bodyHeight: body.getBoundingClientRect().height,
       visibleItemCount: items.filter((item) => item.getClientRects().length > 0).length,
       itemCount: items.length,
+      visibleNewsDetailCount: newsDetails.filter(
+        (detail) => detail.getClientRects().length > 0 && detail.getBoundingClientRect().height > 0,
+      ).length,
+      newsDetailCount: newsDetails.length,
     };
     dispatchEvent(new Event("beforeprint"));
     const duringPrint = {
@@ -329,12 +473,68 @@ try {
       bodyDisplay: getComputedStyle(body).display,
       bodyHeight: body.getBoundingClientRect().height,
       visibleItemCount: items.filter((item) => item.getClientRects().length > 0).length,
+      visibleNewsDetailCount: newsDetails.filter(
+        (detail) => detail.getClientRects().length > 0 && detail.getBoundingClientRect().height > 0,
+      ).length,
     };
     dispatchEvent(new Event("afterprint"));
     return { beforePrint, duringPrint, restoredOpen: details.open };
   })()`);
 
   await cdp.send("Emulation.setEmulatedMedia", { media: "screen" });
+  await navigate(cdp, pathToFileURL(report).href);
+  const archiveFirstClick = await evaluate(cdp, `(async () => {
+    const group = document.querySelector(".archive-date-group[data-report-date='2026-08-11']");
+    const link = group.querySelector(".archive-date-link");
+    const slots = document.getElementById(link.getAttribute("aria-controls"));
+    const initial = {
+      expanded: link.getAttribute("aria-expanded"),
+      slotsHidden: slots.hidden,
+    };
+    const changed = new Promise((resolvePromise) => addEventListener("hashchange", resolvePromise, { once: true }));
+    link.click();
+    await changed;
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+    return {
+      initial,
+      afterClick: {
+        hash: location.hash,
+        expanded: link.getAttribute("aria-expanded"),
+        slotsHidden: slots.hidden,
+      },
+    };
+  })()`);
+  const secondArchiveHref = await evaluate(cdp, `(() => {
+    const link = document.querySelector(".archive-date-group[data-report-date='2026-08-10'] .archive-date-link");
+    const href = link.href;
+    link.click();
+    return href;
+  })()`);
+  await poll(async () => {
+    const href = await evaluate(cdp, "location.href");
+    return href === secondArchiveHref ? true : undefined;
+  });
+  await poll(async () => {
+    const state = await evaluate(cdp, "document.readyState");
+    return state === "complete" ? true : undefined;
+  });
+  const archiveSecondClick = await evaluate(cdp, `(() => {
+    const state = (date) => {
+      const group = document.querySelector('.archive-date-group[data-report-date="' + date + '"]');
+      const link = group.querySelector(".archive-date-link");
+      const slots = document.getElementById(link.getAttribute("aria-controls"));
+      return {
+        expanded: link.getAttribute("aria-expanded"),
+        slotsHidden: slots.hidden,
+      };
+    };
+    return {
+      hash: location.hash,
+      firstDate: state("2026-08-11"),
+      secondDate: state("2026-08-10"),
+    };
+  })()`);
+
   await cdp.send("Emulation.setDeviceMetricsOverride", {
     width: 390,
     height: 844,
@@ -350,9 +550,13 @@ try {
     const reportMain = document.querySelector(".report-main");
     const mobileControl = document.querySelector(".mobile-report-control");
     const navigation = document.querySelector(".theme-navigation");
+    const navigationLinks = Array.from(navigation.querySelectorAll("a"));
     const themeTitle = document.querySelector(".theme-heading-line h2");
     const target = document.querySelectorAll(".theme-group")[4];
     const link = document.querySelector('.theme-navigation a[href="#' + target.id + '"]');
+    const initialCurrentLinks = navigationLinks.filter(
+      (candidate) => candidate.getAttribute("aria-current") === "location",
+    );
     scrollTo(0, 0);
     link.click();
     await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
@@ -374,6 +578,15 @@ try {
       themeTitleFontSize: getComputedStyle(themeTitle).fontSize,
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
+      initialNavigationCurrentCount: initialCurrentLinks.length,
+      initialNavigationCurrentHref: initialCurrentLinks[0]?.getAttribute("href") ?? null,
+      firstNavigationHref: navigationLinks[0].getAttribute("href"),
+      clickedNavigationCurrentCount: navigationLinks.filter(
+        (candidate) => candidate.getAttribute("aria-current") === "location",
+      ).length,
+      clickedNavigationCurrentHref: navigationLinks.find(
+        (candidate) => candidate.getAttribute("aria-current") === "location",
+      )?.getAttribute("href") ?? null,
     };
   })()`);
 
@@ -383,11 +596,57 @@ try {
   if (Math.abs(desktop.sidebar.width - 76) > 1) failures.push("desktop sidebar width mismatch");
   if (desktop.workspacePaddingLeft !== "28px") failures.push("desktop workspace padding mismatch");
   if (desktop.card.borderRadius !== "16px") failures.push("desktop card radius mismatch");
-  if (!desktop.bodyFont.includes("PingFang SC")) failures.push("body font stack mismatch");
+  if (
+    desktop.bodyBackground !== "rgb(237, 241, 246)"
+    || desktop.card.backgroundColor !== "rgb(248, 249, 251)"
+  ) {
+    failures.push("desktop canvas/card background mismatch");
+  }
+  if (
+    desktop.card.borderTopStyle !== "solid"
+    || [
+      desktop.card.borderTopWidth,
+      desktop.card.borderRightWidth,
+      desktop.card.borderBottomWidth,
+      desktop.card.borderLeftWidth,
+    ].some((value) => value !== "2px")
+    || [
+      desktop.card.borderTopColor,
+      desktop.card.borderRightColor,
+      desktop.card.borderBottomColor,
+      desktop.card.borderLeftColor,
+    ].some((value) => value !== "rgb(202, 211, 225)")
+  ) {
+    failures.push("desktop card border must be exactly 2px solid #cad3e1");
+  }
+  if (desktop.card.boxShadow !== "rgba(30, 40, 60, 0.1) 0px 16px 40px 0px") {
+    failures.push(`desktop card shadow mismatch: ${desktop.card.boxShadow}`);
+  }
+  if (
+    desktop.sidebar.paddingTop !== "17px"
+    || desktop.sidebar.paddingRight !== "9px"
+    || desktop.sidebar.paddingBottom !== "17px"
+    || desktop.sidebar.paddingLeft !== "9px"
+    || desktop.sidebar.backgroundColor !== "rgb(28, 41, 64)"
+  ) {
+    failures.push("desktop sidebar padding/background mismatch");
+  }
+  if (!desktop.bodyFont.includes("PingFang SC") || desktop.bodyFont.toLowerCase().includes("inter")) {
+    failures.push(`body font stack must prioritize Chinese system fonts and reject Inter: ${desktop.bodyFont}`);
+  }
   if (desktop.reportTitleFontSize !== "21px") failures.push("report title size mismatch");
   if (desktop.themeTitleFontSize !== "25px") failures.push("theme title size mismatch");
   if (desktop.newsTitleFontSize !== "12px") failures.push("news title size mismatch");
-  if (Math.abs(desktop.newsContentLeft - desktop.firstDetailLeft) > 1) failures.push("news detail alignment mismatch");
+  const contentLeftEdges = {
+    title: desktop.newsTitleLeft,
+    summary: desktop.newsSummaryLeft,
+    association: desktop.associationLeft,
+    detail: desktop.firstDetailLeft,
+    source: desktop.firstSourceLeft,
+  };
+  if (Object.values(contentLeftEdges).some((left) => Math.abs(desktop.newsContentLeft - left) > 1)) {
+    failures.push(`news content/detail/source/association alignment mismatch: ${JSON.stringify(contentLeftEdges)}`);
+  }
   if (desktop.topbar.position !== "static" || desktop.topbar.marginLeft !== "28px") {
     failures.push("desktop topbar geometry mismatch");
   }
@@ -398,13 +657,32 @@ try {
   if (desktop.theme.paddingTop !== "23px" || desktop.theme.paddingBottom !== "15px") {
     failures.push("desktop theme section rhythm mismatch");
   }
+  if (
+    desktop.secondTheme.borderTopWidth !== "6px"
+    || desktop.secondTheme.borderTopColor !== "rgb(237, 240, 244)"
+  ) {
+    failures.push("desktop adjacent themes need a 6px #edf0f4 separator");
+  }
   if (desktop.themeHeading.alignItems !== "baseline" || desktop.themeHeading.columnGap !== "7px") {
     failures.push("desktop theme heading baseline mismatch");
+  }
+  if (
+    desktop.reportTitle.color !== "rgb(24, 32, 51)"
+    || desktop.reportTitle.fontWeight !== "800"
+    || desktop.themeKicker.color !== "rgb(36, 87, 210)"
+    || desktop.themeKicker.fontWeight !== "800"
+    || desktop.themeTitle.fontWeight !== "700"
+    || desktop.newsTitle.fontWeight !== "700"
+    || desktop.newsRank.fontWeight !== "400"
+    || desktop.themeTotal.fontWeight !== "400"
+  ) {
+    failures.push("desktop key color/font-weight hierarchy mismatch");
   }
   if (desktop.themeTotal.fontSize !== "8px") failures.push("desktop theme metadata size mismatch");
   if (desktop.newsList.borderTopWidth !== "2px") failures.push("desktop news list divider mismatch");
   if (
-    desktop.newsRow.gridTemplateColumns.split(" ").length !== 2
+    desktop.newsRow.gridTemplateColumns.split(" ")[0] !== "30px"
+    || Math.abs(desktop.newsRank.width - 30) > 1
     || desktop.newsRow.columnGap !== "9px"
     || desktop.newsRow.paddingTop !== "12px"
   ) {
@@ -414,6 +692,25 @@ try {
     failures.push("desktop news rank typography mismatch");
   }
   if (desktop.newsSummary.fontSize !== "9px") failures.push("desktop news summary size mismatch");
+  if (
+    !desktop.disclosure.closed.hidden
+    || desktop.disclosure.closed.ariaExpanded !== "false"
+    || desktop.disclosure.closed.height !== 0
+    || desktop.disclosure.open.hidden
+    || desktop.disclosure.open.ariaExpanded !== "true"
+    || desktop.disclosure.open.height <= 0
+    || !desktop.disclosure.closedAgain.hidden
+    || desktop.disclosure.closedAgain.ariaExpanded !== "false"
+    || desktop.disclosure.closedAgain.height !== 0
+  ) {
+    failures.push(`news disclosure lifecycle is incomplete: ${JSON.stringify(desktop.disclosure)}`);
+  }
+  if (
+    desktop.initialNavigationCurrent.currentCount !== 1
+    || desktop.initialNavigationCurrent.currentHref !== desktop.firstNavigationHref
+  ) {
+    failures.push(`default theme navigation current state is wrong: ${JSON.stringify(desktop.initialNavigationCurrent)}`);
+  }
   if (
     desktop.headerPosition !== "static"
     || desktop.scrollMarginTop !== 0
@@ -428,14 +725,56 @@ try {
       top: desktop.targetTop,
     })}`);
   }
-  if (contrast.ratio < 4.5) {
-    failures.push(`theme-total contrast ${contrast.ratio.toFixed(2)}:1 is below 4.5:1`);
+  if (
+    desktop.clickedNavigationCurrent.currentCount !== 1
+    || desktop.clickedNavigationCurrent.currentHref !== `#${desktop.anchorTargetId}`
+    || desktop.currentNavigationLink?.color !== "rgb(31, 82, 204)"
+    || desktop.currentNavigationLink?.fontWeight !== "800"
+    || desktop.inactiveNavigationLink?.color !== "rgb(102, 114, 133)"
+    || desktop.inactiveNavigationLink?.fontWeight !== "500"
+  ) {
+    failures.push(`clicked theme navigation current/style state is wrong: ${JSON.stringify({
+      state: desktop.clickedNavigationCurrent,
+      current: desktop.currentNavigationLink,
+      inactive: desktop.inactiveNavigationLink,
+    })}`);
+  }
+  if (
+    directHashNavigation.hash !== `#${desktop.directTargetId}`
+    || directHashNavigation.currentCount !== 1
+    || directHashNavigation.currentHref !== `#${desktop.directTargetId}`
+  ) {
+    failures.push(`direct-hash theme current state is wrong: ${JSON.stringify(directHashNavigation)}`);
+  }
+  const lowContrast = contrast.results.filter((result) => result.ratio < 4.5);
+  const contrastBySelector = Object.values(contrast.results.reduce((summary, result) => {
+    const current = summary[result.selector] ?? {
+      selector: result.selector,
+      count: 0,
+      minimum: Infinity,
+      foreground: result.foreground,
+      background: result.background,
+    };
+    current.count += 1;
+    if (result.ratio < current.minimum) {
+      current.minimum = result.ratio;
+      current.foreground = result.foreground;
+      current.background = result.background;
+    }
+    summary[result.selector] = current;
+    return summary;
+  }, {}));
+  const lowContrastSummary = contrastBySelector.filter((result) => result.minimum < 4.5);
+  if (lowContrast.length) {
+    failures.push(`small-text contrast below 4.5:1: ${JSON.stringify(lowContrastSummary)}`);
   }
   if (
     !print.beforePrint.mediaMatches
     || !print.duringPrint.detailsOpen
     || print.duringPrint.bodyHeight <= 0
     || print.duringPrint.visibleItemCount !== print.beforePrint.itemCount
+    || print.beforePrint.visibleNewsDetailCount !== print.beforePrint.newsDetailCount
+    || print.duringPrint.visibleNewsDetailCount !== print.beforePrint.newsDetailCount
     || print.restoredOpen
   ) {
     failures.push(
@@ -443,12 +782,30 @@ try {
     );
   }
   if (
+    archiveFirstClick.initial.expanded !== "false"
+    || !archiveFirstClick.initial.slotsHidden
+    || archiveFirstClick.afterClick.hash !== "#archive-2026-08-11"
+    || archiveFirstClick.afterClick.expanded !== "true"
+    || archiveFirstClick.afterClick.slotsHidden
+    || archiveSecondClick.hash !== "#archive-2026-08-10"
+    || archiveSecondClick.firstDate.expanded !== "false"
+    || !archiveSecondClick.firstDate.slotsHidden
+    || archiveSecondClick.secondDate.expanded !== "true"
+    || archiveSecondClick.secondDate.slotsHidden
+  ) {
+    failures.push(`archive date expand/collapse lifecycle is wrong: ${JSON.stringify({
+      archiveFirstClick,
+      archiveSecondClick,
+    })}`);
+  }
+  if (
     mobile.headerPosition !== "static"
     || mobile.scrollMarginTop !== 0
     || mobile.anchorHash !== `#${mobile.anchorTargetId}`
+    || Math.abs(mobile.targetTop) > 1
   ) {
     failures.push(
-      `mobile anchor reset is wrong: header=${mobile.headerPosition}, scrollMargin=${mobile.scrollMarginTop}px, hash=${mobile.anchorHash}`,
+      `mobile anchor reset is wrong: header=${mobile.headerPosition}, scrollMargin=${mobile.scrollMarginTop}px, hash=${mobile.anchorHash}, top=${mobile.targetTop}px`,
     );
   }
   if (mobile.shellPaddingLeft !== "12px") failures.push("mobile outer padding mismatch");
@@ -460,12 +817,62 @@ try {
   if (mobile.themeTitleFontSize !== "21px") failures.push("mobile theme title size mismatch");
   if (mobile.cardBorderRadius !== "16px") failures.push("mobile card radius mismatch");
   if (mobile.navigationOverflowX !== "auto") failures.push("mobile theme navigation does not scroll");
+  if (mobile.navigationScrollWidth <= mobile.navigationClientWidth) {
+    failures.push(
+      `mobile theme navigation does not have real horizontal overflow: ${mobile.navigationScrollWidth}px <= ${mobile.navigationClientWidth}px`,
+    );
+  }
+  if (
+    mobile.initialNavigationCurrentCount !== 1
+    || mobile.initialNavigationCurrentHref !== mobile.firstNavigationHref
+    || mobile.clickedNavigationCurrentCount !== 1
+    || mobile.clickedNavigationCurrentHref !== `#${mobile.anchorTargetId}`
+  ) {
+    failures.push(`mobile theme navigation current lifecycle is wrong: ${JSON.stringify(mobile)}`);
+  }
   if (mobile.scrollWidth > mobile.clientWidth) {
     failures.push(`mobile page overflows: ${mobile.scrollWidth}px > ${mobile.clientWidth}px`);
   }
   if (browserProblems.length) failures.push(`browser console: ${browserProblems.join(" | ")}`);
 
-  console.log(JSON.stringify({ desktop, contrast, print, mobile, browserProblems }, null, 2));
+  console.log(JSON.stringify({
+    buildScope: { gitRoot, trackedReports },
+    desktop: {
+      shell: desktop.shell,
+      card: desktop.card,
+      sidebar: desktop.sidebar,
+      reportMain: desktop.reportMain,
+      reportTitle: desktop.reportTitle,
+      cutoff: desktop.cutoff,
+      navigation: desktop.navigation,
+      theme: desktop.theme,
+      secondTheme: desktop.secondTheme,
+      themeKicker: desktop.themeKicker,
+      themeTitle: desktop.themeTitle,
+      themeTotal: desktop.themeTotal,
+      newsList: desktop.newsList,
+      newsRow: desktop.newsRow,
+      newsRank: desktop.newsRank,
+      newsTitle: desktop.newsTitle,
+      newsSummary: desktop.newsSummary,
+      bodyFont: desktop.bodyFont,
+      bodyBackground: desktop.bodyBackground,
+      contentLeftEdges: { newsContent: desktop.newsContentLeft, ...contentLeftEdges },
+      disclosure: desktop.disclosure,
+      initialNavigationCurrent: desktop.initialNavigationCurrent,
+      clickedNavigationCurrent: desktop.clickedNavigationCurrent,
+      currentNavigationLink: desktop.currentNavigationLink,
+      inactiveNavigationLink: desktop.inactiveNavigationLink,
+      targetTop: desktop.targetTop,
+    },
+    directHashNavigation,
+    contrast: { count: contrast.count, minimum: contrast.minimum, bySelector: contrastBySelector },
+    print,
+    archiveFirstClick,
+    archiveSecondClick,
+    mobile,
+    browserProblems,
+  }, null, 2));
   if (failures.length) throw new Error(failures.join("\n"));
   console.log("PASS: reference geometry, typography, anchors, print appendix, contrast, and mobile layout");
 } finally {

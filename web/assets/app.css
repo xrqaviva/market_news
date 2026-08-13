@@ -169,7 +169,7 @@ select:focus-visible {
 
 .report-eyebrow {
   margin: 0;
-  color: #7f8999;
+  color: var(--muted);
   font-size: 9px;
   line-height: 1.55;
   letter-spacing: 0.12em;
@@ -185,7 +185,7 @@ select:focus-visible {
 .report-cutoff {
   flex: 0 0 auto;
   margin: 0;
-  color: #8d96a5;
+  color: var(--muted);
   font-size: 9px;
   line-height: 1.55;
   text-align: right;
@@ -271,8 +271,7 @@ select:focus-visible {
   text-decoration: none;
 }
 
-.theme-navigation a:first-child,
-.theme-navigation a:hover {
+.theme-navigation a[aria-current="location"] {
   color: #1f52cc;
   font-weight: 800;
 }
@@ -350,7 +349,7 @@ select:focus-visible {
 .theme-risk,
 .theme-mappings {
   margin: 6px 0 0;
-  color: #707b8c;
+  color: var(--muted);
   font-size: 9px;
   line-height: 1.55;
 }
@@ -405,7 +404,7 @@ select:focus-visible {
 }
 
 .news-rank {
-  color: #929cab;
+  color: var(--muted);
   font-family: Georgia, serif;
   font-size: 12px;
   font-weight: 400;
@@ -426,7 +425,7 @@ select:focus-visible {
 
 .news-summary {
   margin: 0;
-  color: #707b8c;
+  color: var(--muted);
   font-size: 9px;
   line-height: 1.55;
 }
@@ -453,7 +452,7 @@ select:focus-visible {
   grid-column: 2;
   justify-self: start;
   margin-top: 4px;
-  color: #8a93a1;
+  color: var(--muted);
   font-size: 8px;
   line-height: 1.4;
 }
@@ -579,7 +578,7 @@ select:focus-visible {
 
 .pending-body > p {
   margin: 0 0 8px;
-  color: #8a93a1;
+  color: var(--muted);
   font-size: 8px;
 }
 
@@ -599,7 +598,7 @@ select:focus-visible {
 
 .pending-item p,
 [data-component="pending-sources"] li {
-  color: #7c8797;
+  color: var(--muted);
   font-size: 8px;
 }
 

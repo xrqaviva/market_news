@@ -88,6 +88,17 @@
     });
   }
 
+  function applyThemeNavigationCurrent(hash = window.location.hash) {
+    const links = Array.from(document.querySelectorAll(".theme-navigation a[href^='#']"));
+    const current = links.find((link) => link.getAttribute("href") === hash)
+      ?? (hash ? null : links[0]);
+
+    links.forEach((link) => {
+      if (link === current) link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
+    });
+  }
+
   function applyCategoryFilter(category) {
     document.querySelectorAll(".news-row").forEach((row) => {
       row.hidden = category !== "all" && row.dataset.category !== category;
@@ -102,7 +113,9 @@
   document.querySelectorAll("[data-component='news-detail']").forEach(enhanceRow);
   populateReportSelect();
   applyArchiveState();
+  applyThemeNavigationCurrent();
   window.addEventListener("hashchange", applyArchiveState);
+  window.addEventListener("hashchange", () => applyThemeNavigationCurrent());
 
   const closedPendingDetailsForPrint = new Set();
   window.addEventListener("beforeprint", () => {
@@ -120,6 +133,9 @@
   });
 
   document.addEventListener("click", (event) => {
+    const themeLink = event.target.closest(".theme-navigation a[href^='#']");
+    if (themeLink) applyThemeNavigationCurrent(themeLink.getAttribute("href"));
+
     const toggle = event.target.closest(".news-toggle");
     if (toggle) {
       const detail = document.getElementById(toggle.getAttribute("aria-controls"));
