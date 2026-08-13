@@ -100,11 +100,17 @@ def _news_item(
         ("判断边界", item.boundary),
         ("后续变量", item.variables),
         ("热度变化", item.heat_change),
+        ("热点构成", item.score_breakdown),
     )
+    supplemental_labels = {label for label, _ in item.supplemental_details}
     details = "".join(
         "<p><strong>{}</strong>{}</p>".format(_escape(label), _escape(value))
         for label, value in detail_fields
-        if value
+        if value and label not in supplemental_labels
+    )
+    details += "".join(
+        "<p><strong>{}</strong>{}</p>".format(_escape(label), _escape(value))
+        for label, value in item.supplemental_details
     )
     detail_kind = "analysis" if details else "sources-inline"
     return (
@@ -342,7 +348,9 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
         ) if part
     )
     report_window = (
-        '<p class="report-eyebrow">报告窗口 · {}</p>'.format(_escape(document.meta.window))
+        '<p class="report-eyebrow" data-component="report-window">报告窗口 · {}</p>'.format(
+            _escape(document.meta.window)
+        )
         if document.meta.window else ""
     )
     replacements = {

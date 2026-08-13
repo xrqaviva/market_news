@@ -1,4 +1,5 @@
 import json
+from html import escape
 from pathlib import Path
 import re
 import subprocess
@@ -667,10 +668,187 @@ if (scoreCell.innerHTML.includes('<strong>')) {
             for filename, report_window in expected_windows.items():
                 with self.subTest(filename=filename):
                     page = (output / "reports" / filename).read_text(encoding="utf-8")
-                    self.assertIn(
-                        '<p class="report-eyebrow">报告窗口 · {}</p>'.format(report_window),
-                        page,
+                    self.assertEqual(
+                        1,
+                        page.count(
+                            '<p class="report-eyebrow" data-component="report-window">'
+                            '报告窗口 · {}</p>'.format(report_window)
+                        ),
                     )
+            empty_page = (output / "reports/2026-07-29-1800.html").read_text(encoding="utf-8")
+            self.assertEqual(0, empty_page.count('data-component="report-window"'))
+
+    def test_report_window_escapes_special_characters_once(self):
+        document = ReportDocument(
+            meta=ReportMeta(
+                report_id="window-escape", report_date="2026-08-01", slot="0800",
+                slot_label="盘前", title="window", window='<窗口 & "测试">',
+                cutoff="", source_name="",
+            ),
+            items=(),
+        )
+
+        page = render_report(document, [{
+            "id": "window-escape", "date": "2026-08-01", "label": "盘前",
+            "url": "reports/2026-08-01-0800.html",
+        }])
+
+        self.assertEqual(1, page.count('data-component="report-window"'))
+        self.assertIn(
+            '<p class="report-eyebrow" data-component="report-window">'
+            '报告窗口 · &lt;窗口 &amp; &quot;测试&quot;&gt;</p>',
+            page,
+        )
+        self.assertNotIn('<窗口 & "测试">', page)
+
+    def test_july29_markdown_news_fields_reach_fresh_html_in_source_order(self):
+        source = (ROOT / "reports/2026-07-29-pure-news-hot-ranking-v4.md").read_text(
+            encoding="utf-8"
+        )
+        headings = list(re.finditer(r"^## (\d+)\. .+$", source, re.MULTILINE))
+        self.assertEqual(35, len(headings))
+        expected_labels = (
+            "时间",
+            "监控区间",
+            "热度变化",
+            "变化判定",
+            "传播路径",
+            "当前原始热度",
+            "可靠性",
+            "尚未确认",
+            "可选A股附注",
+        )
+
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            page = (output / "reports/2026-07-29-1800.html").read_text(encoding="utf-8")
+            for index, heading in enumerate(headings):
+                end_match = re.search(r"^## ", source[heading.end():], re.MULTILINE)
+                end = heading.end() + end_match.start() if end_match else len(source)
+                block = source[heading.end():end]
+                rank = int(heading.group(1))
+                article = self._article(page, rank)
+                summary = re.search(
+                    r"^- \*\*消息详情：\*\* (.+)$", block, re.MULTILINE
+                ).group(1)
+                self.assertIn("<p>{}</p>".format(escape(summary, quote=True)), article)
+
+                positions = []
+                for label in expected_labels:
+                    value = re.search(
+                        r"^- \*\*{}：\*\* (.+)$".format(re.escape(label)),
+                        block,
+                        re.MULTILINE,
+                    ).group(1)
+                    rendered = "<p><strong>{}</strong>{}</p>".format(
+                        label, escape(value, quote=True)
+                    )
+                    self.assertEqual(1, article.count(rendered))
+                    positions.append(article.index(rendered))
+                self.assertEqual(sorted(positions), positions)
+
+    def test_every_markdown_score_breakdown_reaches_fresh_html_exactly_once(self):
+        expected = []
+        for source_path in sorted((ROOT / "reports").glob("*.md")):
+            source = source_path.read_text(encoding="utf-8")
+            report_match = re.match(r"(\d{4}-\d{2}-\d{2})-(.*)", source_path.name)
+            slot = {
+                "2026-07-29": "1800",
+                "2026-07-30": "1500" if "1500" in source_path.name else "0800",
+            }.get(report_match.group(1), "0800")
+            output_name = "{}-{}.html".format(report_match.group(1), slot)
+            headings = list(re.finditer(r"^## (\d+)\. .+$", source, re.MULTILINE))
+            for heading in headings:
+                next_heading = re.search(r"^## ", source[heading.end():], re.MULTILINE)
+                end = heading.end() + next_heading.start() if next_heading else len(source)
+                score = re.search(
+                    r"\*\*热点权重：\d+/100\*\*（([^）]+)）",
+                    source[heading.end():end],
+                )
+                if score:
+                    expected.append((output_name, int(heading.group(1)), score.group(1)))
+        self.assertEqual(85, len(expected))
+
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            pages = {}
+            for filename, rank, breakdown in expected:
+                page = pages.setdefault(
+                    filename,
+                    (output / "reports" / filename).read_text(encoding="utf-8"),
+                )
+                article = self._article(page, rank)
+                rendered = "<p><strong>热点构成</strong>{}</p>".format(
+                    escape(breakdown, quote=True)
+                )
+                self.assertEqual(1, article.count(rendered))
+
+    def test_every_legacy_markdown_status_reaches_fresh_html_exactly_once(self):
+        expected = []
+        for source_path in sorted((ROOT / "reports").glob("*.md")):
+            source = source_path.read_text(encoding="utf-8")
+            date = re.match(r"(\d{4}-\d{2}-\d{2})-", source_path.name).group(1)
+            slot = "1500" if "1500" in source_path.name else "1800" if date == "2026-07-29" else "0800"
+            filename = "{}-{}.html".format(date, slot)
+            headings = list(re.finditer(r"^## (\d+)\. .+$", source, re.MULTILINE))
+            for heading in headings:
+                next_heading = re.search(r"^## ", source[heading.end():], re.MULTILINE)
+                end = heading.end() + next_heading.start() if next_heading else len(source)
+                status = re.search(
+                    r"[|｜]\*\*状态：([^*]+)\*\*", source[heading.end():end]
+                )
+                if status:
+                    expected.append((filename, int(heading.group(1)), status.group(1)))
+        self.assertEqual(55, len(expected))
+
+        with TemporaryDirectory() as tmp:
+            output = build_site(ROOT, Path(tmp) / "dist").output_dir
+            pages = {}
+            for filename, rank, status in expected:
+                page = pages.setdefault(
+                    filename,
+                    (output / "reports" / filename).read_text(encoding="utf-8"),
+                )
+                article = self._article(page, rank)
+                rendered = "<p><strong>状态</strong>{}</p>".format(
+                    escape(status, quote=True)
+                )
+                self.assertEqual(1, article.count(rendered))
+
+    def test_score_breakdown_is_auxiliary_escaped_and_omitted_when_empty(self):
+        document = ReportDocument(
+            meta=ReportMeta(
+                report_id="breakdown", report_date="2026-08-01", slot="0800",
+                slot_label="盘前", title="breakdown", window="", cutoff="", source_name="",
+            ),
+            items=(
+                NewsItem(
+                    rank=1, title="有分项", core="核心", score=80,
+                    score_breakdown='<覆盖20 & 变化"30">',
+                    sources=(SourceLink("官方", "", "来源", "https://example.com/one"),),
+                ),
+                NewsItem(
+                    rank=2, title="无分项", core="核心", score=70, score_breakdown="",
+                    sources=(SourceLink("官方", "", "来源", "https://example.com/two"),),
+                ),
+            ),
+        )
+
+        page = render_report(document, [{
+            "id": "breakdown", "date": "2026-08-01", "label": "盘前",
+            "url": "reports/2026-08-01-0800.html",
+        }])
+
+        first = self._article(page, 1)
+        second = self._article(page, 2)
+        self.assertEqual(
+            1,
+            first.count(
+                "<p><strong>热点构成</strong>&lt;覆盖20 &amp; 变化&quot;30&quot;&gt;</p>"
+            ),
+        )
+        self.assertNotIn("热点构成", second)
+        self.assertLess(first.index("热点权重：80/100"), first.index("热点构成"))
 
     def test_rendered_rows_keep_title_and_core_categories_for_filtering(self):
         with TemporaryDirectory() as tmp:

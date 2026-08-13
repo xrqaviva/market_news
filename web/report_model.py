@@ -44,6 +44,7 @@ class NewsItem:
     sources: Tuple[SourceLink, ...] = field(default_factory=tuple)
     event_id: str = ""
     theme_ids: Tuple[str, ...] = field(default_factory=tuple)
+    supplemental_details: Tuple[Tuple[str, str], ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)

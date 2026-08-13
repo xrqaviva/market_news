@@ -34,6 +34,17 @@ _THEME_HEADING = re.compile(
     r"(?:关联新闻(?:数)?\s*)?(\d+)(?:条)?\s*$",
     re.MULTILINE,
 )
+_LEGACY_DETAIL_LABELS = {
+    "时间",
+    "监控区间",
+    "热度变化",
+    "变化判定",
+    "传播路径",
+    "当前原始热度",
+    "可靠性",
+    "尚未确认",
+    "可选A股附注",
+}
 
 
 @dataclass(frozen=True)
@@ -159,7 +170,28 @@ def _top_sections(text: str) -> Iterable[Tuple[int, str, str]]:
     headings = list(_HEADING.finditer(text))
     for index, heading in enumerate(headings):
         end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
-        yield int(heading.group(1)), heading.group(2), text[heading.end():end]
+        block = text[heading.end():end]
+        following_section = re.search(r"^##\s+", block, re.MULTILINE)
+        if following_section:
+            block = block[:following_section.start()]
+        yield int(heading.group(1)), heading.group(2), block
+
+
+def _legacy_supplemental_details(block: str) -> Tuple[Tuple[str, str], ...]:
+    news_block = re.split(r"^##\s+", block, maxsplit=1, flags=re.MULTILINE)[0]
+    details = []
+    status = re.search(r"[|｜]\*\*状态：([^*]+)\*\*", news_block)
+    if status:
+        details.append(("状态", _plain(status.group(1))))
+    if not re.search(r"^(?:-\s*)?\*\*消息详情：\*\*", news_block, re.MULTILINE):
+        return tuple(details)
+    for match in re.finditer(
+        r"^(?:-\s*)?\*\*([^*：\n]+)：\*\*\s*(.+)$", news_block, re.MULTILINE
+    ):
+        label = _plain(match.group(1))
+        if label in _LEGACY_DETAIL_LABELS:
+            details.append((label, _plain(match.group(2))))
+    return tuple(details)
 
 
 def _make_top_item(rank: int, title: str, block: str) -> NewsItem:
@@ -171,7 +203,8 @@ def _make_top_item(rank: int, title: str, block: str) -> NewsItem:
     score = int(score_match.group(1))
     breakdown = _plain(score_match.group(2) or "") if score_match.lastindex and score_match.lastindex >= 2 else ""
     title = _plain(re.sub(r"｜\d+/100$", "", title))
-    core = _field(block, "核心信息")
+    core = _field(block, "核心信息") or _field(block, "消息详情")
+    supplemental_details = _legacy_supplemental_details(block)
     sources = _sources_from_table(block)
     if not sources:
         sources = _inline_sources(block)
@@ -179,15 +212,18 @@ def _make_top_item(rank: int, title: str, block: str) -> NewsItem:
         rank=rank, title=title, core=core, score=score, score_breakdown=breakdown,
         signal=_field(block, "关键信号/预期差"),
         market_feedback=(
-            _field(block, "带时间市场反馈") or _field(block, "财报市场反馈")
+            _field(block, "市场反馈") or _field(block, "带时间市场反馈")
+            or _field(block, "财报市场反馈")
             or _field(block, "财报后盘后反馈")
             or _field(block, "财报后首个可交易时段反馈")
             or _field(block, "财报后发布日余下交易时段反馈")
         ),
         pricing=_pricing(block), boundary=_field(block, "判断边界"),
-        variables=_field(block, "后续变量"), heat_change=_field(block, "热度变化"),
+        variables=_field(block, "后续变量") or _field(block, "后续关键变量"),
+        heat_change=_field(block, "热度变化"),
         release_session=_field(block, "发布时段"),
         category=_category(title, core), sources=sources,
+        supplemental_details=supplemental_details,
     )
 
 

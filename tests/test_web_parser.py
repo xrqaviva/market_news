@@ -314,6 +314,88 @@ class WebReportParserTest(unittest.TestCase):
                 item = next(item for item in documents[report_id].items if item.rank == rank)
                 self.assertEqual(title, item.title)
 
+    def test_july29_legacy_news_keeps_summary_and_ordered_labeled_details(self):
+        document = self._documents()["20260729-1800"]
+
+        self.assertEqual(35, len(document.items))
+        self.assertEqual(35, sum(bool(item.core) for item in document.items))
+        first = document.items[0]
+        self.assertEqual(
+            "本轮直接触发是日韩厂商新一轮调价：太阳诱电于7月27日宣布9月1日起执行新价，"
+            "7月28日韩媒披露三星电机将从8月1日起上调MLCC价格；7月29日财经媒体集中汇总后，"
+            "被动元件话题进入高热榜位。更早的2026年行业涨价周期可追溯至华新科6月1日起执行的"
+            "调价，但不是本轮新增触发。",
+            first.core,
+        )
+        expected_labels = (
+            "状态",
+            "时间",
+            "监控区间",
+            "热度变化",
+            "变化判定",
+            "传播路径",
+            "当前原始热度",
+            "可靠性",
+            "尚未确认",
+            "可选A股附注",
+        )
+        for item in document.items:
+            with self.subTest(rank=item.rank):
+                self.assertEqual(
+                    expected_labels,
+                    tuple(label for label, _ in item.supplemental_details),
+                )
+                self.assertTrue(all(value for _, value in item.supplemental_details))
+
+    def test_legacy_detail_parser_stops_before_following_document_sections(self):
+        with TemporaryDirectory() as tmp:
+            report_path = Path(tmp) / "2026-07-29-1800-legacy.md"
+            report_path.write_text(
+                "# 旧报告\n\n"
+                "## 1. 示例新闻\n\n"
+                "**热点权重：50/100**（覆盖10 + 变化10）\n\n"
+                "- **消息详情：** 新闻摘要。\n"
+                "- **时间：** 新闻时间。\n"
+                "- **核验路径：** [来源](https://example.com/news)\n\n"
+                "## 评分方法\n\n"
+                "**时间：** 这是文档说明，不属于新闻。\n\n"
+                "[不应归入新闻](https://example.com/method)\n",
+                encoding="utf-8",
+            )
+            entry = CatalogEntry(
+                report_id="20260729-1800", path=report_path.name,
+                report_date="2026-07-29", slot="1800", label="收盘",
+            )
+
+            item = parse_report(report_path, entry).items[0]
+
+            self.assertEqual("新闻摘要。", item.core)
+            self.assertEqual((("时间", "新闻时间。"),), item.supplemental_details)
+            self.assertEqual(["https://example.com/news"], [source.url for source in item.sources])
+
+    def test_legacy_market_feedback_and_variable_labels_map_to_existing_fields(self):
+        documents = self._documents()
+        for report_id in ("20260730-0800", "20260730-1500"):
+            with self.subTest(report_id=report_id):
+                top_ten = documents[report_id].items[:10]
+                self.assertEqual(10, sum(bool(item.market_feedback) for item in top_ten))
+                self.assertEqual(10, sum(bool(item.variables) for item in top_ten))
+
+    def test_all_report_model_field_counts_do_not_regress_during_legacy_recovery(self):
+        items = [item for document in self._documents().values() for item in document.items]
+
+        self.assertEqual(169, len(items))
+        self.assertEqual(316, sum(len(item.sources) for item in items))
+        self.assertEqual(169, sum(bool(item.core) for item in items))
+        self.assertEqual(85, sum(bool(item.score_breakdown) for item in items))
+        self.assertEqual(74, sum(bool(item.signal) for item in items))
+        self.assertEqual(74, sum(bool(item.market_feedback) for item in items))
+        self.assertEqual(74, sum(bool(item.boundary) for item in items))
+        self.assertEqual(50, sum(bool(item.variables) for item in items))
+        self.assertEqual(89, sum(bool(item.heat_change) for item in items))
+        self.assertEqual(24, sum(bool(item.release_session) for item in items))
+        self.assertEqual(370, sum(len(item.supplemental_details) for item in items))
+
     def test_headlines_exclude_heat_method_terms(self):
         for document in self._documents().values():
             for item in document.items:
