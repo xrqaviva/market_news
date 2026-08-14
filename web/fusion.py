@@ -78,6 +78,8 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
     - pull 核验状态/核验原因 paragraphs out of the tables and collect them
       into a verification summary rendered below
     """
+    # 0. rename the brief headline to 外围
+    body = re.sub(r"<h1>A股盘前双源晨报", "<h1>外围", body)
     # 1. drop informational paragraphs
     body = re.sub(r"<p class=\"(?:meta|rule|legend)\">.*?</p>", "", body, flags=re.DOTALL)
     body = re.sub(r"<footer>.*?</footer>", "", body, flags=re.DOTALL)
@@ -264,22 +266,22 @@ _FUSION_TEMPLATE = """<!doctype html>
   <div class="page-shell">
     <section class="report-card">
       <aside class="report-sidebar">
-        <div class="brand" aria-label="A股晨报融合视图">RADAR</div>
+        <div class="brand" aria-label="新闻速递">RADAR</div>
         {date_archive}
       </aside>
       <div class="report-workspace">
         <header class="topbar">
           <div class="report-heading">
-            <p class="report-eyebrow">A股晨报融合视图 · 每日</p>
+            <p class="report-eyebrow">新闻速递 · 每日</p>
             <h1>{heading_title}</h1>
           </div>
           <p class="report-cutoff">{date_label}</p>
         </header>
         <main class="report-main">
           <nav class="fusion-tabs" aria-label="视图切换">
-            <span class="fusion-tabs-meta">晨报：{news_title}</span>
+            <span class="fusion-tabs-meta">外围：{news_title}</span>
             <div class="fusion-tabs-actions">
-              <button class="fusion-tab-button" type="button" data-tab="brief" aria-selected="true">晨报</button>
+              <button class="fusion-tab-button" type="button" data-tab="brief" aria-selected="true">外围</button>
               <button class="fusion-tab-button" type="button" data-tab="news" aria-selected="false">新闻</button>
             </div>
           </nav>
@@ -355,12 +357,12 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
     if not date_label:
         match = re.search(r"(\d{4}-\d{2}-\d{2})", latest_url)
         date_label = match.group(1) if match else ""
-    page_title = "A股晨报融合视图{}".format(
+    page_title = "新闻速递{}".format(
         " · {}".format(date_label) if date_label else ""
     )
     page = _FUSION_TEMPLATE.format(
         page_title=html_mod.escape(page_title, quote=True),
-        heading_title=html_mod.escape("A股晨报融合视图", quote=True),
+        heading_title=html_mod.escape("新闻速递", quote=True),
         date_label=html_mod.escape(date_label, quote=True),
         date_archive=_date_archive(reports, latest_url),
         style=_FUSION_STYLE,
