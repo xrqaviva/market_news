@@ -84,8 +84,14 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
     body = re.sub(r"<p class=\"(?:meta|rule|legend)\">.*?</p>", "", body, flags=re.DOTALL)
     body = re.sub(r"<footer>.*?</footer>", "", body, flags=re.DOTALL)
     body = re.sub(r"<p>本报告仅作信息整理，不构成投资建议。</p>", "", body)
-    # 2. drop the 重要宏观新闻 section (heading + following paragraph)
-    body = re.sub(r"<h2>重要宏观新闻</h2>\s*<p>.*?</p>", "", body, flags=re.DOTALL)
+    # 2. drop the whole 重要宏观新闻 section (heading through the next heading
+    #    or the verification details block)
+    body = re.sub(
+        r"<h2>重要宏观新闻</h2>(?:(?!<h2>).)*?(?=<h2>|<details|<footer|\Z)",
+        "",
+        body,
+        flags=re.DOTALL,
+    )
     # 2.5 breadth single-source display: eastmoney only, plain line, no table
     breadth_match = re.search(
         r"<h2>上一交易日A股非ST涨跌家数</h2>(?:(?!<h2>).)*?</div>",
