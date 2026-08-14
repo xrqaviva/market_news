@@ -548,13 +548,17 @@ if (scoreCell.innerHTML.includes('<strong>')) {
         with TemporaryDirectory() as tmp:
             fresh = build_site(ROOT, Path(tmp) / "dist").output_dir
             checked = ROOT / "web/dist"
+            # fusion.html depends on the external daily_info project's latest
+            # output, so it is excluded here and covered by test_fusion_build.
             fresh_files = {
                 path.relative_to(fresh): path.read_bytes()
                 for path in fresh.rglob("*") if path.is_file()
+                if path.relative_to(fresh).as_posix() != "fusion.html"
             }
             checked_files = {
                 path.relative_to(checked): path.read_bytes()
                 for path in checked.rglob("*") if path.is_file()
+                if path.relative_to(checked).as_posix() != "fusion.html"
             }
             self.assertEqual(fresh_files, checked_files)
 

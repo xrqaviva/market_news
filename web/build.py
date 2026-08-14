@@ -15,6 +15,7 @@ from web.report_model import NewsItem, ReportDocument
 from web.report_parser import discover_reports, parse_report
 from web.security import assert_public_tree_safe
 from web.url_policy import renderable_source_url
+from web.fusion import FusionBuildError, build_fusion
 
 
 _TEMPLATE_PATH = Path(__file__).with_name("templates") / "report.html"
@@ -552,8 +553,17 @@ def _atomic_replace(target: Path, next_output: Path) -> None:
             pass
 
 
-def build_site(project_root: Path, output_dir: Path) -> BuildResult:
-    """Build next to output_dir, validate, then atomically replace only output_dir."""
+def build_site(
+    project_root: Path,
+    output_dir: Path,
+    daily_info_root: Optional[Path] = None,
+) -> BuildResult:
+    """Build next to output_dir, validate, then atomically replace only output_dir.
+
+    When daily_info_root is given, also renders fusion.html (radar styles, two tabs:
+    晨报 from the daily_info brief, 新闻 from the latest radar report). A fusion
+    failure never rolls back the radar build itself.
+    """
     project_root = project_root.expanduser().resolve()
     target = _checked_output_dir(project_root, output_dir)
     next_output = target.with_name("{}.next-{}".format(target.name, os.getpid()))
@@ -578,6 +588,12 @@ def build_site(project_root: Path, output_dir: Path) -> BuildResult:
         _write_index(next_output / "index.html", latest["url"], latest["title"])
         _copy_assets(project_root, next_output)
         _validate_output(next_output, report_index)
+        if daily_info_root is not None:
+            try:
+                build_fusion(next_output, daily_info_root)
+                print("fusion page written: {}".format(next_output / "fusion.html"))
+            except FusionBuildError as error:
+                print("fusion page skipped: {}".format(error), file=sys.stderr)
         assert_public_tree_safe(next_output)
         _atomic_replace(target, next_output)
     except Exception:
@@ -596,10 +612,16 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Build static news-radar report pages")
     parser.add_argument("--project-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--daily-info-root",
+        type=Path,
+        default=None,
+        help="optional root of the daily_info project; when given, also renders fusion.html",
+    )
     args = parser.parse_args(argv)
     output = args.output if args.output.is_absolute() else Path.cwd() / args.output
     try:
-        result = build_site(args.project_root, output)
+        result = build_site(args.project_root, output, daily_info_root=args.daily_info_root)
     except Exception as error:
         print("build failed: {}".format(error), file=sys.stderr)
         return 1

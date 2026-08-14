@@ -71,7 +71,7 @@ def _allowed_public_path(relative: str, is_directory: bool) -> bool:
     if is_directory:
         return relative in {"assets", "reports"}
     return (
-        relative in {"index.html", "reports.json", "assets/app.css", "assets/app.js"}
+        relative in {"index.html", "fusion.html", "reports.json", "assets/app.css", "assets/app.js"}
         or re.fullmatch(r"reports/[^/]+\.html", relative) is not None
     )
 
