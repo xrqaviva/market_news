@@ -57,40 +57,41 @@ def _latest_report_manifest(output_dir: Path) -> tuple[str, str]:
 
 _FUSION_STYLE = """
 <style>
-  .fusion-shell { max-width: 1180px; margin: 0 auto; padding: 18px 16px 40px; }
-  .fusion-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-  .fusion-head h1 { margin: 0; font-size: 20px; color: var(--ink); }
-  .fusion-head .fusion-date { color: var(--muted); font-size: 13px; }
-  .fusion-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
-  .fusion-tab-button {
-    appearance: none; border: 1px solid var(--line); border-bottom: none; background: var(--surface);
-    color: var(--muted); padding: 9px 22px; font-size: 14px; border-radius: 10px 10px 0 0;
-    cursor: pointer; margin-bottom: -1px;
+  /* tab bar in the report filter-bar idiom */
+  .fusion-tabs {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin: 18px 0 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px;
   }
+  .fusion-tabs .fusion-tabs-meta { color: var(--muted); font-size: 10px; }
+  .fusion-tabs .fusion-tabs-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+  .fusion-tab-button {
+    padding: 5px 10px; font-size: 10px; color: #425069; background: #f8fafc;
+    border: 1px solid #cbd3df; border-radius: 3px; cursor: pointer;
+  }
+  .fusion-tab-button:hover { color: #1749a8; border-color: #8ab1f3; }
   .fusion-tab-button[aria-selected="true"] {
-    background: var(--canvas); color: var(--ink); border-color: var(--line);
-    box-shadow: inset 0 2px 0 var(--nav-active); font-weight: 600;
+    color: #ffffff; background: var(--accent); border-color: var(--accent); font-weight: 700;
   }
   .fusion-pane[hidden] { display: none; }
 
-  /* morning-brief table styles adapted to the radar palette */
+  /* morning-brief content styled with the radar palette */
   .brief-body h1 { font-size: 19px; margin: 0 0 10px; color: var(--ink); }
   .brief-body h2 {
-    font-size: 15px; margin: 22px 0 10px; padding: 7px 12px;
+    font-size: 15px; margin: 24px 0 10px; padding: 7px 12px;
     border-left: 3px solid var(--accent); background: rgba(36, 87, 210, .07);
     border-radius: 0 6px 6px 0; color: var(--ink);
   }
-  .brief-body h3 { font-size: 14px; margin: 16px 0 8px; color: var(--ink); }
-  .brief-body p { margin: 6px 0; }
-  .brief-body .meta, .brief-body .rule { color: var(--muted); font-size: 12.5px; margin: 3px 0; }
-  .brief-body .table-wrap { width: 100%; overflow-x: auto; margin: 8px 0 14px; }
+  .brief-body h3 { font-size: 13px; margin: 16px 0 8px; color: var(--ink); }
+  .brief-body p { margin: 6px 0; font-size: 13px; }
+  .brief-body .meta, .brief-body .rule { color: var(--muted); font-size: 11px; margin: 3px 0; }
+  .brief-body .table-wrap { width: 100%; overflow-x: auto; margin: 8px 0 16px; }
   .brief-body table {
     width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;
     background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
   }
-  .brief-body th, .brief-body td { padding: 7px 10px; text-align: left; font-size: 13px; }
+  .brief-body th, .brief-body td { padding: 8px 12px; text-align: left; font-size: 12.5px; }
   .brief-body th {
-    background: var(--surface); color: var(--muted); font-weight: 600; font-size: 12px;
+    background: var(--surface); color: var(--muted); font-weight: 600; font-size: 11px;
     border-bottom: 1px solid var(--line); letter-spacing: .2px;
   }
   .brief-body td { border-bottom: 1px solid var(--line); }
@@ -106,11 +107,14 @@ _FUSION_STYLE = """
   .brief-body details { margin: 12px 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; }
   .brief-body details.alert { border-color: rgba(138, 79, 10, .4); background: var(--mixed-bg); }
   .brief-body summary { cursor: pointer; font-weight: 600; color: var(--ink); }
-  .brief-body .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px;
+  .brief-body .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px;
     border: 1px solid var(--line); color: var(--muted); background: var(--surface); }
   .brief-body .tag.official { color: #0c8f5e; border-color: rgba(12, 143, 94, .4); background: rgba(12, 143, 94, .08); }
 
-  .fusion-news-frame { width: 100%; height: calc(100vh - 150px); min-height: 620px; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+  .fusion-news-frame {
+    width: 100%; height: calc(100vh - 210px); min-height: 620px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--canvas);
+  }
 </style>
 """
 
@@ -119,18 +123,27 @@ _FUSION_JS = """
   (function () {
     var tabs = document.querySelectorAll('.fusion-tab-button');
     var panes = document.querySelectorAll('.fusion-pane');
-    for (var i = 0; i < tabs.length; i++) {
-      tabs[i].addEventListener('click', function () {
-        var target = this.getAttribute('data-tab');
-        for (var j = 0; j < tabs.length; j++) {
-          var selected = tabs[j].getAttribute('data-tab') === target;
-          tabs[j].setAttribute('aria-selected', selected ? 'true' : 'false');
-        }
-        for (var k = 0; k < panes.length; k++) {
-          panes[k].hidden = panes[k].getAttribute('data-pane') !== target;
-        }
-      });
+    function select(target) {
+      for (var j = 0; j < tabs.length; j++) {
+        tabs[j].setAttribute('aria-selected', tabs[j].getAttribute('data-tab') === target ? 'true' : 'false');
+      }
+      for (var k = 0; k < panes.length; k++) {
+        panes[k].hidden = panes[k].getAttribute('data-pane') !== target;
+      }
     }
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].addEventListener('click', function () { select(this.getAttribute('data-tab')); });
+    }
+    var links = document.querySelectorAll('[data-tab-link]');
+    for (var m = 0; m < links.length; m++) {
+      links[m].addEventListener('click', function () { select(this.getAttribute('data-tab-link')); });
+    }
+    window.addEventListener('hashchange', function () {
+      var target = (location.hash || '').replace('#', '');
+      if (target === 'brief' || target === 'news') { select(target); }
+    });
+    var hash = (location.hash || '').replace('#', '');
+    if (hash === 'news') { select('news'); }
   })();
 </script>
 """
@@ -146,20 +159,38 @@ _FUSION_TEMPLATE = """<!doctype html>
   {style}
 </head>
 <body>
-  <div class="fusion-shell">
-    <header class="fusion-head">
-      <h1>A股晨报融合视图</h1>
-      <span class="fusion-date">{date_label}</span>
-    </header>
-    <nav class="fusion-tabs" aria-label="视图切换">
-      <button class="fusion-tab-button" type="button" data-tab="brief" aria-selected="true">晨报</button>
-      <button class="fusion-tab-button" type="button" data-tab="news" aria-selected="false">新闻</button>
-    </nav>
-    <section class="fusion-pane brief-body" data-pane="brief">
-      {brief_body}
-    </section>
-    <section class="fusion-pane" data-pane="news" hidden>
-      <iframe class="fusion-news-frame" src="{latest_url}" title="{news_title}" loading="lazy"></iframe>
+  <div class="page-shell">
+    <section class="report-card">
+      <aside class="report-sidebar">
+        <div class="brand" aria-label="A股晨报融合视图">RADAR</div>
+        <a class="archive-date-link" href="#brief" data-tab-link="brief">晨报</a>
+        <a class="archive-date-link" href="#news" data-tab-link="news">新闻</a>
+        <a class="archive-date-link" href="{latest_url}" data-report-link>当日报告</a>
+      </aside>
+      <div class="report-workspace">
+        <header class="topbar">
+          <div class="report-heading">
+            <p class="report-eyebrow">A股晨报融合视图 · 每日</p>
+            <h1>{heading_title}</h1>
+          </div>
+          <p class="report-cutoff">{date_label}</p>
+        </header>
+        <main class="report-main">
+          <nav class="fusion-tabs" aria-label="视图切换">
+            <span class="fusion-tabs-meta">晨报：{news_title}</span>
+            <div class="fusion-tabs-actions">
+              <button class="fusion-tab-button" type="button" data-tab="brief" aria-selected="true">晨报</button>
+              <button class="fusion-tab-button" type="button" data-tab="news" aria-selected="false">新闻</button>
+            </div>
+          </nav>
+          <section class="fusion-pane brief-body" data-pane="brief">
+            {brief_body}
+          </section>
+          <section class="fusion-pane" data-pane="news" hidden>
+            <iframe class="fusion-news-frame" src="{latest_url}" title="{news_title}" loading="lazy"></iframe>
+          </section>
+        </main>
+      </div>
     </section>
   </div>
   {js}
@@ -185,6 +216,7 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
     )
     page = _FUSION_TEMPLATE.format(
         page_title=html_mod.escape(page_title, quote=True),
+        heading_title=html_mod.escape("A股晨报融合视图", quote=True),
         date_label=html_mod.escape(date_label, quote=True),
         style=_FUSION_STYLE,
         brief_body=brief_body,

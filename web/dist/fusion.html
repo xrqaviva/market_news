@@ -8,40 +8,41 @@
   <link rel="stylesheet" href="assets/app.css">
   
 <style>
-  .fusion-shell { max-width: 1180px; margin: 0 auto; padding: 18px 16px 40px; }
-  .fusion-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-  .fusion-head h1 { margin: 0; font-size: 20px; color: var(--ink); }
-  .fusion-head .fusion-date { color: var(--muted); font-size: 13px; }
-  .fusion-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
-  .fusion-tab-button {
-    appearance: none; border: 1px solid var(--line); border-bottom: none; background: var(--surface);
-    color: var(--muted); padding: 9px 22px; font-size: 14px; border-radius: 10px 10px 0 0;
-    cursor: pointer; margin-bottom: -1px;
+  /* tab bar in the report filter-bar idiom */
+  .fusion-tabs {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin: 18px 0 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px;
   }
+  .fusion-tabs .fusion-tabs-meta { color: var(--muted); font-size: 10px; }
+  .fusion-tabs .fusion-tabs-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+  .fusion-tab-button {
+    padding: 5px 10px; font-size: 10px; color: #425069; background: #f8fafc;
+    border: 1px solid #cbd3df; border-radius: 3px; cursor: pointer;
+  }
+  .fusion-tab-button:hover { color: #1749a8; border-color: #8ab1f3; }
   .fusion-tab-button[aria-selected="true"] {
-    background: var(--canvas); color: var(--ink); border-color: var(--line);
-    box-shadow: inset 0 2px 0 var(--nav-active); font-weight: 600;
+    color: #ffffff; background: var(--accent); border-color: var(--accent); font-weight: 700;
   }
   .fusion-pane[hidden] { display: none; }
 
-  /* morning-brief table styles adapted to the radar palette */
+  /* morning-brief content styled with the radar palette */
   .brief-body h1 { font-size: 19px; margin: 0 0 10px; color: var(--ink); }
   .brief-body h2 {
-    font-size: 15px; margin: 22px 0 10px; padding: 7px 12px;
+    font-size: 15px; margin: 24px 0 10px; padding: 7px 12px;
     border-left: 3px solid var(--accent); background: rgba(36, 87, 210, .07);
     border-radius: 0 6px 6px 0; color: var(--ink);
   }
-  .brief-body h3 { font-size: 14px; margin: 16px 0 8px; color: var(--ink); }
-  .brief-body p { margin: 6px 0; }
-  .brief-body .meta, .brief-body .rule { color: var(--muted); font-size: 12.5px; margin: 3px 0; }
-  .brief-body .table-wrap { width: 100%; overflow-x: auto; margin: 8px 0 14px; }
+  .brief-body h3 { font-size: 13px; margin: 16px 0 8px; color: var(--ink); }
+  .brief-body p { margin: 6px 0; font-size: 13px; }
+  .brief-body .meta, .brief-body .rule { color: var(--muted); font-size: 11px; margin: 3px 0; }
+  .brief-body .table-wrap { width: 100%; overflow-x: auto; margin: 8px 0 16px; }
   .brief-body table {
     width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;
     background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
   }
-  .brief-body th, .brief-body td { padding: 7px 10px; text-align: left; font-size: 13px; }
+  .brief-body th, .brief-body td { padding: 8px 12px; text-align: left; font-size: 12.5px; }
   .brief-body th {
-    background: var(--surface); color: var(--muted); font-weight: 600; font-size: 12px;
+    background: var(--surface); color: var(--muted); font-weight: 600; font-size: 11px;
     border-bottom: 1px solid var(--line); letter-spacing: .2px;
   }
   .brief-body td { border-bottom: 1px solid var(--line); }
@@ -57,26 +58,44 @@
   .brief-body details { margin: 12px 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; }
   .brief-body details.alert { border-color: rgba(138, 79, 10, .4); background: var(--mixed-bg); }
   .brief-body summary { cursor: pointer; font-weight: 600; color: var(--ink); }
-  .brief-body .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px;
+  .brief-body .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px;
     border: 1px solid var(--line); color: var(--muted); background: var(--surface); }
   .brief-body .tag.official { color: #0c8f5e; border-color: rgba(12, 143, 94, .4); background: rgba(12, 143, 94, .08); }
 
-  .fusion-news-frame { width: 100%; height: calc(100vh - 150px); min-height: 620px; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+  .fusion-news-frame {
+    width: 100%; height: calc(100vh - 210px); min-height: 620px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--canvas);
+  }
 </style>
 
 </head>
 <body>
-  <div class="fusion-shell">
-    <header class="fusion-head">
-      <h1>A股晨报融合视图</h1>
-      <span class="fusion-date">2026-08-14</span>
-    </header>
-    <nav class="fusion-tabs" aria-label="视图切换">
-      <button class="fusion-tab-button" type="button" data-tab="brief" aria-selected="true">晨报</button>
-      <button class="fusion-tab-button" type="button" data-tab="news" aria-selected="false">新闻</button>
-    </nav>
-    <section class="fusion-pane brief-body" data-pane="brief">
-      <h1>A股盘前双源晨报｜2026-08-14</h1>
+  <div class="page-shell">
+    <section class="report-card">
+      <aside class="report-sidebar">
+        <div class="brand" aria-label="A股晨报融合视图">RADAR</div>
+        <a class="archive-date-link" href="#brief" data-tab-link="brief">晨报</a>
+        <a class="archive-date-link" href="#news" data-tab-link="news">新闻</a>
+        <a class="archive-date-link" href="reports/2026-08-14-0800.html" data-report-link>当日报告</a>
+      </aside>
+      <div class="report-workspace">
+        <header class="topbar">
+          <div class="report-heading">
+            <p class="report-eyebrow">A股晨报融合视图 · 每日</p>
+            <h1>A股晨报融合视图</h1>
+          </div>
+          <p class="report-cutoff">2026-08-14</p>
+        </header>
+        <main class="report-main">
+          <nav class="fusion-tabs" aria-label="视图切换">
+            <span class="fusion-tabs-meta">晨报：2026-08-14 A股盘前新闻热榜（08:00 正式版·旧闻后置）</span>
+            <div class="fusion-tabs-actions">
+              <button class="fusion-tab-button" type="button" data-tab="brief" aria-selected="true">晨报</button>
+              <button class="fusion-tab-button" type="button" data-tab="news" aria-selected="false">新闻</button>
+            </div>
+          </nav>
+          <section class="fusion-pane brief-body" data-pane="brief">
+            <h1>A股盘前双源晨报｜2026-08-14</h1>
 <p class="meta">采集截止：中国时间 2026-08-14T07:40:00+08:00</p>
 <p class="meta">上一A股交易日：2026-08-13</p>
 <p class="rule">规则：只有同口径、同日期的两个独立来源在容差内才显示共识值；普通冲突或单源会列原值，交易日不符的盘中值仅保留日期与来源证据、不进入主表。</p>
@@ -107,9 +126,12 @@
 <h2>重要宏观新闻</h2>
 <p>本时间窗内没有通过严格来源规则的宏观新闻。</p>
 <details class="status"><summary>核验状态（41 条，点击展开）</summary><ul><li>上期所铝：<span class="status-conflict">待核验（双源冲突）</span></li><li>法国CAC40：<span class="status-verified">已双源核验</span></li><li>COMEX铜：<span class="status-conflict">待核验（双源冲突）</span></li><li>德国DAX：<span class="status-verified">已双源核验</span></li><li>道琼斯工业：<span class="status-single">待核验（仅单源）</span></li><li>美元指数：<span class="status-single">待核验（仅单源）</span></li><li>钼铁FeMo60-C（Mysteel）：<span class="status-unavailable">不可用</span></li><li>钼铁60%（SMM）：<span class="status-single">待核验（仅单源）</span></li><li>英国富时100：<span class="status-verified">已双源核验</span></li><li>COMEX黄金：<span class="status-verified">已双源核验</span></li><li>上海原油：<span class="status-conflict">待核验（双源冲突）</span></li><li>大商所铁矿石：<span class="status-conflict">待核验（双源冲突）</span></li><li>LME铝：<span class="status-single">待核验（仅单源）</span></li><li>LME钴：<span class="status-unavailable">不可用</span></li><li>LME铜：<span class="status-single">待核验（仅单源）</span></li><li>LME铅：<span class="status-single">待核验（仅单源）</span></li><li>LME镍：<span class="status-single">待核验（仅单源）</span></li><li>LME锡：<span class="status-single">待核验（仅单源）</span></li><li>LME锌：<span class="status-single">待核验（仅单源）</span></li><li>纳斯达克综合：<span class="status-single">待核验（仅单源）</span></li><li>上期所铜：<span class="status-conflict">待核验（双源冲突）</span></li><li>上期所黄金：<span class="status-conflict">待核验（双源冲突）</span></li><li>上期所铅：<span class="status-conflict">待核验（双源冲突）</span></li><li>上期所镍：<span class="status-conflict">待核验（双源冲突）</span></li><li>上期所白银：<span class="status-conflict">待核验（双源冲突）</span></li><li>上期所锡：<span class="status-conflict">待核验（双源冲突）</span></li><li>上期所锌：<span class="status-conflict">待核验（双源冲突）</span></li><li>COMEX白银：<span class="status-conflict">待核验（双源冲突）</span></li><li>标普500：<span class="status-verified">已双源核验</span></li><li>现货黄金：<span class="status-single">待核验（仅单源）</span></li><li>现货白银：<span class="status-single">待核验（仅单源）</span></li><li>钨精矿参考价：<span class="status-single">待核验（仅单源）</span></li><li>赣州钨精矿预测价（55%，月度）：<span class="status-conflict">待核验（双源冲突）</span></li><li>美元/在岸人民币：<span class="status-conflict">待核验（双源冲突）</span></li><li>美元/欧元：<span class="status-conflict">待核验（双源冲突）</span></li><li>美元/英镑：<span class="status-conflict">待核验（双源冲突）</span></li><li>美元/日元：<span class="status-conflict">待核验（双源冲突）</span></li><li>WTI原油：<span class="status-conflict">待核验（双源冲突）</span></li><li>标普500行业ETF板块行情：<span class="status-single">单源参考</span></li><li>A股涨跌家数：<span class="status-conflict">待核验（双源冲突）</span></li><li>新闻核验缺口：隔夜美股与财报、国内商品期货</li></ul></details><p class="legend"><span class="up">涨 ▲</span> / <span class="down">跌 ▼</span>（红涨绿跌）—— 颜色仅辅助展示，核验状态以表格为准。</p><footer>本报告仅作信息整理，不构成投资建议。</footer>
-    </section>
-    <section class="fusion-pane" data-pane="news" hidden>
-      <iframe class="fusion-news-frame" src="reports/2026-08-14-0800.html" title="2026-08-14 A股盘前新闻热榜（08:00 正式版·旧闻后置）" loading="lazy"></iframe>
+          </section>
+          <section class="fusion-pane" data-pane="news" hidden>
+            <iframe class="fusion-news-frame" src="reports/2026-08-14-0800.html" title="2026-08-14 A股盘前新闻热榜（08:00 正式版·旧闻后置）" loading="lazy"></iframe>
+          </section>
+        </main>
+      </div>
     </section>
   </div>
   
@@ -117,18 +139,27 @@
   (function () {
     var tabs = document.querySelectorAll('.fusion-tab-button');
     var panes = document.querySelectorAll('.fusion-pane');
-    for (var i = 0; i < tabs.length; i++) {
-      tabs[i].addEventListener('click', function () {
-        var target = this.getAttribute('data-tab');
-        for (var j = 0; j < tabs.length; j++) {
-          var selected = tabs[j].getAttribute('data-tab') === target;
-          tabs[j].setAttribute('aria-selected', selected ? 'true' : 'false');
-        }
-        for (var k = 0; k < panes.length; k++) {
-          panes[k].hidden = panes[k].getAttribute('data-pane') !== target;
-        }
-      });
+    function select(target) {
+      for (var j = 0; j < tabs.length; j++) {
+        tabs[j].setAttribute('aria-selected', tabs[j].getAttribute('data-tab') === target ? 'true' : 'false');
+      }
+      for (var k = 0; k < panes.length; k++) {
+        panes[k].hidden = panes[k].getAttribute('data-pane') !== target;
+      }
     }
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].addEventListener('click', function () { select(this.getAttribute('data-tab')); });
+    }
+    var links = document.querySelectorAll('[data-tab-link]');
+    for (var m = 0; m < links.length; m++) {
+      links[m].addEventListener('click', function () { select(this.getAttribute('data-tab-link')); });
+    }
+    window.addEventListener('hashchange', function () {
+      var target = (location.hash || '').replace('#', '');
+      if (target === 'brief' || target === 'news') { select(target); }
+    });
+    var hash = (location.hash || '').replace('#', '');
+    if (hash === 'news') { select('news'); }
   })();
 </script>
 

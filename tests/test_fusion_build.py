@@ -69,6 +69,13 @@ class FusionBuildTest(unittest.TestCase):
             self.assertIn("+0.65%", page)
             self.assertIn("assets/app.css", page)
             self.assertIn("2026-08-14", page)
+            # radar report-card skeleton reused for a consistent look
+            self.assertIn('class="page-shell"', page)
+            self.assertIn('class="report-card"', page)
+            self.assertIn('class="report-sidebar"', page)
+            self.assertIn('class="report-workspace"', page)
+            self.assertIn('href="#brief"', page)
+            self.assertIn('href="reports/2026-08-14-0800.html"', page)
 
     def test_build_fusion_fails_without_brief(self):
         with TemporaryDirectory() as tmp:
