@@ -132,8 +132,10 @@ class FusionBuildTest(unittest.TestCase):
             self.assertIn(">东方财富<", page)
             self.assertIn("+69.7200", page)
             self.assertIn("26,803.03", page)
-            # fully-empty value tables collapse into a verification summary
-            self.assertIn("官方日度参考汇率（2 项暂无共识值", page)
+            # market tables always render open, even when values are missing
+            self.assertNotIn("暂无共识值", page)
+            self.assertIn("美元/在岸人民币", page)
+            self.assertIn("核验明细（1 条）", page)
             # breadth becomes a single-source plain line (eastmoney, no table)
             self.assertIn("上涨 1,088 · 下跌 4,168 · 平盘 78（数据日期 2026-08-13，东方财富）", page)
             self.assertIn("breadth-line", page)

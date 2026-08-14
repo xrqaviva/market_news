@@ -330,40 +330,6 @@ _FUSION_TEMPLATE = """<!doctype html>
 """
 
 
-def _collapse_empty_tables(body: str) -> str:
-    """Wrap fully-empty value tables (every .num cell is —) in a folded details block,
-    titled by the nearest preceding section heading."""
-
-    def _nearest_h2(before: str) -> str:
-        headings = list(re.finditer(r"<h2>([^<]+)</h2>", before))
-        if not headings:
-            return ""
-        return headings[-1].group(1).strip()
-
-    out = []
-    cursor = 0
-    for match in re.finditer(r'<div class="table-wrap">(.*?)</div>', body, flags=re.DOTALL):
-        out.append(body[cursor:match.start()])
-        block = match.group(1)
-        num_values = re.findall(r'<td class="num[^"]*">([^<]*)</td>', block)
-        if not num_values or any(value.strip() != "—" for value in num_values):
-            out.append(match.group(0))
-        else:
-            title = _nearest_h2(body[:match.start()])
-            rows = block.count("<tr>") - 1
-            summary = "{}（{} 项暂无共识值，来源日期不一致未形成双源共识）".format(
-                title or "数据表", rows
-            )
-            out.append(
-                '<details class="status"><summary>{}</summary>'
-                '<div class="table-wrap">{}</div></details>'.format(
-                    html_mod.escape(summary), block
-                )
-            )
-        cursor = match.end()
-    out.append(body[cursor:])
-    return "".join(out)
-
 
 def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") -> Path:
     """Write fusion.html into output_dir and return its path."""
@@ -374,7 +340,6 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
     brief_body, verification_lines = _transform_brief_body(
         _extract_brief_body(brief_path.read_text(encoding="utf-8"))
     )
-    brief_body = _collapse_empty_tables(brief_body)
     if verification_lines:
         lines = "".join("<li>{}</li>".format(html_mod.escape(line)) for line in verification_lines)
         brief_body += (
