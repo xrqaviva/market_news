@@ -500,7 +500,7 @@ class WebReportParserTest(unittest.TestCase):
         items = [item for document in self._documents().values() for item in document.items]
 
         self.assertEqual(261, len(items))
-        self.assertEqual(473, sum(len(item.sources) for item in items))
+        self.assertEqual(479, sum(len(item.sources) for item in items))
         self.assertEqual(261, sum(bool(item.core) for item in items))
         self.assertEqual(201, sum(bool(item.score_breakdown) for item in items))
         self.assertEqual(166, sum(bool(item.signal) for item in items))
