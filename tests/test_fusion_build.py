@@ -18,9 +18,36 @@ def _fake_daily_info(base: Path) -> Path:
     brief_dir.mkdir(parents=True)
     (brief_dir / "A股盘前晨报.html").write_text(
         "<!doctype html><html lang=\"zh-CN\"><head><title>x</title></head>"
-        "<body><main><h1>A股盘前双源晨报｜2026-08-13</h1>"
-        "<div class=\"table-wrap\"><table><thead><tr><th>品种</th></tr></thead>"
-        "<tbody><tr><td class=\"num up\">+0.65%</td></tr></tbody></table></div>"
+        "<body><main>"
+        "<h1>A股盘前双源晨报｜2026-08-13</h1>"
+        "<p class=\"meta\">采集截止：中国时间 2026-08-13T07:30:00+08:00</p>"
+        "<p class=\"meta\">上一A股交易日：2026-08-12</p>"
+        "<p class=\"rule\">规则：只有同口径、同日期的两个独立来源在容差内才显示共识值；</p>"
+        "<h2>美股三大指数</h2>"
+        "<div class=\"table-wrap\"><table><thead><tr><th>品种</th><th>最新值</th></tr></thead><tbody>"
+        "<tr><td>标普500</td><td class=\"num up\">+0.65%</td></tr>"
+        "<tr><td>纳斯达克综合</td><td class=\"num\">tencent 26,803.03</td></tr>"
+        "<tr><td>道琼斯工业</td><td class=\"num up\">tencent +69.7200</td>"
+        "<td class=\"src\"><a href=\"https://example.com/tencent\">tencent</a>；"
+        "<a href=\"https://example.com/east\">eastmoney_global_history</a></td></tr>"
+        "</tbody></table></div>"
+        "<h2>官方日度参考汇率</h2>"
+        "<div class=\"table-wrap\"><table><thead><tr><th>品种</th><th>最新值</th></tr></thead><tbody>"
+        "<tr><td>美元/在岸人民币</td><td class=\"num flat\">—</td>"
+        "<td class=\"src\"><a href=\"https://example.com/boc\">boc</a></td></tr>"
+        "<tr><td>美元/欧元</td><td class=\"num flat\">—</td>"
+        "<td class=\"src\"><a href=\"https://example.com/ecb\">ecb</a></td></tr>"
+        "</tbody></table></div>"
+        "<h2>上一交易日A股非ST涨跌家数</h2>"
+        "<p>核验状态：待核验（双源冲突）</p>"
+        "<p>核验原因：eligible_code_set_mismatch</p>"
+        "<div class=\"table-wrap\"><table><tbody>"
+        "<tr><td>eastmoney</td><td class=\"num\">5,334.00</td></tr>"
+        "</tbody></table></div>"
+        "<h2>重要宏观新闻</h2>"
+        "<p>本时间窗内没有通过严格来源规则的宏观新闻。</p>"
+        "<p class=\"legend\">涨 ▲ / 跌 ▼（红涨绿跌）—— 颜色仅辅助展示，核验状态以表格为准。</p>"
+        "<footer>本报告仅作信息整理，不构成投资建议。</footer>"
         "</main></body></html>",
         encoding="utf-8",
     )
@@ -76,6 +103,25 @@ class FusionBuildTest(unittest.TestCase):
             self.assertIn('class="report-workspace"', page)
             self.assertIn('href="#brief"', page)
             self.assertIn('href="reports/2026-08-14-0800.html"', page)
+            # informational paragraphs and macro-news section dropped
+            for dropped in (
+                "采集截止", "上一A股交易日", "规则：只有同口径", "涨 ▲",
+                "本报告仅作信息整理", "重要宏观新闻",
+            ):
+                self.assertNotIn(dropped, page)
+            # source prefixes stripped from numeric cells, keys mapped to short names
+            self.assertNotIn("tencent ", page)
+            self.assertIn(">腾讯<", page)
+            self.assertIn(">东方财富<", page)
+            self.assertIn("+69.7200", page)
+            self.assertIn("26,803.03", page)
+            # fully-empty value tables collapse into a verification summary
+            self.assertIn("官方日度参考汇率（2 项暂无共识值", page)
+            # inline verification status/reason moved to the bottom summary
+            self.assertIn("核验明细（1 条）", page)
+            self.assertIn("eligible_code_set_mismatch", page)
+            # tables get full cell borders
+            self.assertIn("border: 1px solid var(--line);", page)
 
     def test_build_fusion_fails_without_brief(self):
         with TemporaryDirectory() as tmp:

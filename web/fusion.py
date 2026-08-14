@@ -30,6 +30,30 @@ class FusionBuildError(RuntimeError):
     """Raised when the fusion page cannot be built from project outputs."""
 
 
+_SOURCE_SHORT_NAMES = {
+    "tencent": "腾讯",
+    "eastmoney_global_history": "东方财富",
+    "eastmoney_futures": "东方财富",
+    "sina_global_history": "新浪",
+    "sina_futures": "新浪",
+    "smm": "SMM",
+    "ganzhou": "赣州钨协",
+    "boc": "加拿大央行",
+    "boe": "英国央行",
+    "ecb": "欧央行",
+}
+_SOURCE_KEY_PATTERN = re.compile(
+    r"^(?:{})$".format("|".join(re.escape(key) for key in _SOURCE_SHORT_NAMES)),
+    re.IGNORECASE,
+)
+_NUM_PREFIX = re.compile(
+    r"(?<![\w/])(?:{}|{})\s+".format(
+        "|".join(re.escape(key) for key in _SOURCE_SHORT_NAMES),
+        "|".join(re.escape(key).capitalize() for key in _SOURCE_SHORT_NAMES),
+    )
+)
+
+
 def _extract_brief_body(brief_html: str) -> str:
     match = _MAIN.search(brief_html)
     if not match:
@@ -38,6 +62,65 @@ def _extract_brief_body(brief_html: str) -> str:
     if not body:
         raise FusionBuildError("daily_info brief <main> block is empty")
     return body
+
+
+def _clean_short_name(link_text: str) -> str:
+    return _SOURCE_SHORT_NAMES.get(link_text.strip(), link_text.strip())
+
+
+def _transform_brief_body(body: str) -> tuple[str, list[str]]:
+    """Clean the daily_info brief body for the radar look.
+
+    Returns (cleaned_body, verification_lines). The user-facing rules:
+    - drop meta/rule/legend/disclaimer paragraphs (no information value)
+    - drop the whole 重要宏观新闻 section (news lives in the 新闻 tab)
+    - strip source prefixes from numeric cells, map source keys to short names
+    - pull 核验状态/核验原因 paragraphs out of the tables and collect them
+      into a verification summary rendered below
+    """
+    # 1. drop informational paragraphs
+    body = re.sub(r"<p class=\"(?:meta|rule|legend)\">.*?</p>", "", body, flags=re.DOTALL)
+    body = re.sub(r"<footer>.*?</footer>", "", body, flags=re.DOTALL)
+    body = re.sub(r"<p>本报告仅作信息整理，不构成投资建议。</p>", "", body)
+    # 2. drop the 重要宏观新闻 section (heading + following paragraph)
+    body = re.sub(r"<h2>重要宏观新闻</h2>\s*<p>.*?</p>", "", body, flags=re.DOTALL)
+    # 3. collect and remove inline verification status/reason paragraphs
+    verification_lines = []
+    heading_before = None
+    for match in re.finditer(
+        r"<h2>([^<]+)</h2>(?:(?!<h2>).)*?<p>核验状态：([^<]*)</p>\s*<p>核验原因：([^<]*)</p>",
+        body,
+        flags=re.DOTALL,
+    ):
+        section_title, status, reason = match.groups()
+        verification_lines.append(
+            "{}：{}——{}".format(section_title.strip(), status.strip(), reason.strip())
+        )
+        heading_before = section_title.strip()
+    body = re.sub(
+        r"<p>核验状态：[^<]*</p>\s*<p>核验原因：[^<]*</p>", "", body, flags=re.DOTALL
+    )
+    # 4. strip source prefixes from numeric cells
+    def _strip_num(match: re.Match) -> str:
+        cell = match.group(0)
+        inner = match.group(2)
+        inner = _NUM_PREFIX.sub("", inner)
+        return "{}{}{}".format(match.group(1), inner, match.group(3))
+
+    body = re.sub(
+        r"(<td class=\"num[^\"]*\">)(.*?)(</td>)",
+        _strip_num,
+        body,
+        flags=re.DOTALL,
+    )
+    # 5. map source keys to short names (keep the href)
+    def _rename_source(match: re.Match) -> str:
+        url = match.group(1)
+        key = match.group(2)
+        return '<a href="{}">{}</a>'.format(url, _clean_short_name(key))
+
+    body = re.sub(r'<a href="([^"]+)">([^<]+)</a>', _rename_source, body)
+    return body, verification_lines
 
 
 def _latest_report_manifest(output_dir: Path) -> tuple[str, str]:
@@ -89,13 +172,11 @@ _FUSION_STYLE = """
     width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;
     background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
   }
-  .brief-body th, .brief-body td { padding: 8px 12px; text-align: left; font-size: 12.5px; }
+  .brief-body th, .brief-body td { padding: 8px 12px; text-align: left; font-size: 12.5px; border: 1px solid var(--line); }
   .brief-body th {
     background: var(--surface); color: var(--muted); font-weight: 600; font-size: 11px;
-    border-bottom: 1px solid var(--line); letter-spacing: .2px;
+    letter-spacing: .2px;
   }
-  .brief-body td { border-bottom: 1px solid var(--line); }
-  .brief-body tbody tr:last-child td { border-bottom: none; }
   .brief-body tbody tr:hover td { background: rgba(36, 87, 210, .05); }
   .brief-body .num { text-align: right; }
   .brief-body .up { color: #d9384a; }   /* A-share convention: red up */
@@ -199,13 +280,57 @@ _FUSION_TEMPLATE = """<!doctype html>
 """
 
 
+def _collapse_empty_tables(body: str) -> str:
+    """Wrap fully-empty value tables (every .num cell is —) in a folded details block,
+    titled by the nearest preceding section heading."""
+
+    def _nearest_h2(before: str) -> str:
+        headings = list(re.finditer(r"<h2>([^<]+)</h2>", before))
+        if not headings:
+            return ""
+        return headings[-1].group(1).strip()
+
+    out = []
+    cursor = 0
+    for match in re.finditer(r'<div class="table-wrap">(.*?)</div>', body, flags=re.DOTALL):
+        out.append(body[cursor:match.start()])
+        block = match.group(1)
+        num_values = re.findall(r'<td class="num[^"]*">([^<]*)</td>', block)
+        if not num_values or any(value.strip() != "—" for value in num_values):
+            out.append(match.group(0))
+        else:
+            title = _nearest_h2(body[:match.start()])
+            rows = block.count("<tr>") - 1
+            summary = "{}（{} 项暂无共识值，来源日期不一致未形成双源共识）".format(
+                title or "数据表", rows
+            )
+            out.append(
+                '<details class="status"><summary>{}</summary>'
+                '<div class="table-wrap">{}</div></details>'.format(
+                    html_mod.escape(summary), block
+                )
+            )
+        cursor = match.end()
+    out.append(body[cursor:])
+    return "".join(out)
+
+
 def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") -> Path:
     """Write fusion.html into output_dir and return its path."""
     output_dir = output_dir.expanduser().resolve()
     brief_path = daily_info_root.expanduser().resolve() / _BRIEF_HTML
     if not brief_path.is_file():
         raise FusionBuildError("daily_info brief html not found: {}".format(brief_path))
-    brief_body = _extract_brief_body(brief_path.read_text(encoding="utf-8"))
+    brief_body, verification_lines = _transform_brief_body(
+        _extract_brief_body(brief_path.read_text(encoding="utf-8"))
+    )
+    brief_body = _collapse_empty_tables(brief_body)
+    if verification_lines:
+        lines = "".join("<li>{}</li>".format(html_mod.escape(line)) for line in verification_lines)
+        brief_body += (
+            '<details class="status"><summary>核验明细（{} 条）</summary>'
+            "<ul>{}</ul></details>".format(len(verification_lines), lines)
+        )
     latest_url, latest_title = _latest_report_manifest(output_dir)
 
     if not date_label:
