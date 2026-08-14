@@ -8,6 +8,7 @@
 |---|---|---|---|---|---|
 | 新浪行情 API | curl/HTTP | `https://hq.sinajs.cn/list=sh000001,sz399001` | 指数/个股实时快照（开高低收、成交量额、时间） | ✅ 实测可用 | 必须带 `Referer: https://finance.sina.com.cn/`；返回 GBK 需转码；`sh`/`sz`/`hk` 前缀 |
 | 财联社 API | HTTP | `https://api3.cls.cn/nodeapi/telegraphList?app=CailianpressWeb&os=web&sv=7.7.5&sign=...` | 电报 JSON | ⚠️ 存活但需签名 | 返回 `{"errno":50101,"msg":"小财正在加载中..."}`，sign 参数需客户端算法，未逆向，不采用 |
+| 新浪 7×24 回放 API | curl/HTTP | `https://zhibo.sina.com.cn/api/zhibo/feed?page={n}&page_size=100&zhibo_id=152&tag_id=0&dire=f&dpc=1` | 全窗口快讯流：`create_time`（精确到秒）、`rich_text`、`ext.docurl`（**永久详情页直链**）、id | ✅ 2026-08-14 实测 | **主发现/核验通道**：page=1 最新、page 递增回看；`dire=f` 为向前翻页；2300条约23页；`ext` 为 **JSON 字符串需二次解析**；约 6% 条目无 docurl；详情页 `https://finance.sina.com.cn/7x24/YYYY-MM-DD/doc-xxx.shtml` 纯 HTML 可直接 curl；需 UA+Referer `https://finance.sina.com.cn/7x24/` |
 | 东方财富推送 API | HTTP | `https://push2.eastmoney.com/...` | 行情推送 | 未实测 | 历史域名单中出现，未验证 |
 | NewsNow 公共 JSON | HTTP | NewsNow 站内 JSON 接口 | 聚合榜位 | ❌ 历史失败 | 2026-07-29 起超时返回非 JSON，改走公共网页 |
 | 巨潮资讯 cninfo | 浏览器 | `http://www.cninfo.com.cn/new/index` | 法定公告 | ✅ 浏览器可达 | 命令行 WebFetch 未验证 |
@@ -16,7 +17,8 @@
 
 | 来源 | URL 模式 | 可用内容 | 提取注意 |
 |---|---|---|---|
-| 新浪财经 7×24 | `https://finance.sina.com.cn/7x24/` | 最近约25分钟快讯（标题+时间，无永久链接） | 只作发现；条目无直链 |
+| 新浪财经 7×24 | API 直链（见第1节） | 全窗口快讯（时间戳+docurl 永久链接） | 优先 API；详情页纯 HTML 可 curl |
+| 新浪财经 7×24 网页 | `https://finance.sina.com.cn/7x24/` | 最近约25分钟快讯（标题+时间） | 只作发现与对账；回放必须走 API |
 | 东方财富 7×24 | `https://finance.eastmoney.com/a/cywjh.html` | 头条/资讯精华/网友点击榜（标题+完整URL） | WebFetch 提示"标题 = URL"格式提取效果最好；文章 URL 形如 `/a/YYYYMMDD<数字>.html` |
 | 第一财经 | `https://www.yicai.com/` | 头条新闻（标题+URL，如 `/news/103317713.html`） | 财经政策/公司稿覆盖好，双源首选 |
 | 证券时报 | `https://www.stcn.com/` | 头条（标题+URL，如 `/article/detail/4074971.html`） | 监管/政策/公司稿 |
@@ -78,3 +80,8 @@
 | 必应（浏览器） | 站点搜索不返回过滤结果 | 不可用 |
 | WebFetch 批量提取 | 命中率约 50%，时通时挂 | 可用但需重试与多轮 |
 | 财联社站内/电报搜索（SPA） | 输入不生效 | 不可用，用全窗口遍历替代 |
+| 财联社搜索页 /search?keyword= | 404（"页面找不到了"） | 不可用 |
+| 一财搜索 /search?keys= | 常用关键词 0 结果（仅覆盖部分近期文章） | 不可用为通用通道；双源核验不依赖 |
+| 东财搜索 so.eastmoney.com | WebFetch 返回空 | 不可用（浏览器可试） |
+| 新浪7×24 部分快讯 | 无 docurl（约 6%） | 来源缺失时换同主题有 docurl 节点 |
+| 财联社 webview 激活 | 偶发 "could not be restored for activation" | 用户手动切到目标页（前台）后重试可恢复；或转新浪 API |
