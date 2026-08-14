@@ -123,19 +123,44 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
     return body, verification_lines
 
 
-def _latest_report_manifest(output_dir: Path) -> tuple[str, str]:
+def _latest_report_manifest(output_dir: Path) -> tuple[str, str, list[dict]]:
     manifest_path = output_dir / "reports.json"
     if not manifest_path.is_file():
         raise FusionBuildError("reports.json missing; build the radar site first")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     latest_url = str(manifest.get("latest", ""))
     latest_title = ""
-    for report in manifest.get("reports", []):
+    reports = manifest.get("reports", [])
+    for report in reports:
         if report.get("url") == latest_url:
             latest_title = str(report.get("title", ""))
     if not latest_url:
         raise FusionBuildError("reports.json has no latest url")
-    return latest_url, latest_title
+    return latest_url, latest_title, reports
+
+
+def _date_archive(reports: list[dict], latest_url: str) -> str:
+    """Sidebar date list mirroring the radar report archive: one row per date,
+    newest date marked as current, each date linking to that day's report."""
+    by_date: dict[str, str] = {}
+    for report in reports:
+        date = str(report.get("date", ""))
+        if date:
+            by_date[date] = str(report.get("url", ""))
+    groups = []
+    for date in sorted(by_date, reverse=True):
+        url = by_date[date]
+        current = ' aria-current="page"' if url == latest_url else ""
+        groups.append(
+            '<div class="archive-date-group" data-report-date="{}">'
+            '<a class="archive-date-link" href="{}"{}>{}</a></div>'.format(
+                html_mod.escape(date, quote=True),
+                html_mod.escape(url, quote=True),
+                current,
+                html_mod.escape(date, quote=True),
+            )
+        )
+    return "".join(groups)
 
 
 _FUSION_STYLE = """
@@ -215,10 +240,6 @@ _FUSION_JS = """
     for (var i = 0; i < tabs.length; i++) {
       tabs[i].addEventListener('click', function () { select(this.getAttribute('data-tab')); });
     }
-    var links = document.querySelectorAll('[data-tab-link]');
-    for (var m = 0; m < links.length; m++) {
-      links[m].addEventListener('click', function () { select(this.getAttribute('data-tab-link')); });
-    }
     window.addEventListener('hashchange', function () {
       var target = (location.hash || '').replace('#', '');
       if (target === 'brief' || target === 'news') { select(target); }
@@ -244,9 +265,7 @@ _FUSION_TEMPLATE = """<!doctype html>
     <section class="report-card">
       <aside class="report-sidebar">
         <div class="brand" aria-label="A股晨报融合视图">RADAR</div>
-        <a class="archive-date-link" href="#brief" data-tab-link="brief">晨报</a>
-        <a class="archive-date-link" href="#news" data-tab-link="news">新闻</a>
-        <a class="archive-date-link" href="{latest_url}" data-report-link>当日报告</a>
+        {date_archive}
       </aside>
       <div class="report-workspace">
         <header class="topbar">
@@ -331,7 +350,7 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
             '<details class="status"><summary>核验明细（{} 条）</summary>'
             "<ul>{}</ul></details>".format(len(verification_lines), lines)
         )
-    latest_url, latest_title = _latest_report_manifest(output_dir)
+    latest_url, latest_title, reports = _latest_report_manifest(output_dir)
 
     if not date_label:
         match = re.search(r"(\d{4}-\d{2}-\d{2})", latest_url)
@@ -343,6 +362,7 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
         page_title=html_mod.escape(page_title, quote=True),
         heading_title=html_mod.escape("A股晨报融合视图", quote=True),
         date_label=html_mod.escape(date_label, quote=True),
+        date_archive=_date_archive(reports, latest_url),
         style=_FUSION_STYLE,
         brief_body=brief_body,
         latest_url=html_mod.escape(latest_url, quote=True),

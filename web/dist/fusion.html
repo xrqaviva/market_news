@@ -72,9 +72,7 @@
     <section class="report-card">
       <aside class="report-sidebar">
         <div class="brand" aria-label="A股晨报融合视图">RADAR</div>
-        <a class="archive-date-link" href="#brief" data-tab-link="brief">晨报</a>
-        <a class="archive-date-link" href="#news" data-tab-link="news">新闻</a>
-        <a class="archive-date-link" href="reports/2026-08-14-0800.html" data-report-link>当日报告</a>
+        <div class="archive-date-group" data-report-date="2026-08-14"><a class="archive-date-link" href="reports/2026-08-14-0800.html" aria-current="page">2026-08-14</a></div><div class="archive-date-group" data-report-date="2026-08-13"><a class="archive-date-link" href="reports/2026-08-13-1500.html">2026-08-13</a></div><div class="archive-date-group" data-report-date="2026-08-11"><a class="archive-date-link" href="reports/2026-08-11-0800.html">2026-08-11</a></div><div class="archive-date-group" data-report-date="2026-08-10"><a class="archive-date-link" href="reports/2026-08-10-0800.html">2026-08-10</a></div><div class="archive-date-group" data-report-date="2026-08-03"><a class="archive-date-link" href="reports/2026-08-03-0800.html">2026-08-03</a></div><div class="archive-date-group" data-report-date="2026-07-31"><a class="archive-date-link" href="reports/2026-07-31-0800.html">2026-07-31</a></div><div class="archive-date-group" data-report-date="2026-07-30"><a class="archive-date-link" href="reports/2026-07-30-1500.html">2026-07-30</a></div><div class="archive-date-group" data-report-date="2026-07-29"><a class="archive-date-link" href="reports/2026-07-29-1800.html">2026-07-29</a></div>
       </aside>
       <div class="report-workspace">
         <header class="topbar">
@@ -145,10 +143,6 @@
     }
     for (var i = 0; i < tabs.length; i++) {
       tabs[i].addEventListener('click', function () { select(this.getAttribute('data-tab')); });
-    }
-    var links = document.querySelectorAll('[data-tab-link]');
-    for (var m = 0; m < links.length; m++) {
-      links[m].addEventListener('click', function () { select(this.getAttribute('data-tab-link')); });
     }
     window.addEventListener('hashchange', function () {
       var target = (location.hash || '').replace('#', '');

@@ -101,8 +101,11 @@ class FusionBuildTest(unittest.TestCase):
             self.assertIn('class="report-card"', page)
             self.assertIn('class="report-sidebar"', page)
             self.assertIn('class="report-workspace"', page)
-            self.assertIn('href="#brief"', page)
+            # sidebar is a date archive, newest date marked as current
+            self.assertIn('data-report-date="2026-08-14"', page)
+            self.assertIn('aria-current="page"', page)
             self.assertIn('href="reports/2026-08-14-0800.html"', page)
+            self.assertNotIn('data-tab-link', page)
             # informational paragraphs and macro-news section dropped
             for dropped in (
                 "采集截止", "上一A股交易日", "规则：只有同口径", "涨 ▲",
