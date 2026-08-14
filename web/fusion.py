@@ -86,6 +86,31 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
     body = re.sub(r"<p>本报告仅作信息整理，不构成投资建议。</p>", "", body)
     # 2. drop the 重要宏观新闻 section (heading + following paragraph)
     body = re.sub(r"<h2>重要宏观新闻</h2>\s*<p>.*?</p>", "", body, flags=re.DOTALL)
+    # 2.5 breadth single-source display: eastmoney only, plain line, no table
+    breadth_match = re.search(
+        r"<h2>上一交易日A股非ST涨跌家数</h2>(?:(?!<h2>).)*?</div>",
+        body,
+        flags=re.DOTALL,
+    )
+    if breadth_match:
+        block = breadth_match.group(0)
+        cells = [c.strip() for c in re.findall(r"<td[^>]*>([^<]*)</td>", block)]
+        if cells and cells[0] == "eastmoney" and len(cells) >= 6:
+            date, up, down, flat = cells[1], cells[3], cells[4], cells[5]
+            up, down, flat = (
+                re.sub(r"\.0+$", "", value) for value in (up, down, flat)
+            )
+            if up and up != "—":
+                line = "上涨 {} · 下跌 {} · 平盘 {}（数据日期 {}，东方财富）".format(
+                    up, down, flat, date
+                )
+            else:
+                line = "东方财富暂无有效值（数据日期 {}）".format(date)
+            body = body.replace(
+                block,
+                "<h2>上一交易日A股非ST涨跌家数</h2>\n"
+                '<p class="breadth-line">{}</p>'.format(line),
+            )
     # 3. collect and remove inline verification status/reason paragraphs
     verification_lines = []
     heading_before = None
@@ -209,6 +234,10 @@ _FUSION_STYLE = """
   .brief-body .up { color: #d9384a; }   /* A-share convention: red up */
   .brief-body .down { color: #0c8f5e; } /* green down */
   .brief-body .flat { color: var(--muted); }
+  .brief-body .breadth-line {
+    padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface); font-size: 13px;
+  }
   .brief-body .src a { color: var(--accent); text-decoration: none; }
   .brief-body .src a:hover { text-decoration: underline; }
   .brief-body ul { margin: 6px 0; padding-left: 20px; }

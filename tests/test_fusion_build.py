@@ -41,8 +41,15 @@ def _fake_daily_info(base: Path) -> Path:
         "<h2>上一交易日A股非ST涨跌家数</h2>"
         "<p>核验状态：待核验（双源冲突）</p>"
         "<p>核验原因：eligible_code_set_mismatch</p>"
+        "<div class=\"table-wrap\"><table><thead><tr><th>来源</th><th>数据日期</th><th>有效样本</th><th>上涨</th><th>下跌</th><th>平盘</th><th>上涨率</th><th>下跌率</th></tr></thead><tbody>"
+        "<tr><td class=\"src\">eastmoney</td><td>2026-08-13</td><td class=\"num\">5,334.00</td><td class=\"num\">1,088.00</td><td class=\"num\">4,168.00</td><td class=\"num\">78.0000</td><td class=\"num up\">+20.40%</td><td class=\"num down\">+78.14%</td></tr>"
+        "<tr><td class=\"src\">sina</td><td>2026-08-13</td><td class=\"num\">5,335.00</td><td class=\"num\">1,088.00</td><td class=\"num\">4,168.00</td><td class=\"num\">79.0000</td><td class=\"num up\">+20.39%</td><td class=\"num down\">+78.13%</td></tr>"
+        "</tbody></table></div>"
+        "<h2>国内期货</h2>"
+        "<p>核验状态：待核验（双源冲突）</p>"
+        "<p>核验原因：date_mismatch</p>"
         "<div class=\"table-wrap\"><table><tbody>"
-        "<tr><td>eastmoney</td><td class=\"num\">5,334.00</td></tr>"
+        "<tr><td>上期所黄金</td><td class=\"num\">1,000.00</td></tr>"
         "</tbody></table></div>"
         "<h2>重要宏观新闻</h2>"
         "<p>本时间窗内没有通过严格来源规则的宏观新闻。</p>"
@@ -127,9 +134,13 @@ class FusionBuildTest(unittest.TestCase):
             self.assertIn("26,803.03", page)
             # fully-empty value tables collapse into a verification summary
             self.assertIn("官方日度参考汇率（2 项暂无共识值", page)
-            # inline verification status/reason moved to the bottom summary
+            # breadth becomes a single-source plain line (eastmoney, no table)
+            self.assertIn("上涨 1,088 · 下跌 4,168 · 平盘 78（数据日期 2026-08-13，东方财富）", page)
+            self.assertIn("breadth-line", page)
+            self.assertNotIn("eligible_code_set_mismatch", page)
+            # other tables' verification status/reason still moved to the bottom summary
             self.assertIn("核验明细（1 条）", page)
-            self.assertIn("eligible_code_set_mismatch", page)
+            self.assertIn("国内期货：待核验（双源冲突）——date_mismatch", page)
             # tables get full cell borders
             self.assertIn("border: 1px solid var(--line);", page)
 
