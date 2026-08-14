@@ -96,6 +96,10 @@ class FusionBuildTest(unittest.TestCase):
             self.assertIn("新闻速递", page)
             self.assertNotIn("融合视图", page)
             self.assertNotIn("双源晨报", page)
+            # tabs-meta shows the plain date, not the internal report title
+            self.assertIn("外围 · 2026-08-14", page)
+            self.assertNotIn("测试报告", page)
+            self.assertIn("#a9b4c3", page)  # visible outer table border
             self.assertIn("+0.65%", page)
             self.assertIn("assets/app.css", page)
             self.assertIn("2026-08-14", page)
@@ -170,6 +174,9 @@ class FusionBuildTest(unittest.TestCase):
             page = (dist / FUSION_NAME).read_text(encoding="utf-8")
             # real brief body must be present and must not leak private paths
             self.assertIn("美股三大指数", page)
+            # internal report terminology must not surface on the fusion page
+            self.assertNotIn("正式版", page)
+            self.assertNotIn("旧闻后置", page)
             for forbidden in ("/Users/", "file://", "ghp_", "Authorization: Bearer", "Local Storage"):
                 self.assertNotIn(forbidden, page)
 

@@ -197,7 +197,7 @@ _FUSION_STYLE = """
   .brief-body .table-wrap { width: 100%; overflow-x: auto; margin: 8px 0 16px; }
   .brief-body table {
     width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;
-    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--surface); border: 1px solid #a9b4c3; border-radius: 10px; overflow: hidden;
   }
   .brief-body th, .brief-body td { padding: 8px 12px; text-align: left; font-size: 12.5px; border: 1px solid var(--line); }
   .brief-body th {
@@ -279,7 +279,7 @@ _FUSION_TEMPLATE = """<!doctype html>
         </header>
         <main class="report-main">
           <nav class="fusion-tabs" aria-label="视图切换">
-            <span class="fusion-tabs-meta">外围：{news_title}</span>
+            <span class="fusion-tabs-meta">外围 · {date_label}</span>
             <div class="fusion-tabs-actions">
               <button class="fusion-tab-button" type="button" data-tab="brief" aria-selected="true">外围</button>
               <button class="fusion-tab-button" type="button" data-tab="news" aria-selected="false">新闻</button>
@@ -289,7 +289,7 @@ _FUSION_TEMPLATE = """<!doctype html>
             {brief_body}
           </section>
           <section class="fusion-pane" data-pane="news" hidden>
-            <iframe class="fusion-news-frame" src="{latest_url}" title="{news_title}" loading="lazy"></iframe>
+            <iframe class="fusion-news-frame" src="{latest_url}" title="新闻 · {date_label}" loading="lazy"></iframe>
           </section>
         </main>
       </div>
@@ -368,7 +368,6 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
         style=_FUSION_STYLE,
         brief_body=brief_body,
         latest_url=html_mod.escape(latest_url, quote=True),
-        news_title=html_mod.escape(latest_title, quote=True),
         js=_FUSION_JS,
     )
     target = output_dir / FUSION_NAME
