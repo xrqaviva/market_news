@@ -303,7 +303,7 @@ class WebBuildTest(unittest.TestCase):
         )
         self.assertNotIn('class="report-eyebrow"', page)
         self.assertNotIn('data-component="report-window"', page)
-        self.assertIn('<h1>0811新闻速递</h1>', page)
+        self.assertIn('<h1>0811盘前新闻速递</h1>', page)
         self.assertNotIn("report-cutoff", page)
         self.assertNotIn('class="filter-bar"', page)
 

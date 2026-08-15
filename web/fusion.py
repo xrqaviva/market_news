@@ -440,7 +440,13 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
         match = re.search(r"(\d{4}-\d{2}-\d{2})", latest_url)
         date_label = match.group(1) if match else ""
     mmdd = date_label.replace("-", "")[4:] if date_label else ""
-    page_title = "{}新闻速递".format(mmdd) if mmdd else "新闻速递"
+    latest_slot = ""
+    for report in reports:
+        if report.get("url") == latest_url:
+            latest_slot = str(report.get("slot", ""))
+            break
+    session = "盘前" if latest_slot == "0800" else "盘后"
+    page_title = "{}{}新闻速递".format(mmdd, session) if mmdd else "新闻速递"
     js = _FUSION_JS.replace(
         "__DATE_TARGETS__", json.dumps(date_targets, ensure_ascii=False)
     )
