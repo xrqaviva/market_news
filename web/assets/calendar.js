@@ -62,8 +62,11 @@
   }
 
   function jump(date) {
-    var url = dateTargets[date];
-    if (url) window.location.href = url;
+    var name = dateTargets[date];
+    if (!name) return;
+    // report pages live under /reports/, the fusion page at the root
+    var inReports = /\/reports\//.test(window.location.pathname);
+    window.location.href = inReports ? name : "reports/" + name;
   }
 
   input.addEventListener("click", function (e) {

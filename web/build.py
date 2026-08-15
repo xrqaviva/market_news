@@ -401,7 +401,7 @@ def _calendar_filter(report_index: list[dict]) -> str:
     for report in report_index:
         date = str(report.get("date", ""))
         if date:
-            by_date[date] = str(report.get("url", ""))
+            by_date[date] = Path(str(report.get("url", ""))).name
     dates = sorted(by_date)
     latest = dates[-1] if dates else ""
     payload = json.dumps(by_date, ensure_ascii=False)

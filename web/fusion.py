@@ -410,7 +410,7 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
             if report.get("date") == date and report.get("url")
         ]
         if urls:
-            date_targets[date] = urls[-1]  # last slot of the day
+            date_targets[date] = Path(urls[-1]).name  # last slot of the day
     min_date = dates[0] if dates else ""
     max_date = dates[-1] if dates else ""
     latest_date = max_date
