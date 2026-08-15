@@ -226,20 +226,35 @@ def _date_archive(reports: list[dict], latest_url: str) -> str:
 
 _FUSION_STYLE = """
 <style>
-  /* tab bar inside the topbar, background-free */
+  /* tab bar inside the topbar, filled buttons */
   .fusion-tabs {
-    display: flex; align-items: center; gap: 6px;
-    background: transparent;
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px; border: 1px solid #cbd3df; border-radius: 7px; background: #f8fafc;
   }
   .fusion-tab-button {
-    padding: 4px 8px; font-size: 10px; color: #667285;
-    background: transparent; border: none; border-radius: 3px; cursor: pointer;
+    padding: 5px 10px; font-size: 10px; color: #425069; background: #f8fafc;
+    border: 1px solid #cbd3df; border-radius: 3px; cursor: pointer;
   }
-  .fusion-tab-button:hover { color: #1749a8; }
+  .fusion-tab-button:hover { color: #1749a8; border-color: #8ab1f3; }
   .fusion-tab-button[aria-selected="true"] {
-    color: var(--accent); background: transparent; font-weight: 700;
+    color: #ffffff; background: var(--accent); border-color: var(--accent); font-weight: 700;
   }
   .fusion-pane[hidden] { display: none; }
+
+  .sidebar-date-filter {
+    display: block;
+    margin: 0 0 12px;
+  }
+
+  .sidebar-date-filter input {
+    width: 100%;
+    padding: 3px 2px;
+    font-size: 9px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid #3a4a66;
+    border-radius: 5px;
+  }
 
   .fusion-brief-card,
   .fusion-news-card {
@@ -314,6 +329,16 @@ _FUSION_JS = """
     window.addEventListener('hashchange', applyHash);
     document.addEventListener('DOMContentLoaded', applyHash);
     applyHash();
+    var dateTargets = __DATE_TARGETS__;
+    var dateFilter = document.getElementById('fusion-date-filter');
+    function jumpToDate() {
+      var target = dateTargets[dateFilter.value];
+      if (target) window.location.href = target;
+    }
+    if (dateFilter) {
+      dateFilter.addEventListener('change', jumpToDate);
+      dateFilter.addEventListener('input', jumpToDate);
+    }
   })();
 </script>
 """
@@ -333,13 +358,15 @@ _FUSION_TEMPLATE = """<!doctype html>
   <div class="page-shell">
     <section class="report-card">
       <aside class="report-sidebar">
-        <div class="brand" aria-label="新闻速递">RADAR</div>
+        <div class="brand" aria-label="新闻速递">新闻速递</div>
+        <label class="sidebar-date-filter">
+          <input type="date" id="fusion-date-filter" min="{min_date}" max="{max_date}" value="{latest_date}" aria-label="按日期筛选报告">
+        </label>
         {date_archive}
       </aside>
       <div class="report-workspace">
         <header class="topbar">
           <div class="report-heading">
-            <p class="report-eyebrow">新闻速递 · 每日</p>
             <h1>{heading_title}</h1>
           </div>
           <div class="report-topbar-right">
@@ -398,6 +425,20 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
         )
     latest_url, latest_title, reports = _latest_report_manifest(output_dir)
     news_content = _extract_report_main((output_dir / latest_url).read_text(encoding="utf-8"))
+    # date filter data: per-date last report URL + min/max bounds
+    dates = sorted({str(report.get("date", "")) for report in reports if report.get("date")})
+    date_targets = {}
+    for date in dates:
+        urls = [
+            str(report.get("url", ""))
+            for report in reports
+            if report.get("date") == date and report.get("url")
+        ]
+        if urls:
+            date_targets[date] = urls[-1]  # last slot of the day
+    min_date = dates[0] if dates else ""
+    max_date = dates[-1] if dates else ""
+    latest_date = max_date
 
     if not date_label:
         match = re.search(r"(\d{4}-\d{2}-\d{2})", latest_url)
@@ -405,15 +446,21 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
     page_title = "新闻速递{}".format(
         " · {}".format(date_label) if date_label else ""
     )
+    js = _FUSION_JS.replace(
+        "__DATE_TARGETS__", json.dumps(date_targets, ensure_ascii=False)
+    )
     page = _FUSION_TEMPLATE.format(
         page_title=html_mod.escape(page_title, quote=True),
         heading_title=html_mod.escape("新闻速递", quote=True),
         date_label=html_mod.escape(date_label, quote=True),
         date_archive=_date_archive(reports, latest_url),
+        min_date=html_mod.escape(min_date, quote=True),
+        max_date=html_mod.escape(max_date, quote=True),
+        latest_date=html_mod.escape(latest_date, quote=True),
         style=_FUSION_STYLE,
         brief_body=brief_body,
         news_content=news_content,
-        js=_FUSION_JS,
+        js=js,
     )
     target = output_dir / FUSION_NAME
     target.write_text(page, encoding="utf-8")
