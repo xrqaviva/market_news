@@ -163,7 +163,7 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
         if "push2his.eastmoney.com" in raw_url or "push2.eastmoney.com" in raw_url:
             return "https://quote.eastmoney.com/"
         if "stock2.finance.sina.com.cn" in raw_url:
-            return "https://finance.sina.com.cn/futures/"
+            return "https://finance.sina.com.cn/7x24/"
         return raw_url
 
     def _rename_source(match: re.Match) -> str:
