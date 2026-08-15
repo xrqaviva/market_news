@@ -25,7 +25,7 @@
   var grid = filter.querySelector(".calendar-grid");
   var todayBtn = filter.querySelector('[data-nav="today"]');
 
-  var selected = available[available.length - 1];
+  var selected = input.value || available[available.length - 1];
   var viewYear = Number(selected.slice(0, 4));
   var viewMonth = Number(selected.slice(5, 7)) - 1;
 

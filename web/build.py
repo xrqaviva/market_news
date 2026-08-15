@@ -395,7 +395,7 @@ def _filter_bar(document: ReportDocument) -> str:
     ).format(metadata)
 
 
-def _calendar_filter(report_index: list[dict]) -> str:
+def _calendar_filter(report_index: list[dict], current_date: str) -> str:
     """Sidebar calendar date picker (antd-like) with the report-date JSON."""
     by_date = {}
     for report in report_index:
@@ -403,7 +403,7 @@ def _calendar_filter(report_index: list[dict]) -> str:
         if date:
             by_date[date] = Path(str(report.get("url", ""))).name
     dates = sorted(by_date)
-    latest = dates[-1] if dates else ""
+    latest = current_date or (dates[-1] if dates else "")
     payload = json.dumps(by_date, ensure_ascii=False)
     return (
         '<div class="calendar-filter" id="calendar-filter">'
@@ -431,7 +431,7 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
     replacements = {
         "PAGE_TITLE": _escape(document.meta.title),
         "REPORT_ID": _escape(document.meta.report_id),
-        "CALENDAR_FILTER": _calendar_filter(report_index),
+        "CALENDAR_FILTER": _calendar_filter(report_index, document.meta.report_date),
         "TOPBAR": (
             '<div class="report-heading"><h1>{}</h1></div>'
             '<div class="report-topbar-right">'
