@@ -123,3 +123,13 @@ node "/Users/aviva/Documents/AI/Skills/vision/vision.js" --url "<图片URL>" "�
 - 触发：用户发图片、"Saved attachments:" 列表、要求看截图/识别图
 
 **2026-08-15 实测：** 成功识别用户此前发的"美元指数/汇率全空"截图，文字与布局完整提取。
+
+## 11. 公开访问（GitHub Pages，2026-08-15 启用）
+
+**站点：** https://xrqaviva.github.io/market_news/（公开仓库 xrqaviva/market_news，用户已授权发布）
+
+**机制：** `.github/workflows/pages.yml` —— push 到 main 时，Actions 把已提交的 `web/dist/`（本地每日自动化构建产物）上传到 GitHub Pages。CI 不重新构建（fusion 依赖 daily_info 晨报产出，仅本地可构建）。
+
+**发布流程：** 每日自动化构建 dist → 提交 → `git push origin main` → Actions 自动部署（已验证：首页/融合页/报告页均 200）。
+
+**注意：** 仓库为公开（全部代码/文档/历史公开）；报告内容本身为公开市场信息，无凭据。发布任何新内容前确认不含敏感信息。
