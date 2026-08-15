@@ -18,9 +18,13 @@
           <select class="mobile-report-select" aria-label="切换报告"></select>
         </label>
         <main class="report-main">
-          <section class="fusion-pane brief-body" data-pane="brief">{{BRIEF_PANE}}</section>
+          <section class="fusion-pane" data-pane="brief">
+            <div class="fusion-brief-card brief-body">{{BRIEF_PANE}}</div>
+          </section>
           <section class="fusion-pane" data-pane="news" hidden>
+            <div class="fusion-news-card">
             {{FILTER_BAR}}{{THEME_CONTENT}}{{NEWS_ITEMS}}{{PENDING_ITEMS}}
+            </div>
           </section>
         </main>
       </div>

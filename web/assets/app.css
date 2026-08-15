@@ -1150,3 +1150,50 @@ select:focus-visible {
     display: block !important;
   }
 }
+
+/* fused brief pane styles (migrated from fusion.py) */
+  .fusion-pane[hidden] { display: none; }
+  .fusion-brief-card,
+  .fusion-news-card {
+    background: #eef1f5;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 20px;
+  }
+  .brief-body h1 { font-size: 19px; margin: 0 0 10px; color: var(--ink); }
+  .brief-body h2 {
+    font-size: 15px; margin: 24px 0 10px; padding: 7px 12px;
+    border-left: 3px solid var(--accent); background: rgba(36, 87, 210, .07);
+    border-radius: 0 6px 6px 0; color: var(--ink);
+  }
+  .brief-body h3 { font-size: 13px; margin: 16px 0 8px; color: var(--ink); }
+  .brief-body p { margin: 6px 0; font-size: 13px; }
+  .brief-body .meta, .brief-body .rule { color: var(--muted); font-size: 11px; margin: 3px 0; }
+  .brief-body .table-wrap { width: 100%; overflow-x: auto; margin: 8px 0 16px; }
+  .brief-body table {
+    width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;
+    background: var(--surface); border: 1px solid #a9b4c3; border-radius: 10px; overflow: hidden;
+  }
+  .brief-body th, .brief-body td { padding: 8px 12px; text-align: left; font-size: 12.5px; border: 1px solid var(--line); }
+  .brief-body th {
+    background: var(--surface); color: var(--muted); font-weight: 600; font-size: 11px;
+    letter-spacing: .2px;
+  }
+  .brief-body tbody tr:hover td { background: rgba(36, 87, 210, .05); }
+  .brief-body .num { text-align: right; }
+  .brief-body .up { color: #d9384a; }   /* A-share convention: red up */
+  .brief-body .down { color: #0c8f5e; } /* green down */
+  .brief-body .flat { color: var(--muted); }
+  .brief-body .breadth-line {
+    padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface); font-size: 13px;
+  }
+  .brief-body .src a { color: var(--accent); text-decoration: none; }
+  .brief-body .src a:hover { text-decoration: underline; }
+  .brief-body ul { margin: 6px 0; padding-left: 20px; }
+  .brief-body details { margin: 12px 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; }
+  .brief-body details.alert { border-color: rgba(138, 79, 10, .4); background: var(--mixed-bg); }
+  .brief-body summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  .brief-body .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px;
+    border: 1px solid var(--line); color: var(--muted); background: var(--surface); }
+  .brief-body .tag.official { color: #0c8f5e; border-color: rgba(12, 143, 94, .4); background: rgba(12, 143, 94, .08); }
