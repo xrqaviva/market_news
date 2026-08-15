@@ -433,7 +433,16 @@ def _brief_pane(daily_info_root: Optional[Path], report_date: str) -> str:
     root = daily_info_root.expanduser().resolve()
     runs_dir = root / "reports" / ".runs"
     candidates = sorted(runs_dir.glob("{}-*/A股盘前晨报.html".format(report_date)))
-    path = candidates[-1] if candidates else root / "reports/index/A股盘前晨报.html"
+    # run dirs sort by random suffix, not by quality: pick the newest run whose
+    # brief is actually populated (few em-dashes), else fall back to the index
+    # brief that daily_info keeps as the current one
+    path = None
+    for candidate in reversed(candidates):
+        if candidate.read_text(encoding="utf-8").count("—") < 30:
+            path = candidate
+            break
+    if path is None:
+        path = root / "reports/index/A股盘前晨报.html"
     if not path.is_file():
         return "<p class=\"brief-unavailable\">当日无外围晨报。</p>"
     try:
