@@ -303,7 +303,7 @@ class WebBuildTest(unittest.TestCase):
         )
         self.assertNotIn('class="report-eyebrow"', page)
         self.assertNotIn('data-component="report-window"', page)
-        self.assertIn('<h1>题材测试</h1>', page)
+        self.assertIn('<h1>0811新闻速递</h1>', page)
         self.assertNotIn("report-cutoff", page)
         self.assertNotIn('class="filter-bar"', page)
 
@@ -501,10 +501,10 @@ if (scoreCell.innerHTML.includes('<strong>')) {
         document = ReportDocument(
             meta=ReportMeta(
                 report_id="mustache", report_date="2026-08-01", slot="0800", slot_label="盘前",
-                title="{{unresolved}}", window="window", cutoff="cutoff", source_name="",
+                title="0810新闻速递", window="window", cutoff="cutoff", source_name="",
             ),
             items=(NewsItem(
-                rank=1, title="item", core="core", score=1,
+                rank=1, title="item", core="core {{unresolved}}", score=1,
                 sources=(SourceLink("source", "", "source", "https://example.com"),),
             ),),
         )

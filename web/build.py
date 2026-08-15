@@ -428,8 +428,10 @@ def _calendar_filter(report_index: list[dict], current_date: str) -> str:
 def render_report(document: ReportDocument, report_index: list[dict]) -> str:
     """Render fixed template with escaped text and allowlisted http/https source URLs."""
     template = _TEMPLATE_PATH.read_text(encoding="utf-8")
+    mmdd = str(document.meta.report_date).replace("-", "")[4:]
+    display_title = "{}新闻速递".format(mmdd) if mmdd else document.meta.title
     replacements = {
-        "PAGE_TITLE": _escape(document.meta.title),
+        "PAGE_TITLE": _escape(display_title),
         "REPORT_ID": _escape(document.meta.report_id),
         "CALENDAR_FILTER": _calendar_filter(report_index, document.meta.report_date),
         "TOPBAR": (
@@ -441,7 +443,7 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
             '</nav>'
             '</div>'
         ).format(
-            _escape(document.meta.title),
+            _escape(display_title),
         ),
         "REPORT_ARCHIVE": _report_archive(document, report_index),
         "FILTER_BAR": _filter_bar(document),
