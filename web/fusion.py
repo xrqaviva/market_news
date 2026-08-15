@@ -282,10 +282,6 @@ _FUSION_STYLE = """
     border: 1px solid var(--line); color: var(--muted); background: var(--surface); }
   .brief-body .tag.official { color: #0c8f5e; border-color: rgba(12, 143, 94, .4); background: rgba(12, 143, 94, .08); }
 
-  .fusion-news-frame {
-    width: 100%; height: calc(100vh - 210px); min-height: 620px;
-    border: 1px solid var(--line); border-radius: 10px; background: var(--canvas);
-  }
 </style>
 """
 
@@ -305,12 +301,13 @@ _FUSION_JS = """
     for (var i = 0; i < tabs.length; i++) {
       tabs[i].addEventListener('click', function () { select(this.getAttribute('data-tab')); });
     }
-    window.addEventListener('hashchange', function () {
+    function applyHash() {
       var target = (location.hash || '').replace('#', '');
       if (target === 'brief' || target === 'news') { select(target); }
-    });
-    var hash = (location.hash || '').replace('#', '');
-    if (hash === 'news') { select('news'); }
+    }
+    window.addEventListener('hashchange', applyHash);
+    document.addEventListener('DOMContentLoaded', applyHash);
+    applyHash();
   })();
 </script>
 """
@@ -324,6 +321,7 @@ _FUSION_TEMPLATE = """<!doctype html>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/app.css">
   {style}
+  <script src="assets/app.js" defer></script>
 </head>
 <body>
   <div class="page-shell">
@@ -352,17 +350,27 @@ _FUSION_TEMPLATE = """<!doctype html>
             {brief_body}
           </section>
           <section class="fusion-pane" data-pane="news" hidden>
-            <iframe class="fusion-news-frame" src="{latest_url}" title="新闻 · {date_label}" loading="lazy"></iframe>
+            {news_content}
           </section>
         </main>
       </div>
     </section>
   </div>
+  <template id="news-toggle-template">
+    <button class="news-toggle" type="button" aria-expanded="false" aria-controls="">展开详情</button>
+  </template>
   {js}
 </body>
 </html>
 """
 
+
+
+def _extract_report_main(report_html: str) -> str:
+    match = re.search(r'<main class="report-main">(.*?)</main>', report_html, re.DOTALL)
+    if not match:
+        raise FusionBuildError("report page has no report-main block")
+    return match.group(1).strip()
 
 
 def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") -> Path:
@@ -381,6 +389,7 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
             "<ul>{}</ul></details>".format(len(verification_lines), lines)
         )
     latest_url, latest_title, reports = _latest_report_manifest(output_dir)
+    news_content = _extract_report_main((output_dir / latest_url).read_text(encoding="utf-8"))
 
     if not date_label:
         match = re.search(r"(\d{4}-\d{2}-\d{2})", latest_url)
@@ -395,7 +404,7 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
         date_archive=_date_archive(reports, latest_url),
         style=_FUSION_STYLE,
         brief_body=brief_body,
-        latest_url=html_mod.escape(latest_url, quote=True),
+        news_content=news_content,
         js=_FUSION_JS,
     )
     target = output_dir / FUSION_NAME

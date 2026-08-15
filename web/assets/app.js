@@ -65,6 +65,7 @@
 
   function populateReportSelect() {
     const select = document.querySelector(".mobile-report-select");
+    if (!select) return;
     document.querySelectorAll("[data-component='report-archive'] a[data-report-link]").forEach((link) => {
       const option = document.createElement("option");
       option.value = link.getAttribute("href");

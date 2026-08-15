@@ -69,7 +69,11 @@ def _fake_radar_site(base: Path) -> Path:
     (dist / "reports").mkdir(parents=True)
     (dist / "reports" / "2026-08-14-0800.html").write_text(
         "<!doctype html><html><head></head><body><main class=\"report-main\">"
-        "<h1>测试报告</h1></main></body></html>",
+        "<nav class=\"theme-navigation\" data-component=\"theme-navigation\" aria-label=\"核心方向\">"
+        "<a href=\"#theme-ascii-theme-a\">题材A</a></nav>"
+        "<article data-component=\"news-detail\" data-rank=\"1\" data-event-id=\"evt-x\"><h2>1. 测试新闻</h2>"
+        "<p>核心</p><ul data-component=\"sources\"><li><a href=\"https://example.com/x\">来源</a></li></ul>"
+        "<p>热点权重：50/100</p></article></main></body></html>",
         encoding="utf-8",
     )
     (dist / "reports.json").write_text(
@@ -98,7 +102,11 @@ class FusionBuildTest(unittest.TestCase):
             self.assertIn('data-tab="brief" aria-selected="true"', page)
             self.assertIn('data-tab="news" aria-selected="false"', page)
             self.assertIn('class="fusion-pane brief-body"', page)
-            self.assertIn('src="reports/2026-08-14-0800.html"', page)
+            self.assertIn('data-component="theme-navigation"', page)
+            self.assertIn('data-component="news-detail"', page)
+            self.assertIn('id="news-toggle-template"', page)
+            self.assertIn('assets/app.js', page)
+            self.assertNotIn("fusion-news-frame", page)
             self.assertIn("外围｜2026-08-13", page)
             self.assertIn("新闻速递", page)
             self.assertNotIn("融合视图", page)
