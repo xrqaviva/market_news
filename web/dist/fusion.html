@@ -8,18 +8,18 @@
   <link rel="stylesheet" href="assets/app.css">
   
 <style>
-  /* tab bar in the report filter-bar idiom, now inside the topbar */
+  /* tab bar inside the topbar, background-free */
   .fusion-tabs {
-    display: flex; align-items: center; gap: 5px;
-    padding: 3px; border: 1px solid #cbd3df; border-radius: 7px; background: #f8fafc;
+    display: flex; align-items: center; gap: 6px;
+    background: transparent;
   }
   .fusion-tab-button {
-    padding: 5px 10px; font-size: 10px; color: #425069; background: #f8fafc;
-    border: 1px solid #cbd3df; border-radius: 3px; cursor: pointer;
+    padding: 4px 8px; font-size: 10px; color: #667285;
+    background: transparent; border: none; border-radius: 3px; cursor: pointer;
   }
-  .fusion-tab-button:hover { color: #1749a8; border-color: #8ab1f3; }
+  .fusion-tab-button:hover { color: #1749a8; }
   .fusion-tab-button[aria-selected="true"] {
-    color: #ffffff; background: var(--accent); border-color: var(--accent); font-weight: 700;
+    color: var(--accent); background: transparent; font-weight: 700;
   }
   .fusion-pane[hidden] { display: none; }
 
