@@ -159,7 +159,11 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
         if "qt.gtimg.cn" in raw_url:
             match = re.search(r"q=([A-Za-z0-9_]+)", raw_url)
             if match:
-                return "https://gu.qq.com/{}".format(match.group(1))
+                symbol = match.group(1)
+                if symbol.startswith("gz"):
+                    # gzXXX redirects to the wrong page on gu.qq.com; us-prefix works
+                    symbol = "us" + symbol[2:]
+                return "https://gu.qq.com/{}".format(symbol)
         if "push2his.eastmoney.com" in raw_url or "push2.eastmoney.com" in raw_url:
             return "https://quote.eastmoney.com/"
         if "stock2.finance.sina.com.cn" in raw_url or "hq.sinajs.cn" in raw_url:
