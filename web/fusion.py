@@ -146,11 +146,23 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
         body,
         flags=re.DOTALL,
     )
-    # 5. map source keys to short names (keep the href)
+    # 5. map source keys to short names; rewrite raw API endpoints to
+    #    human-readable quote pages so the links open real pages
+    def _readable_url(raw_url: str) -> str:
+        if "qt.gtimg.cn" in raw_url:
+            match = re.search(r"q=([A-Za-z0-9_]+)", raw_url)
+            if match:
+                return "https://gu.qq.com/{}".format(match.group(1))
+        if "push2his.eastmoney.com" in raw_url or "push2.eastmoney.com" in raw_url:
+            return "https://quote.eastmoney.com/"
+        if "stock2.finance.sina.com.cn" in raw_url:
+            return "https://finance.sina.com.cn/futures/"
+        return raw_url
+
     def _rename_source(match: re.Match) -> str:
         url = match.group(1)
         key = match.group(2)
-        return '<a href="{}">{}</a>'.format(url, _clean_short_name(key))
+        return '<a href="{}">{}</a>'.format(_readable_url(url), _clean_short_name(key))
 
     body = re.sub(r'<a href="([^"]+)">([^<]+)</a>', _rename_source, body)
     return body, verification_lines

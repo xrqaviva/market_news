@@ -28,8 +28,8 @@ def _fake_daily_info(base: Path) -> Path:
         "<tr><td>标普500</td><td class=\"num up\">+0.65%</td></tr>"
         "<tr><td>纳斯达克综合</td><td class=\"num\">tencent 26,803.03</td></tr>"
         "<tr><td>道琼斯工业</td><td class=\"num up\">tencent +69.7200</td>"
-        "<td class=\"src\"><a href=\"https://example.com/tencent\">tencent</a>；"
-        "<a href=\"https://example.com/east\">eastmoney_global_history</a></td></tr>"
+        "<td class=\"src\"><a href=\"https://qt.gtimg.cn/q=usINX\">tencent</a>；"
+        "<a href=\"https://push2his.eastmoney.com/x\">eastmoney_global_history</a></td></tr>"
         "</tbody></table></div>"
         "<h2>官方日度参考汇率</h2>"
         "<div class=\"table-wrap\"><table><thead><tr><th>品种</th><th>最新值</th></tr></thead><tbody>"
@@ -130,6 +130,10 @@ class FusionBuildTest(unittest.TestCase):
             self.assertNotIn("tencent ", page)
             self.assertIn(">腾讯<", page)
             self.assertIn(">东方财富<", page)
+            # raw API endpoints rewritten to human-readable quote pages
+            self.assertIn('href="https://gu.qq.com/usINX"', page)
+            self.assertIn('href="https://quote.eastmoney.com/"', page)
+            self.assertNotIn("qt.gtimg.cn", page)
             self.assertIn("+69.7200", page)
             self.assertIn("26,803.03", page)
             # market tables always render open, even when values are missing
