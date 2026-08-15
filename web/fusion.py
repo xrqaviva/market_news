@@ -246,12 +246,12 @@ _FUSION_STYLE = """
     margin: 0 0 12px;
   }
 
-  .sidebar-date-filter input {
+  .sidebar-date-filter select {
     width: 100%;
-    padding: 3px 2px;
+    padding: 4px 2px;
     font-size: 9px;
-    color: var(--muted);
-    background: transparent;
+    color: #dbe4f0;
+    background: #263650;
     border: 1px solid #3a4a66;
     border-radius: 5px;
   }
@@ -360,7 +360,9 @@ _FUSION_TEMPLATE = """<!doctype html>
       <aside class="report-sidebar">
         <div class="brand" aria-label="新闻速递">新闻速递</div>
         <label class="sidebar-date-filter">
-          <input type="date" id="fusion-date-filter" min="{min_date}" max="{max_date}" value="{latest_date}" aria-label="按日期筛选报告">
+          <select id="fusion-date-filter" aria-label="按日期筛选报告">
+            {date_options}
+          </select>
         </label>
         {date_archive}
       </aside>
@@ -439,6 +441,14 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
     min_date = dates[0] if dates else ""
     max_date = dates[-1] if dates else ""
     latest_date = max_date
+    date_options = "".join(
+        '<option value="{}"{}>{}</option>'.format(
+            html_mod.escape(date, quote=True),
+            " selected" if date == latest_date else "",
+            html_mod.escape(date, quote=True),
+        )
+        for date in dates
+    )
 
     if not date_label:
         match = re.search(r"(\d{4}-\d{2}-\d{2})", latest_url)
@@ -456,7 +466,7 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
         date_archive=_date_archive(reports, latest_url),
         min_date=html_mod.escape(min_date, quote=True),
         max_date=html_mod.escape(max_date, quote=True),
-        latest_date=html_mod.escape(latest_date, quote=True),
+        date_options=date_options,
         style=_FUSION_STYLE,
         brief_body=brief_body,
         news_content=news_content,
