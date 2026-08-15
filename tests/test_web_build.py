@@ -304,7 +304,7 @@ class WebBuildTest(unittest.TestCase):
         self.assertNotIn('class="report-eyebrow"', page)
         self.assertNotIn('data-component="report-window"', page)
         self.assertIn('<h1>题材测试</h1>', page)
-        self.assertIn('<p class="report-cutoff">截至 cutoff</p>', page)
+        self.assertNotIn("report-cutoff", page)
         self.assertNotIn('class="filter-bar"', page)
 
     def test_themed_cross_theme_instances_are_unique_and_source_only_has_no_toggle(self):
@@ -547,7 +547,7 @@ if (scoreCell.innerHTML.includes('<strong>')) {
             self.assertEqual(9, len(manifest["reports"]))
             self.assertEqual("reports/2026-08-14-0800.html", manifest["latest"])
             self.assertTrue((output / manifest["latest"]).exists())
-            self.assertIn(manifest["latest"], (output / "index.html").read_text(encoding="utf-8"))
+            self.assertIn("fusion.html", (output / "index.html").read_text(encoding="utf-8"))
 
     def test_checked_in_dist_is_byte_identical_to_a_fresh_build(self):
         with TemporaryDirectory() as tmp:
@@ -638,11 +638,8 @@ if (scoreCell.innerHTML.includes('<strong>')) {
         for marker in ("发布时段", "关键信号/预期差", "市场反馈", "判断边界", "热度变化"):
             self.assertIn(marker, page)
         self.assertEqual(25, page.count("<strong>发布时段</strong>"))
-        self.assertIn(
-            '<p class="report-cutoff">截至 '
-            '2026-08-11 08:30:39（北京时间，Asia/Shanghai）</p>',
-            page,
-        )
+        self.assertNotIn("report-window", page)
+        self.assertNotIn("report-cutoff", page)
         self.assertNotIn('class="filter-actions"', page)
         self.assertNotIn('data-event-id="evt-20260811-011"', page)
         self.assertIn(
@@ -670,7 +667,7 @@ if (scoreCell.innerHTML.includes('<strong>')) {
         manifest = json.loads((ROOT / "web/dist/reports.json").read_text(encoding="utf-8"))
         self.assertEqual("reports/2026-08-14-0800.html", manifest["latest"])
         self.assertIn('href="2026-08-11-0800.html#archive-2026-08-11"', page)
-        self.assertIn(manifest["latest"], (ROOT / "web/dist/index.html").read_text(encoding="utf-8"))
+        self.assertIn("fusion.html", (ROOT / "web/dist/index.html").read_text(encoding="utf-8"))
 
     def test_report_archive_links_resolve_from_report_directory(self):
         with TemporaryDirectory() as tmp:
@@ -779,25 +776,16 @@ if (scoreCell.innerHTML.includes('<strong>')) {
                     self.assertIn('<link rel="icon" href="data:,">', page)
                     self.assertNotIn('href="/favicon.ico"', page)
 
-    def test_fresh_build_renders_explicit_legacy_beijing_metadata(self):
-        expected = {
-            "2026-07-29-1800.html": (
-                '<p class="report-cutoff">截至 2026-07-29 18:08（北京时间）</p>',
-            ),
-            "2026-07-30-0800.html": (
-                '<p class="report-cutoff">截至 10:00（北京时间）</p>',
-            ),
-            "2026-07-30-1500.html": (
-                '<p class="report-cutoff">截至 15:00（北京时间）</p>',
-            ),
-        }
+    def test_fresh_build_omits_cutoff_and_embeds_calendar_filter(self):
         with TemporaryDirectory() as tmp:
             output = build_site(ROOT, Path(tmp) / "dist").output_dir
-            for filename, visible_values in expected.items():
-                with self.subTest(filename=filename):
-                    page = (output / "reports" / filename).read_text(encoding="utf-8")
-                    for visible_value in visible_values:
-                        self.assertIn(visible_value, page)
+            for page_path in (output / "reports").glob("*.html"):
+                with self.subTest(page=page_path.name):
+                    page = page_path.read_text(encoding="utf-8")
+                    self.assertNotIn("report-cutoff", page)
+                    self.assertIn('id="calendar-filter"', page)
+                    self.assertIn('id="calendar-dates"', page)
+                    self.assertIn("assets/calendar.js", page)
 
     def test_report_window_is_no_longer_rendered_on_any_page(self):
         with TemporaryDirectory() as tmp:

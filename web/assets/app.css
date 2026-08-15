@@ -182,6 +182,129 @@ select:focus-visible {
   line-height: 1.15;
 }
 
+.calendar-filter {
+  position: relative;
+  margin: 0 0 12px;
+}
+
+.calendar-filter input {
+  width: 100%;
+  padding: 4px 2px;
+  font-size: 9px;
+  color: #dbe4f0;
+  background: #263650;
+  border: 1px solid #3a4a66;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.calendar-pop {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  width: 232px;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(30, 40, 60, 0.18);
+  color: var(--ink);
+}
+
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.calendar-head button {
+  padding: 2px 7px;
+  font-size: 11px;
+  color: #667285;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.calendar-head button:hover {
+  color: var(--accent);
+  background: #edf4ff;
+}
+
+.calendar-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-day {
+  padding: 5px 0;
+  font-size: 11px;
+  text-align: center;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.calendar-day:hover:not(:disabled) {
+  background: #edf4ff;
+  color: var(--accent);
+}
+
+.calendar-day.selected {
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.calendar-day.disabled {
+  color: #c3ccd8;
+  cursor: default;
+}
+
+.calendar-day.empty {
+  visibility: hidden;
+}
+
+.calendar-foot {
+  margin-top: 8px;
+  text-align: right;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+}
+
+.calendar-foot button {
+  padding: 3px 10px;
+  font-size: 10px;
+  color: var(--accent);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.calendar-foot button:hover {
+  text-decoration: underline;
+}
+
 .report-topbar-right {
   display: flex;
   align-items: center;
@@ -792,7 +915,130 @@ select:focus-visible {
     white-space: normal;
   }
 
-  .report-topbar-right {
+  .calendar-filter {
+  position: relative;
+  margin: 0 0 12px;
+}
+
+.calendar-filter input {
+  width: 100%;
+  padding: 4px 2px;
+  font-size: 9px;
+  color: #dbe4f0;
+  background: #263650;
+  border: 1px solid #3a4a66;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.calendar-pop {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  width: 232px;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(30, 40, 60, 0.18);
+  color: var(--ink);
+}
+
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.calendar-head button {
+  padding: 2px 7px;
+  font-size: 11px;
+  color: #667285;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.calendar-head button:hover {
+  color: var(--accent);
+  background: #edf4ff;
+}
+
+.calendar-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-day {
+  padding: 5px 0;
+  font-size: 11px;
+  text-align: center;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.calendar-day:hover:not(:disabled) {
+  background: #edf4ff;
+  color: var(--accent);
+}
+
+.calendar-day.selected {
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.calendar-day.disabled {
+  color: #c3ccd8;
+  cursor: default;
+}
+
+.calendar-day.empty {
+  visibility: hidden;
+}
+
+.calendar-foot {
+  margin-top: 8px;
+  text-align: right;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+}
+
+.calendar-foot button {
+  padding: 3px 10px;
+  font-size: 10px;
+  color: var(--accent);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.calendar-foot button:hover {
+  text-decoration: underline;
+}
+
+.report-topbar-right {
     flex-wrap: wrap;
   }
 

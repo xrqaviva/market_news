@@ -10,7 +10,7 @@
 <body data-report-id="{{REPORT_ID}}">
   <div class="page-shell">
     <section class="report-card">
-      <aside class="report-sidebar" data-component="report-archive"><div class="brand" aria-label="A股新闻雷达">RADAR</div>{{REPORT_ARCHIVE}}</aside>
+      <aside class="report-sidebar" data-component="report-archive"><div class="brand" aria-label="A股新闻雷达">RADAR</div>{{CALENDAR_FILTER}}{{REPORT_ARCHIVE}}</aside>
       <div class="report-workspace">
         <header class="topbar">{{TOPBAR}}</header>
         <label class="mobile-report-control">
@@ -27,5 +27,6 @@
     <button class="news-toggle" type="button" aria-expanded="false" aria-controls="">展开详情</button>
   </template>
   <script src="../assets/app.js" defer></script>
+  <script src="../assets/calendar.js" defer></script>
 </body>
 </html>

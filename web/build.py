@@ -395,12 +395,43 @@ def _filter_bar(document: ReportDocument) -> str:
     ).format(metadata)
 
 
+def _calendar_filter(report_index: list[dict]) -> str:
+    """Sidebar calendar date picker (antd-like) with the report-date JSON."""
+    by_date = {}
+    for report in report_index:
+        date = str(report.get("date", ""))
+        if date:
+            by_date[date] = str(report.get("url", ""))
+    dates = sorted(by_date)
+    latest = dates[-1] if dates else ""
+    payload = json.dumps(by_date, ensure_ascii=False)
+    return (
+        '<div class="calendar-filter" id="calendar-filter">'
+        '<input type="text" readonly value="{}" aria-label="按日期筛选报告">'
+        '<div class="calendar-pop" hidden>'
+        '<div class="calendar-head">'
+        '<button type="button" data-nav="year-prev">«</button>'
+        '<button type="button" data-nav="month-prev">‹</button>'
+        '<span class="calendar-title"></span>'
+        '<button type="button" data-nav="month-next">›</button>'
+        '<button type="button" data-nav="year-next">»</button>'
+        '</div>'
+        '<div class="calendar-week"><span>一</span><span>二</span><span>三</span>'
+        '<span>四</span><span>五</span><span>六</span><span>日</span></div>'
+        '<div class="calendar-grid"></div>'
+        '<div class="calendar-foot"><button type="button" data-nav="today">今天</button></div>'
+        '</div></div>'
+        '<script type="application/json" id="calendar-dates">{}</script>'
+    ).format(_escape(latest), payload)
+
+
 def render_report(document: ReportDocument, report_index: list[dict]) -> str:
     """Render fixed template with escaped text and allowlisted http/https source URLs."""
     template = _TEMPLATE_PATH.read_text(encoding="utf-8")
     replacements = {
         "PAGE_TITLE": _escape(document.meta.title),
         "REPORT_ID": _escape(document.meta.report_id),
+        "CALENDAR_FILTER": _calendar_filter(report_index),
         "TOPBAR": (
             '<div class="report-heading"><h1>{}</h1></div>'
             '<div class="report-topbar-right">'
@@ -408,11 +439,9 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
             '<a href="../fusion.html#brief">外围</a>'
             '<a href="../fusion.html#news" aria-current="page">新闻</a>'
             '</nav>'
-            '<p class="report-cutoff">截至 {}</p>'
             '</div>'
         ).format(
             _escape(document.meta.title),
-            _escape(document.meta.cutoff),
         ),
         "REPORT_ARCHIVE": _report_archive(document, report_index),
         "FILTER_BAR": _filter_bar(document),
@@ -456,12 +485,13 @@ def _manifest_entry(document: ReportDocument) -> dict:
 
 
 def _write_index(destination: Path, latest_url: str, latest_title: str) -> None:
-    escaped_url = _escape(latest_url)
+    # single entry: the fusion page owns the shared sidebar/topbar frame
+    escaped_url = _escape("fusion.html")
     destination.write_text(
         "<!doctype html>\n"
         '<html lang="zh-CN"><head><meta charset="utf-8">'
         '<meta http-equiv="refresh" content="0; url={}">'
-        '<title>新闻雷达</title><link rel="icon" href="data:,">'
+        '<title>新闻速递</title><link rel="icon" href="data:,">'
         "</head><body>"
         '<p><a href="{}">{}</a></p></body></html>\n'.format(
             escaped_url, escaped_url, _escape(latest_title)
@@ -502,8 +532,8 @@ def _validate_output(destination: Path, report_index: list[dict]) -> None:
     if manifest.get("latest") != expected_urls[-1]:
         raise ValueError("manifest latest report is inconsistent")
     index = (destination / "index.html").read_text(encoding="utf-8")
-    if expected_urls[-1] not in index or "http-equiv=\"refresh\"" not in index:
-        raise ValueError("index page does not redirect to latest report")
+    if "fusion.html" not in index or "http-equiv=\"refresh\"" not in index:
+        raise ValueError("index page does not redirect to the fusion page")
 
 
 def _checked_output_dir(project_root: Path, output_dir: Path) -> Path:

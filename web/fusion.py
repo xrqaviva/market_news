@@ -241,21 +241,6 @@ _FUSION_STYLE = """
   }
   .fusion-pane[hidden] { display: none; }
 
-  .sidebar-date-filter {
-    display: block;
-    margin: 0 0 12px;
-  }
-
-  .sidebar-date-filter select {
-    width: 100%;
-    padding: 4px 2px;
-    font-size: 9px;
-    color: #dbe4f0;
-    background: #263650;
-    border: 1px solid #3a4a66;
-    border-radius: 5px;
-  }
-
   .fusion-brief-card,
   .fusion-news-card {
     background: #eef1f5;
@@ -329,16 +314,7 @@ _FUSION_JS = """
     window.addEventListener('hashchange', applyHash);
     document.addEventListener('DOMContentLoaded', applyHash);
     applyHash();
-    var dateTargets = __DATE_TARGETS__;
-    var dateFilter = document.getElementById('fusion-date-filter');
-    function jumpToDate() {
-      var target = dateTargets[dateFilter.value];
-      if (target) window.location.href = target;
-    }
-    if (dateFilter) {
-      dateFilter.addEventListener('change', jumpToDate);
-      dateFilter.addEventListener('input', jumpToDate);
-    }
+
   })();
 </script>
 """
@@ -353,17 +329,14 @@ _FUSION_TEMPLATE = """<!doctype html>
   <link rel="stylesheet" href="assets/app.css">
   {style}
   <script src="assets/app.js" defer></script>
+  <script src="assets/calendar.js" defer></script>
 </head>
 <body>
   <div class="page-shell">
     <section class="report-card">
       <aside class="report-sidebar">
         <div class="brand" aria-label="新闻速递">新闻速递</div>
-        <label class="sidebar-date-filter">
-          <select id="fusion-date-filter" aria-label="按日期筛选报告">
-            {date_options}
-          </select>
-        </label>
+        {calendar_filter}
         {date_archive}
       </aside>
       <div class="report-workspace">
@@ -441,13 +414,26 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
     min_date = dates[0] if dates else ""
     max_date = dates[-1] if dates else ""
     latest_date = max_date
-    date_options = "".join(
-        '<option value="{}"{}>{}</option>'.format(
-            html_mod.escape(date, quote=True),
-            " selected" if date == latest_date else "",
-            html_mod.escape(date, quote=True),
-        )
-        for date in dates
+    calendar_filter = (
+        '<div class="calendar-filter" id="calendar-filter">'
+        '<input type="text" readonly value="{}" aria-label="按日期筛选报告">'
+        '<div class="calendar-pop" hidden>'
+        '<div class="calendar-head">'
+        '<button type="button" data-nav="year-prev">«</button>'
+        '<button type="button" data-nav="month-prev">‹</button>'
+        '<span class="calendar-title"></span>'
+        '<button type="button" data-nav="month-next">›</button>'
+        '<button type="button" data-nav="year-next">»</button>'
+        '</div>'
+        '<div class="calendar-week"><span>一</span><span>二</span><span>三</span>'
+        '<span>四</span><span>五</span><span>六</span><span>日</span></div>'
+        '<div class="calendar-grid"></div>'
+        '<div class="calendar-foot"><button type="button" data-nav="today">今天</button></div>'
+        '</div></div>'
+        '<script type="application/json" id="calendar-dates">{}</script>'
+    ).format(
+        html_mod.escape(latest_date, quote=True),
+        json.dumps(date_targets, ensure_ascii=False),
     )
 
     if not date_label:
@@ -466,7 +452,7 @@ def build_fusion(output_dir: Path, daily_info_root: Path, date_label: str = "") 
         date_archive=_date_archive(reports, latest_url),
         min_date=html_mod.escape(min_date, quote=True),
         max_date=html_mod.escape(max_date, quote=True),
-        date_options=date_options,
+        calendar_filter=calendar_filter,
         style=_FUSION_STYLE,
         brief_body=brief_body,
         news_content=news_content,
