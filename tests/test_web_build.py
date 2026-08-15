@@ -298,7 +298,8 @@ class WebBuildTest(unittest.TestCase):
             ),
             "report sidebar and workspace must remain siblings inside the report card",
         )
-        self.assertIn('<p class="report-eyebrow">2026-08-11 · 盘前</p>', page)
+        self.assertNotIn('class="report-eyebrow"', page)
+        self.assertNotIn('data-component="report-window"', page)
         self.assertIn('<h1>题材测试</h1>', page)
         self.assertIn('<p class="report-cutoff">截至 cutoff</p>', page)
         self.assertNotIn('class="filter-bar"', page)
@@ -777,15 +778,12 @@ if (scoreCell.innerHTML.includes('<strong>')) {
     def test_fresh_build_renders_explicit_legacy_beijing_metadata(self):
         expected = {
             "2026-07-29-1800.html": (
-                '<p class="report-eyebrow">2026-07-29 · 收盘</p>',
                 '<p class="report-cutoff">截至 2026-07-29 18:08（北京时间）</p>',
             ),
             "2026-07-30-0800.html": (
-                '<p class="report-eyebrow">2026-07-30 · 盘前</p>',
                 '<p class="report-cutoff">截至 10:00（北京时间）</p>',
             ),
             "2026-07-30-1500.html": (
-                '<p class="report-eyebrow">2026-07-30 · 盘后</p>',
                 '<p class="report-cutoff">截至 15:00（北京时间）</p>',
             ),
         }
@@ -797,39 +795,14 @@ if (scoreCell.innerHTML.includes('<strong>')) {
                     for visible_value in visible_values:
                         self.assertIn(visible_value, page)
 
-    def test_fresh_build_preserves_every_nonempty_report_window(self):
-        expected_windows = {
-            "2026-07-30-0800.html": "2026-07-29 00:00—2026-07-30 10:00（北京时间）",
-            "2026-07-30-1500.html": "2026-07-30 00:00—15:00（北京时间）",
-            "2026-07-31-0800.html": "2026-07-30 00:00—2026-07-31 08:29（北京时间）",
-            "2026-08-03-0800.html": (
-                "2026-07-31 00:00—2026-08-02 16:34（北京时间）。这是周日提前生成的可读版本，"
-                "不冒充8月3日08:00实时快照；周日晚至周一08:00的新消息尚未覆盖。"
-            ),
-            "2026-08-10-0800.html": (
-                "2026-08-07 00:00—2026-08-09 19:44:27（北京时间），"
-                "完整覆盖前一交易日及周末已发生信息。"
-            ),
-            "2026-08-11-0800.html": (
-                "2026-08-10 00:00:00—2026-08-11 08:30:39（北京时间，Asia/Shanghai）；"
-                "前一交易日 2026-08-10 当天完整纳入。"
-            ),
-        }
-
+    def test_report_window_is_no_longer_rendered_on_any_page(self):
         with TemporaryDirectory() as tmp:
             output = build_site(ROOT, Path(tmp) / "dist").output_dir
-            for filename, report_window in expected_windows.items():
-                with self.subTest(filename=filename):
-                    page = (output / "reports" / filename).read_text(encoding="utf-8")
-                    self.assertEqual(
-                        1,
-                        page.count(
-                            '<p class="report-eyebrow" data-component="report-window">'
-                            '报告窗口 · {}</p>'.format(report_window)
-                        ),
-                    )
-            empty_page = (output / "reports/2026-07-29-1800.html").read_text(encoding="utf-8")
-            self.assertEqual(0, empty_page.count('data-component="report-window"'))
+            for page_path in (output / "reports").glob("*.html"):
+                with self.subTest(page=page_path.name):
+                    page = page_path.read_text(encoding="utf-8")
+                    self.assertEqual(0, page.count('data-component="report-window"'))
+                    self.assertNotIn("报告窗口 ·", page)
 
     def test_report_window_escapes_special_characters_once(self):
         document = ReportDocument(
@@ -846,12 +819,8 @@ if (scoreCell.innerHTML.includes('<strong>')) {
             "url": "reports/2026-08-01-0800.html",
         }])
 
-        self.assertEqual(1, page.count('data-component="report-window"'))
-        self.assertIn(
-            '<p class="report-eyebrow" data-component="report-window">'
-            '报告窗口 · &lt;窗口 &amp; &quot;测试&quot;&gt;</p>',
-            page,
-        )
+        self.assertEqual(0, page.count('data-component="report-window"'))
+        self.assertNotIn('报告窗口 ·', page)
         self.assertNotIn('<窗口 & "测试">', page)
 
     def test_july29_markdown_news_fields_reach_fresh_html_in_source_order(self):

@@ -402,27 +402,13 @@ def _filter_bar(document: ReportDocument) -> str:
 def render_report(document: ReportDocument, report_index: list[dict]) -> str:
     """Render fixed template with escaped text and allowlisted http/https source URLs."""
     template = _TEMPLATE_PATH.read_text(encoding="utf-8")
-    topbar_meta = " · ".join(
-        part for part in (
-            document.meta.report_date,
-            document.meta.slot_label,
-        ) if part
-    )
-    report_window = (
-        '<p class="report-eyebrow" data-component="report-window">报告窗口 · {}</p>'.format(
-            _escape(document.meta.window)
-        )
-        if document.meta.window else ""
-    )
     replacements = {
         "PAGE_TITLE": _escape(document.meta.title),
         "REPORT_ID": _escape(document.meta.report_id),
         "TOPBAR": (
-            '<div class="report-heading"><p class="report-eyebrow">{}</p>{}'
-            '<h1>{}</h1></div><p class="report-cutoff">截至 {}</p>'
+            '<div class="report-heading"><h1>{}</h1></div>'
+            '<p class="report-cutoff">截至 {}</p>'
         ).format(
-            _escape(topbar_meta),
-            report_window,
             _escape(document.meta.title),
             _escape(document.meta.cutoff),
         ),
