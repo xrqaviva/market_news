@@ -29,12 +29,12 @@ def _fake_daily_info(base: Path) -> Path:
         "<tr><td>纳斯达克综合</td><td class=\"num\">tencent 26,803.03</td></tr>"
         "<tr><td>道琼斯工业</td><td class=\"num up\">tencent +69.7200</td>"
         "<td class=\"src\"><a href=\"https://qt.gtimg.cn/q=usINX\">tencent</a>；"
-        "<a href=\"https://push2his.eastmoney.com/x\">eastmoney_global_history</a></td></tr>"
+        "<a href=\"https://cdn.cboe.com/api/global/us_indices/daily_prices/SPX_History.csv\">cboe</a></td></tr>"
         "</tbody></table></div>"
         "<h2>官方日度参考汇率</h2>"
         "<div class=\"table-wrap\"><table><thead><tr><th>品种</th><th>最新值</th></tr></thead><tbody>"
         "<tr><td>美元/在岸人民币</td><td class=\"num flat\">—</td>"
-        "<td class=\"src\"><a href=\"https://example.com/boc\">boc</a></td></tr>"
+        "<td class=\"src\"><a href=\"https://www.bankofcanada.ca/valet/observations/x\">boc</a></td></tr>"
         "<tr><td>美元/欧元</td><td class=\"num flat\">—</td>"
         "<td class=\"src\"><a href=\"https://example.com/ecb\">ecb</a></td></tr>"
         "</tbody></table></div>"
@@ -129,10 +129,12 @@ class FusionBuildTest(unittest.TestCase):
             # source prefixes stripped from numeric cells, keys mapped to short names
             self.assertNotIn("tencent ", page)
             self.assertIn(">腾讯<", page)
-            self.assertIn(">东方财富<", page)
+            self.assertIn(">cboe<", page)
+            self.assertIn(">加拿大央行<", page)
             # raw API endpoints rewritten to human-readable quote pages
             self.assertIn('href="https://gu.qq.com/usINX"', page)
-            self.assertIn('href="https://quote.eastmoney.com/"', page)
+            self.assertIn('href="https://www.cboe.com/us/indices/dashboard/spx/"', page)
+            self.assertIn('href="https://www.bankofcanada.ca/rates/exchange/daily-exchange-rates/"', page)
             self.assertNotIn("qt.gtimg.cn", page)
             self.assertIn("+69.7200", page)
             self.assertIn("26,803.03", page)

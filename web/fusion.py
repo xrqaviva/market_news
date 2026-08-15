@@ -162,8 +162,17 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
                 return "https://gu.qq.com/{}".format(match.group(1))
         if "push2his.eastmoney.com" in raw_url or "push2.eastmoney.com" in raw_url:
             return "https://quote.eastmoney.com/"
-        if "stock2.finance.sina.com.cn" in raw_url:
+        if "stock2.finance.sina.com.cn" in raw_url or "hq.sinajs.cn" in raw_url:
             return "https://finance.sina.com.cn/7x24/"
+        if "cdn.cboe.com" in raw_url:
+            return "https://www.cboe.com/us/indices/dashboard/spx/"
+        if "data-api.ecb.europa.eu" in raw_url:
+            return (
+                "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/"
+                "euro_reference_exchange_rates/html/index.en.html"
+            )
+        if "bankofcanada.ca" in raw_url:
+            return "https://www.bankofcanada.ca/rates/exchange/daily-exchange-rates/"
         return raw_url
 
     def _rename_source(match: re.Match) -> str:
