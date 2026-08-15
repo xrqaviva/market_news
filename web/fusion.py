@@ -78,8 +78,8 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
     - pull 核验状态/核验原因 paragraphs out of the tables and collect them
       into a verification summary rendered below
     """
-    # 0. rename the brief headline to 外围
-    body = re.sub(r"<h1>A股盘前双源晨报", "<h1>外围", body)
+    # 0. drop the brief headline entirely (redundant with the topbar)
+    body = re.sub(r"<h1>[^<]*</h1>", "", body)
     # 1. drop informational paragraphs
     body = re.sub(r"<p class=\"(?:meta|rule|legend)\">.*?</p>", "", body, flags=re.DOTALL)
     body = re.sub(r"<footer>.*?</footer>", "", body, flags=re.DOTALL)
@@ -226,13 +226,11 @@ def _date_archive(reports: list[dict], latest_url: str) -> str:
 
 _FUSION_STYLE = """
 <style>
-  /* tab bar in the report filter-bar idiom */
+  /* tab bar in the report filter-bar idiom, now inside the topbar */
   .fusion-tabs {
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    margin: 18px 0 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px;
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px; border: 1px solid #cbd3df; border-radius: 7px; background: #f8fafc;
   }
-  .fusion-tabs .fusion-tabs-meta { color: var(--muted); font-size: 10px; }
-  .fusion-tabs .fusion-tabs-actions { display: flex; flex-wrap: wrap; gap: 5px; }
   .fusion-tab-button {
     padding: 5px 10px; font-size: 10px; color: #425069; background: #f8fafc;
     border: 1px solid #cbd3df; border-radius: 3px; cursor: pointer;
@@ -242,6 +240,14 @@ _FUSION_STYLE = """
     color: #ffffff; background: var(--accent); border-color: var(--accent); font-weight: 700;
   }
   .fusion-pane[hidden] { display: none; }
+
+  .fusion-brief-card,
+  .fusion-news-card {
+    background: #eef1f5;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 20px;
+  }
 
   /* morning-brief content styled with the radar palette */
   .brief-body h1 { font-size: 19px; margin: 0 0 10px; color: var(--ink); }
@@ -336,21 +342,23 @@ _FUSION_TEMPLATE = """<!doctype html>
             <p class="report-eyebrow">新闻速递 · 每日</p>
             <h1>{heading_title}</h1>
           </div>
-          <p class="report-cutoff">{date_label}</p>
-        </header>
-        <main class="report-main">
-          <nav class="fusion-tabs" aria-label="视图切换">
-            <span class="fusion-tabs-meta">外围 · {date_label}</span>
-            <div class="fusion-tabs-actions">
+          <div class="report-topbar-right">
+            <nav class="fusion-tabs" aria-label="视图切换">
               <button class="fusion-tab-button" type="button" data-tab="brief" aria-selected="true">外围</button>
               <button class="fusion-tab-button" type="button" data-tab="news" aria-selected="false">新闻</button>
-            </div>
-          </nav>
+            </nav>
+          </div>
+        </header>
+        <main class="report-main">
           <section class="fusion-pane brief-body" data-pane="brief">
-            {brief_body}
+            <div class="fusion-brief-card">
+              {brief_body}
+            </div>
           </section>
           <section class="fusion-pane" data-pane="news" hidden>
-            {news_content}
+            <div class="fusion-news-card">
+              {news_content}
+            </div>
           </section>
         </main>
       </div>

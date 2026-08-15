@@ -107,13 +107,15 @@ class FusionBuildTest(unittest.TestCase):
             self.assertIn('id="news-toggle-template"', page)
             self.assertIn('assets/app.js', page)
             self.assertNotIn("fusion-news-frame", page)
-            self.assertIn("外围｜2026-08-13", page)
             self.assertIn("新闻速递", page)
             self.assertNotIn("融合视图", page)
             self.assertNotIn("双源晨报", page)
             # tabs-meta shows the plain date, not the internal report title
-            self.assertIn("外围 · 2026-08-14", page)
-            self.assertNotIn("测试报告", page)
+            self.assertNotIn("fusion-tabs-meta", page)
+            self.assertIn('class="fusion-brief-card"', page)
+            self.assertIn('class="fusion-news-card"', page)
+            self.assertNotIn("外围｜2026-08-13", page)
+            self.assertNotIn("report-cutoff", page)
             self.assertIn("#a9b4c3", page)  # visible outer table border
             self.assertIn("+0.65%", page)
             self.assertIn("assets/app.css", page)
