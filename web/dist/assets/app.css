@@ -254,13 +254,11 @@ select:focus-visible {
 
 .theme-navigation {
   display: flex;
-  gap: 16px;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  gap: 6px 14px;
   margin: 0;
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
-  scrollbar-width: thin;
-  white-space: nowrap;
 }
 
 .theme-navigation a {
