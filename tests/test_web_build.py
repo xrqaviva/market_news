@@ -28,6 +28,7 @@ from web.security import PublicTreeUnsafe
 
 
 ROOT = Path(__file__).resolve().parents[1]
+DAILY_INFO_ROOT = Path("/Users/aviva/Projects/daily_info")
 
 
 class WebBuildTest(unittest.TestCase):
@@ -203,7 +204,7 @@ class WebBuildTest(unittest.TestCase):
             for filename, titles in expected_titles.items():
                 page = (output / "reports" / filename).read_text(encoding="utf-8")
                 notes = re.search(
-                    r'<details class="report-notes".*?</details>\s*(?=<section class="pending-section"|</main>)',
+                    r'<details class="report-notes".*?</details>',
                     page,
                     re.DOTALL,
                 )
@@ -547,11 +548,13 @@ if (scoreCell.innerHTML.includes('<strong>')) {
             self.assertEqual(9, len(manifest["reports"]))
             self.assertEqual("reports/2026-08-14-0800.html", manifest["latest"])
             self.assertTrue((output / manifest["latest"]).exists())
-            self.assertIn("fusion.html", (output / "index.html").read_text(encoding="utf-8"))
+            self.assertIn(manifest["latest"], (output / "index.html").read_text(encoding="utf-8"))
 
     def test_checked_in_dist_is_byte_identical_to_a_fresh_build(self):
         with TemporaryDirectory() as tmp:
-            fresh = build_site(ROOT, Path(tmp) / "dist").output_dir
+            fresh = build_site(
+                ROOT, Path(tmp) / "dist", daily_info_root=DAILY_INFO_ROOT
+            ).output_dir
             checked = ROOT / "web/dist"
             # fusion.html depends on the external daily_info project's latest
             # output, so it is excluded here and covered by test_fusion_build.
@@ -667,7 +670,7 @@ if (scoreCell.innerHTML.includes('<strong>')) {
         manifest = json.loads((ROOT / "web/dist/reports.json").read_text(encoding="utf-8"))
         self.assertEqual("reports/2026-08-14-0800.html", manifest["latest"])
         self.assertIn('href="2026-08-11-0800.html#archive-2026-08-11"', page)
-        self.assertIn("fusion.html", (ROOT / "web/dist/index.html").read_text(encoding="utf-8"))
+        self.assertIn(manifest["latest"], (ROOT / "web/dist/index.html").read_text(encoding="utf-8"))
 
     def test_report_archive_links_resolve_from_report_directory(self):
         with TemporaryDirectory() as tmp:

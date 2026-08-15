@@ -177,22 +177,28 @@ class FusionBuildTest(unittest.TestCase):
             build_fusion(dist, daily)
             assert_public_tree_safe(dist)  # no raise
 
-    def test_build_site_with_daily_info_root_writes_fusion(self):
+    def test_build_site_with_daily_info_root_fuses_brief_into_reports(self):
         with TemporaryDirectory() as tmp:
             base = Path(tmp)
             daily = _fake_daily_info(base)
             result = build_site(ROOT, base / "dist", daily_info_root=daily)
-            fusion = result.output_dir / FUSION_NAME
-            self.assertTrue(fusion.is_file())
-            page = fusion.read_text(encoding="utf-8")
-            self.assertIn('data-tab="brief"', page)
-            self.assertIn('class="fusion-pane brief-body"', page)
+            self.assertFalse((result.output_dir / FUSION_NAME).exists())
+            page = (result.output_dir / "reports/2026-08-14-0800.html").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn('data-pane="brief"', page)
+            self.assertIn('data-pane="news"', page)
+            self.assertIn("美股三大指数", page)
 
-    def test_build_site_without_daily_info_root_skips_fusion(self):
+    def test_build_site_without_daily_info_root_still_builds_reports(self):
         with TemporaryDirectory() as tmp:
             base = Path(tmp)
             result = build_site(ROOT, base / "dist")
             self.assertFalse((result.output_dir / FUSION_NAME).exists())
+            page = (result.output_dir / "reports/2026-08-14-0800.html").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn('data-pane="news"', page)
 
     @unittest.skipUnless(DAILY_INFO_ROOT.is_dir(), "daily_info project not present")
     def test_real_daily_info_brief_extracts(self):

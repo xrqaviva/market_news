@@ -10,7 +10,7 @@
 <body data-report-id="{{REPORT_ID}}">
   <div class="page-shell">
     <section class="report-card">
-      <aside class="report-sidebar" data-component="report-archive"><div class="brand" aria-label="A股新闻雷达">RADAR</div>{{CALENDAR_FILTER}}{{REPORT_ARCHIVE}}</aside>
+      <aside class="report-sidebar" data-component="report-archive"><div class="brand" aria-label="新闻速递">新闻速递</div>{{CALENDAR_FILTER}}{{REPORT_ARCHIVE}}</aside>
       <div class="report-workspace">
         <header class="topbar">{{TOPBAR}}</header>
         <label class="mobile-report-control">
@@ -18,7 +18,10 @@
           <select class="mobile-report-select" aria-label="切换报告"></select>
         </label>
         <main class="report-main">
-          {{FILTER_BAR}}{{THEME_CONTENT}}{{NEWS_ITEMS}}{{PENDING_ITEMS}}
+          <section class="fusion-pane brief-body" data-pane="brief">{{BRIEF_PANE}}</section>
+          <section class="fusion-pane" data-pane="news" hidden>
+            {{FILTER_BAR}}{{THEME_CONTENT}}{{NEWS_ITEMS}}{{PENDING_ITEMS}}
+          </section>
         </main>
       </div>
     </section>
@@ -26,7 +29,7 @@
   <template id="news-toggle-template">
     <button class="news-toggle" type="button" aria-expanded="false" aria-controls="">展开详情</button>
   </template>
-  <script src="../assets/app.js" defer></script>
-  <script src="../assets/calendar.js" defer></script>
+  <script src="../assets/app.js?v={{JS_VERSION}}" defer></script>
+  <script src="../assets/calendar.js?v={{JS_VERSION}}" defer></script>
 </body>
 </html>

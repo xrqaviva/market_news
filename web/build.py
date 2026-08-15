@@ -15,7 +15,7 @@ from web.report_model import NewsItem, ReportDocument
 from web.report_parser import discover_reports, parse_report
 from web.security import assert_public_tree_safe
 from web.url_policy import renderable_source_url
-from web.fusion import FusionBuildError, build_fusion
+from web.fusion import FusionBuildError, _extract_brief_body, _transform_brief_body
 
 
 _TEMPLATE_PATH = Path(__file__).with_name("templates") / "report.html"
@@ -425,9 +425,39 @@ def _calendar_filter(report_index: list[dict], current_date: str) -> str:
     ).format(_escape(latest), payload)
 
 
-def render_report(document: ReportDocument, report_index: list[dict]) -> str:
+def _brief_pane(daily_info_root: Optional[Path], report_date: str) -> str:
+    """外围 pane: daily_info morning brief for the report date (latest run of
+    that day, else the newest brief)."""
+    if daily_info_root is None:
+        return "<p class=\"brief-unavailable\">外围晨报未配置（构建时未提供 daily-info 路径）。</p>"
+    root = daily_info_root.expanduser().resolve()
+    runs_dir = root / "reports" / ".runs"
+    candidates = sorted(runs_dir.glob("{}-*/A股盘前晨报.html".format(report_date)))
+    path = candidates[-1] if candidates else root / "reports/index/A股盘前晨报.html"
+    if not path.is_file():
+        return "<p class=\"brief-unavailable\">当日无外围晨报。</p>"
+    try:
+        body, _ = _transform_brief_body(
+            _extract_brief_body(path.read_text(encoding="utf-8"))
+        )
+    except FusionBuildError as error:
+        return "<p class=\"brief-unavailable\">外围晨报不可用：{}</p>".format(
+            _escape(str(error))
+        )
+    return body
+
+
+def render_report(
+    document: ReportDocument,
+    report_index: list[dict],
+    daily_info_root: Optional[Path] = None,
+) -> str:
     """Render fixed template with escaped text and allowlisted http/https source URLs."""
     template = _TEMPLATE_PATH.read_text(encoding="utf-8")
+    js_version = max(
+        (Path(__file__).with_name("assets") / name).stat().st_mtime
+        for name in ("app.js", "calendar.js")
+    )
     mmdd = str(document.meta.report_date).replace("-", "")[4:]
     session = "盘前" if document.meta.slot == "0800" else "盘后"
     display_title = "{}{}新闻速递".format(mmdd, session) if mmdd else document.meta.title
@@ -439,13 +469,15 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
             '<div class="report-heading"><h1>{}</h1></div>'
             '<div class="report-topbar-right">'
             '<nav class="report-tabs" aria-label="视图切换">'
-            '<a href="../fusion.html#brief">外围</a>'
-            '<a href="../fusion.html#news" aria-current="page">新闻</a>'
+            '<button type="button" class="report-tab-button" data-pane-target="brief" aria-selected="true">外围</button>'
+            '<button type="button" class="report-tab-button" data-pane-target="news" aria-selected="false">新闻</button>'
             '</nav>'
             '</div>'
         ).format(
             _escape(display_title),
         ),
+        "BRIEF_PANE": _brief_pane(daily_info_root, document.meta.report_date),
+        "JS_VERSION": str(int(js_version)),
         "REPORT_ARCHIVE": _report_archive(document, report_index),
         "FILTER_BAR": _filter_bar(document),
         "THEME_CONTENT": _theme_content(document),
@@ -488,8 +520,9 @@ def _manifest_entry(document: ReportDocument) -> dict:
 
 
 def _write_index(destination: Path, latest_url: str, latest_title: str) -> None:
-    # single entry: the fusion page owns the shared sidebar/topbar frame
-    escaped_url = _escape("fusion.html")
+    # index is only a pointer to the latest report page (every report page is
+    # itself the fused view with 外围/新闻 tabs)
+    escaped_url = _escape(latest_url)
     destination.write_text(
         "<!doctype html>\n"
         '<html lang="zh-CN"><head><meta charset="utf-8">'
@@ -535,8 +568,8 @@ def _validate_output(destination: Path, report_index: list[dict]) -> None:
     if manifest.get("latest") != expected_urls[-1]:
         raise ValueError("manifest latest report is inconsistent")
     index = (destination / "index.html").read_text(encoding="utf-8")
-    if "fusion.html" not in index or "http-equiv=\"refresh\"" not in index:
-        raise ValueError("index page does not redirect to the fusion page")
+    if expected_urls[-1] not in index or "http-equiv=\"refresh\"" not in index:
+        raise ValueError("index page does not redirect to the latest report")
 
 
 def _checked_output_dir(project_root: Path, output_dir: Path) -> Path:
@@ -596,7 +629,7 @@ def build_site(
         documents = [parse_report(path, entry) for path, entry in discover_reports(project_root)]
         report_index = [_manifest_entry(document) for document in documents]
         for document, report in zip(documents, report_index):
-            page = render_report(document, report_index)
+            page = render_report(document, report_index, daily_info_root=daily_info_root)
             report_path = _output_path(next_output, report["url"])
             report_path.parent.mkdir(parents=True, exist_ok=True)
             report_path.write_text(page, encoding="utf-8")
@@ -609,12 +642,6 @@ def build_site(
         _write_index(next_output / "index.html", latest["url"], latest["title"])
         _copy_assets(project_root, next_output)
         _validate_output(next_output, report_index)
-        if daily_info_root is not None:
-            try:
-                build_fusion(next_output, daily_info_root)
-                print("fusion page written: {}".format(next_output / "fusion.html"))
-            except FusionBuildError as error:
-                print("fusion page skipped: {}".format(error), file=sys.stderr)
         assert_public_tree_safe(next_output)
         _atomic_replace(target, next_output)
     except Exception:

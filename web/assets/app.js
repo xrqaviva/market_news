@@ -111,6 +111,26 @@
     });
   }
 
+  var paneButtons = document.querySelectorAll(".report-tab-button");
+  var panes = document.querySelectorAll(".fusion-pane");
+  function selectPane(target) {
+    paneButtons.forEach(function (btn) {
+      btn.setAttribute("aria-selected", String(btn.dataset.paneTarget === target));
+    });
+    panes.forEach(function (pane) {
+      pane.hidden = pane.dataset.pane !== target;
+    });
+  }
+  paneButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () { selectPane(btn.dataset.paneTarget); });
+  });
+  var initialHash = (window.location.hash || "").replace("#", "");
+  if (initialHash === "brief" || initialHash === "news") selectPane(initialHash);
+  window.addEventListener("hashchange", function () {
+    var target = (window.location.hash || "").replace("#", "");
+    if (target === "brief" || target === "news") selectPane(target);
+  });
+
   document.querySelectorAll("[data-component='news-detail']").forEach(enhanceRow);
   populateReportSelect();
   applyArchiveState();

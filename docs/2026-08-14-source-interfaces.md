@@ -136,11 +136,12 @@ node "/Users/aviva/Documents/AI/Skills/vision/vision.js" --url "<图片URL>" "�
 
 ## 12. 公共区域规则（用户裁定，2026-08-16 持久化）
 
-**公共框架（两侧页面必须一致，一次改到位，不许改两次）：**
-- 融合页（fusion.html）与各报告页（reports/*.html）共享同一 `page-shell > report-card` 骨架
+**架构（2026-08-16 用户裁定重构）：唯一页面 = 报告页，每页都是融合页**
+- **index.html 只是指针**：`<meta refresh>` 指向最新报告页（reports/<latest>.html），不承载任何 UI
+- **每个报告页本身就是融合页**：顶部「外围/新闻」tab 切换两个 pane——外围 pane = daily_info 晨报内容（按报告日期取 daily_info runs，无则用最新晨报），新闻 pane = market_news 报告内容
 - **左侧栏（公共）**：品牌「新闻速递」+ 日历日期筛选器（antd 式月历弹层，仅可选有报告的日期，选择跳转该日最后报告）+ 日期归档
-- **顶栏（公共）**：标题 + 右上角「外围/新闻」切换 tab（填充按钮样式）
-- **入口**：`index.html` 重定向到 `fusion.html`（统一入口，公共框架完整）
-- **报告页顶栏不渲染"截至…"截止时间**（与融合页一致，避免冗余）
+- **顶栏（公共）**：标题（MMDD盘前/盘后新闻速递）+ 右上角「外围/新闻」切换按钮
+- **不再有独立的 fusion.html**（旧融合页废弃）；融合逻辑在 web/build.py（_brief_pane）+ web/fusion.py（变换函数复用）+ 模板 report.html
+- 标题统一：`MMDD盘前/盘后新闻速递`（0800=盘前，其余=盘后）
 
-**改动纪律：** 任何涉及左侧目录/上方公共空间的修改，必须同时更新融合页模板（web/fusion.py）与报告页模板（web/templates/report.html + web/build.py），浏览器分别验证两处后再交付。
+**改动纪律：** 唯一模板（web/templates/report.html）+ 唯一构建（web/build.py）——公共区域一次改到位，不存在第二套页面需要同步；浏览器验证（含 tab 切换、日历跳转、外围/新闻内容）后再交付。
