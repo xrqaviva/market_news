@@ -314,32 +314,26 @@ select:focus-visible {
 
 .report-tabs {
   display: flex;
-  gap: 5px;
-  padding: 3px;
-  border: 1px solid #cbd3df;
-  border-radius: 7px;
-  background: #f8fafc;
+  align-items: center;
+  gap: 10px;
 }
 
-.report-tabs a {
-  padding: 5px 10px;
+.report-tabs button {
+  padding: 4px 6px;
   font-size: 10px;
-  color: #425069;
-  background: #f8fafc;
-  border: 1px solid #cbd3df;
+  color: #667285;
+  background: transparent;
+  border: none;
   border-radius: 3px;
-  text-decoration: none;
+  cursor: pointer;
 }
 
-.report-tabs a:hover {
+.report-tabs button:hover {
   color: #1749a8;
-  border-color: #8ab1f3;
 }
 
-.report-tabs a[aria-current="page"] {
-  color: #ffffff;
-  background: var(--accent);
-  border-color: var(--accent);
+.report-tabs button[aria-selected="true"] {
+  color: var(--accent);
   font-weight: 700;
 }
 
