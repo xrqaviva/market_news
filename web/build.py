@@ -117,7 +117,7 @@ def _news_item(
     return (
         '<article data-component="news-detail" data-rank="{}" data-category="{}" data-detail-kind="{}" '
         'id="news-{}" data-instance-id="{}" data-event-id="{}">'
-        '<h2>{}. {}</h2><p>{}</p>{}<p>热点权重：{}/100</p>{}{}</article>'
+        '<h2>{}. {}</h2><p>{}</p>{}<p>热点权重：{}/100</p>{}</article>'
     ).format(
         _escape(item.rank),
         _escape(item.category),
@@ -130,7 +130,6 @@ def _news_item(
         _escape(item.core),
         _source_links(item),
         _escape(item.score),
-        association_labels,
         details,
     )
 
@@ -170,7 +169,6 @@ def _theme_group(
         _news_item(
             item,
             _news_instance_id(document.meta.report_id, theme.theme_id, item.event_id),
-            _association_badges(item.theme_ids, theme_names),
         )
         for item in theme.items
     )
@@ -205,7 +203,6 @@ def _other_important_news(document: ReportDocument, theme_names: dict[str, str])
         _news_item(
             item,
             _news_instance_id(document.meta.report_id, "other", item.event_id),
-            _association_badges(item.theme_ids, theme_names),
         )
         for item in document.other_items
     )
@@ -316,10 +313,9 @@ def _report_notes(document: ReportDocument) -> str:
         for section in document.report_sections
     )
     return (
-        '<section class="report-notes" data-component="report-notes" '
-        'aria-labelledby="report-notes-title">'
-        '<header><p>补充口径</p><h2 id="report-notes-title">报告说明</h2></header>'
-        '{}{}</section>'
+        '<details class="report-notes" data-component="report-notes">'
+        '<summary><p>补充口径</p><h2 id="report-notes-title">报告说明</h2></summary>'
+        '{}{}</details>'
     ).format(intro, sections)
 
 

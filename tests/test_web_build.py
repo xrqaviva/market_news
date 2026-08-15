@@ -125,8 +125,9 @@ class WebBuildTest(unittest.TestCase):
         self.assertIn('href="https://example.com/other"', page)
         self.assertIn('href="#theme-ascii-theme-alpha"', page)
         self.assertIn('href="#theme-ascii-theme-beta"', page)
-        for target in re.findall(r'class="theme-association"[^>]*href="#([^"]+)"', page):
+        for target in re.findall(r'class="theme-navigation"[^>]*href="#([^"]+)"', page):
             self.assertIn(f'id="{target}"', page)
+        self.assertNotIn("news-associations", page)
 
     def test_themed_page_omits_legacy_category_filters(self):
         page = render_report(self._themed_document(), [{
@@ -164,6 +165,8 @@ class WebBuildTest(unittest.TestCase):
 
         self.assertEqual(1, page.count('data-component="report-notes"'))
         self.assertEqual(1, page.count('<h2 id="report-notes-title">报告说明</h2>'))
+        self.assertIn('<details class="report-notes" data-component="report-notes">', page)
+        self.assertNotIn('<section class="report-notes"', page)
         self.assertLess(page.index("其他重要新闻"), page.index('data-component="report-notes"'))
         self.assertLess(page.index('data-component="report-notes"'), page.index('data-component="pending-list"'))
         self.assertIn('顶部 &lt;口径&gt; &amp; &quot;风险&quot;', page)
@@ -200,7 +203,7 @@ class WebBuildTest(unittest.TestCase):
             for filename, titles in expected_titles.items():
                 page = (output / "reports" / filename).read_text(encoding="utf-8")
                 notes = re.search(
-                    r'<section class="report-notes".*?</section>\s*(?=<section class="pending-section"|</main>)',
+                    r'<details class="report-notes".*?</details>\s*(?=<section class="pending-section"|</main>)',
                     page,
                     re.DOTALL,
                 )
@@ -335,7 +338,8 @@ class WebBuildTest(unittest.TestCase):
         ]
         self.assertEqual(normalized[0], normalized[1])
         self.assertIn('data-event-id="evt-shared"', normalized[0])
-        self.assertIn('data-theme-id="theme-alpha"', normalized[0])
+        self.assertNotIn('theme-association', page)
+        self.assertNotIn('news-associations', page)
 
         other_row = re.search(
             r'<article(?=[^>]*data-event-id="evt-other")[^>]*>.*?</article>', page, re.DOTALL,

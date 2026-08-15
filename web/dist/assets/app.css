@@ -558,6 +558,56 @@ select:focus-visible {
 }
 
 .report-notes {
+  margin: 18px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.report-notes > summary {
+  cursor: pointer;
+  padding: 10px 14px;
+  list-style: none;
+}
+
+.report-notes > summary::-webkit-details-marker {
+  display: none;
+}
+
+.report-notes > summary p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+.report-notes > summary h2 {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.report-notes > summary::after {
+  content: "▸";
+  float: right;
+  color: var(--muted);
+  transition: transform 150ms ease;
+}
+
+.report-notes[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+.report-notes > :not(summary) {
+  margin-left: 14px;
+  margin-right: 14px;
+}
+
+.report-notes > :last-child {
+  margin-bottom: 14px;
+}
+
+.report-notes {
   margin-top: 18px;
   padding-top: 12px;
   color: var(--muted);
