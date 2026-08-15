@@ -403,7 +403,13 @@ def render_report(document: ReportDocument, report_index: list[dict]) -> str:
         "REPORT_ID": _escape(document.meta.report_id),
         "TOPBAR": (
             '<div class="report-heading"><h1>{}</h1></div>'
+            '<div class="report-topbar-right">'
+            '<nav class="report-tabs" aria-label="视图切换">'
+            '<a href="../fusion.html#brief">外围</a>'
+            '<a href="../fusion.html#news" aria-current="page">新闻</a>'
+            '</nav>'
             '<p class="report-cutoff">截至 {}</p>'
+            '</div>'
         ).format(
             _escape(document.meta.title),
             _escape(document.meta.cutoff),
