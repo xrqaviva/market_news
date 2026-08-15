@@ -101,8 +101,15 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
     if breadth_match:
         block = breadth_match.group(0)
         cells = [c.strip() for c in re.findall(r"<td[^>]*>([^<]*)</td>", block)]
-        if cells and cells[0] == "eastmoney" and len(cells) >= 6:
-            date, up, down, flat = cells[1], cells[3], cells[4], cells[5]
+        try:
+            east_idx = cells.index("eastmoney")
+        except ValueError:
+            east_idx = -1
+        if east_idx >= 0 and len(cells) >= east_idx + 6:
+            date, up, down, flat = (
+                cells[east_idx + 1], cells[east_idx + 3],
+                cells[east_idx + 4], cells[east_idx + 5],
+            )
             up, down, flat = (
                 re.sub(r"\.0+$", "", value) for value in (up, down, flat)
             )
