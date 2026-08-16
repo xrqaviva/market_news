@@ -144,6 +144,8 @@ def _theme_navigation(document: ReportDocument) -> str:
     )
     if document.other_items:
         links += '<a href="#other-important-news">其他重要新闻</a>'
+    if document.pending_items:
+        links += '<a href="#pending-notes">待核验线索</a>'
     return (
         '<nav class="theme-navigation" data-component="theme-navigation" '
         'aria-label="核心方向">{}</nav>'
@@ -252,7 +254,7 @@ def _pending_items(document: ReportDocument) -> str:
             )
         )
     return (
-        '<section class="pending-section" data-component="pending-list">'
+        '<section class="pending-section" data-component="pending-list" id="pending-notes">'
         '<details class="pending-details">'
         '<summary>待核验线索 <span>· {}</span></summary>'
         '<div class="pending-body">'

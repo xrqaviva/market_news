@@ -655,7 +655,7 @@ if (scoreCell.innerHTML.includes('<strong>')) {
         )
 
         pending = re.search(
-            r'<section class="pending-section" data-component="pending-list">.*?</details></section>',
+            r'<section class="pending-section"[^>]*data-component="pending-list"[^>]*>.*?</details></section>',
             page,
             re.DOTALL,
         )
