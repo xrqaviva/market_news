@@ -248,7 +248,7 @@ class WebReportParserTest(unittest.TestCase):
 
     def test_catalog_selects_legacy_and_current_reports(self):
         found = discover_reports(ROOT)
-        self.assertEqual(9, len(found))
+        self.assertEqual(10, len(found))
         self.assertEqual(
             [
                 "20260729-1800",
@@ -260,6 +260,7 @@ class WebReportParserTest(unittest.TestCase):
                 "20260811-0800",
                 "20260813-1500",
                 "20260814-0800",
+                "20260816-0800",
             ],
             [entry.report_id for _, entry in found],
         )
@@ -499,16 +500,16 @@ class WebReportParserTest(unittest.TestCase):
     def test_all_report_model_field_counts_do_not_regress_during_legacy_recovery(self):
         items = [item for document in self._documents().values() for item in document.items]
 
-        self.assertEqual(290, len(items))
-        self.assertEqual(522, sum(len(item.sources) for item in items))
-        self.assertEqual(290, sum(bool(item.core) for item in items))
-        self.assertEqual(230, sum(bool(item.score_breakdown) for item in items))
-        self.assertEqual(195, sum(bool(item.signal) for item in items))
-        self.assertEqual(195, sum(bool(item.market_feedback) for item in items))
-        self.assertEqual(195, sum(bool(item.boundary) for item in items))
+        self.assertEqual(303, len(items))
+        self.assertEqual(538, sum(len(item.sources) for item in items))
+        self.assertEqual(303, sum(bool(item.core) for item in items))
+        self.assertEqual(243, sum(bool(item.score_breakdown) for item in items))
+        self.assertEqual(208, sum(bool(item.signal) for item in items))
+        self.assertEqual(208, sum(bool(item.market_feedback) for item in items))
+        self.assertEqual(208, sum(bool(item.boundary) for item in items))
         self.assertEqual(50, sum(bool(item.variables) for item in items))
-        self.assertEqual(210, sum(bool(item.heat_change) for item in items))
-        self.assertEqual(145, sum(bool(item.release_session) for item in items))
+        self.assertEqual(223, sum(bool(item.heat_change) for item in items))
+        self.assertEqual(158, sum(bool(item.release_session) for item in items))
         self.assertEqual(370, sum(len(item.supplemental_details) for item in items))
 
     def test_headlines_exclude_heat_method_terms(self):
