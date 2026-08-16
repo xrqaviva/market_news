@@ -146,7 +146,6 @@ def _theme_navigation(document: ReportDocument) -> str:
         links += '<a href="#other-important-news">其他重要新闻</a>'
     if document.pending_items:
         links += '<a href="#pending-notes">待核验线索</a>'
-    links += '<a href="#top">回到最上</a>'
     return (
         '<nav class="theme-navigation" data-component="theme-navigation" '
         'aria-label="核心方向">{}</nav>'

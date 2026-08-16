@@ -75,6 +75,8 @@ select:focus-visible {
 }
 
 .report-sidebar {
+  display: flex;
+  flex-direction: column;
   flex: 0 0 76px;
   width: 76px;
   padding: 17px 9px;
@@ -144,6 +146,23 @@ select:focus-visible {
   color: #ffffff;
   background: var(--nav-active);
   font-weight: 700;
+}
+
+.report-sidebar .sidebar-top-link {
+  display: block;
+  margin-top: auto;
+  padding: 8px 6px;
+  color: #aeb9ca;
+  border-top: 1px solid #2c3b57;
+  border-radius: 7px;
+  font-size: 10px;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.report-sidebar .sidebar-top-link:hover {
+  color: #ffffff;
+  background: #263650;
 }
 
 .report-workspace {
