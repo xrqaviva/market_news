@@ -1,3 +1,16 @@
+/* Browser layout acceptance for the current report design (2026-08):
+
+ * - themed reports render a theme-navigation + theme-group list inside the
+ *   "news" pane; app.js converts each news-detail article into a .news-row
+ *   (rank / content / score) at runtime.
+ * - non-themed reports render a filter-bar with category buttons instead.
+ * - the sidebar is sticky (position: sticky; top: 27px) with its own
+ *   overflow-y and a pinned "回到最上" link at the bottom.
+ * - anchor jumps use CSS scroll-behavior: smooth, so assertions must wait
+ *   for the scroll to settle instead of reading one frame after the click.
+ *
+ * Run with: node tests/report_layout_browser.mjs
+ */
 import { access, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
 import { tmpdir } from "node:os";
@@ -18,6 +31,7 @@ const EXPECTED_REPORT_OUTPUT_BY_INPUT = new Map([
   ["reports/2026-08-11-0800-premarket-news-ranking.md", "reports/2026-08-11-0800.html"],
   ["reports/2026-08-13-1500-news-ranking-test.md", "reports/2026-08-13-1500.html"],
   ["reports/2026-08-14-0800-news-ranking-preview.md", "reports/2026-08-14-0800.html"],
+  ["reports/2026-08-16-0800-news-ranking-preview.md", "reports/2026-08-16-0800.html"],
 ]);
 
 function assertSameStringSet(label, actual, expected) {
@@ -101,13 +115,19 @@ async function connectCdp(url) {
 }
 
 async function evaluate(cdp, expression) {
-  const result = await cdp.send("Runtime.evaluate", {
-    expression,
-    awaitPromise: true,
-    returnByValue: true,
-  });
+  const label = expression.replace(/\s+/g, " ").slice(0, 60);
+  let result;
+  try {
+    result = await cdp.send("Runtime.evaluate", {
+      expression,
+      awaitPromise: true,
+      returnByValue: true,
+    });
+  } catch (error) {
+    throw new Error(`evaluate "${label}": ${error.message}`);
+  }
   if (result.exceptionDetails) {
-    throw new Error(result.exceptionDetails.exception?.description ?? "browser evaluation failed");
+    throw new Error(`${label}: ${result.exceptionDetails.exception?.description ?? "browser evaluation failed"}`);
   }
   return result.result.value;
 }
@@ -122,8 +142,9 @@ async function navigate(cdp, url) {
 
 const scratch = await mkdtemp(join(tmpdir(), "news-radar-layout-"));
 const freshDist = join(scratch, "dist");
-const report = join(freshDist, "reports/2026-08-11-0800.html");
-const sourceOnlyReport = join(freshDist, "reports/2026-08-10-0800.html");
+const themedReport = join(freshDist, "reports/2026-08-11-0800.html");
+const plainReport = join(freshDist, "reports/2026-08-10-0800.html");
+const longReport = join(freshDist, "reports/2026-08-16-0800.html");
 const profile = join(scratch, "chrome-profile");
 let chrome;
 let cdp;
@@ -165,9 +186,9 @@ try {
   // catalog deliberately does not build. The browser guard therefore verifies that
   // every build input is tracked in git, not that tracked == build inputs.
   const buildInputs = [...EXPECTED_REPORT_OUTPUT_BY_INPUT.keys()];
-  if (buildInputs.length !== 9) {
+  if (buildInputs.length !== 10) {
     throw new Error(
-      `fresh browser build must consume exactly 9 tracked report Markdown files, got ${buildInputs.length}`,
+      `fresh browser build must consume exactly 10 tracked report Markdown files, got ${buildInputs.length}`,
     );
   }
   for (const relativePath of buildInputs) {
@@ -273,10 +294,12 @@ try {
     mobile: false,
   });
   await cdp.send("Emulation.setEmulatedMedia", { media: "screen" });
-  await navigate(cdp, pathToFileURL(report).href);
+  await navigate(cdp, pathToFileURL(themedReport).href);
 
+  // Desktop: themed report, measured with the "news" pane visible.
   const desktop = await evaluate(cdp, `(async () => {
     const metric = (element) => {
+      if (!element) return null;
       const rect = element.getBoundingClientRect();
       const style = getComputedStyle(element);
       return {
@@ -293,42 +316,34 @@ try {
         paddingRight: style.paddingRight,
         paddingBottom: style.paddingBottom,
         paddingLeft: style.paddingLeft,
-        marginRight: style.marginRight,
         marginLeft: style.marginLeft,
         borderRadius: style.borderRadius,
-        borderTopColor: style.borderTopColor,
-        borderRightColor: style.borderRightColor,
-        borderBottomColor: style.borderBottomColor,
-        borderLeftColor: style.borderLeftColor,
-        borderTopStyle: style.borderTopStyle,
-        borderRightStyle: style.borderRightStyle,
-        borderBottomStyle: style.borderBottomStyle,
-        borderLeftStyle: style.borderLeftStyle,
+        overflowY: style.overflowY,
+        topPos: style.top,
         borderTopWidth: style.borderTopWidth,
-        borderRightWidth: style.borderRightWidth,
-        borderBottomWidth: style.borderBottomWidth,
-        borderLeftWidth: style.borderLeftWidth,
+        borderTopColor: style.borderTopColor,
+        borderTopStyle: style.borderTopStyle,
         backgroundColor: style.backgroundColor,
         boxShadow: style.boxShadow,
         color: style.color,
         columnGap: style.columnGap,
         gridTemplateColumns: style.gridTemplateColumns,
         alignItems: style.alignItems,
-        overflowX: style.overflowX,
-        fontFamily: style.fontFamily,
         fontSize: style.fontSize,
         fontWeight: style.fontWeight,
-        lineHeight: style.lineHeight,
+        fontFamily: style.fontFamily,
       };
     };
+    document.querySelector('.report-tab-button[data-pane-target="news"]').click();
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+
     const shell = document.querySelector(".page-shell");
     const card = document.querySelector(".report-card");
     const sidebar = document.querySelector(".report-sidebar");
-    const workspace = document.querySelector(".report-workspace");
+    const sidebarTopLink = document.querySelector(".sidebar-top-link");
     const header = document.querySelector(".topbar");
     const reportMain = document.querySelector(".report-main");
     const reportTitle = document.querySelector(".report-heading h1");
-    const cutoff = document.querySelector(".report-cutoff");
     const navigation = document.querySelector(".theme-navigation");
     const navigationLinks = Array.from(navigation.querySelectorAll("a"));
     const firstTheme = document.querySelector(".theme-group");
@@ -339,110 +354,71 @@ try {
     const themeTitle = themeHeading.querySelector("h2");
     const themeTotal = themeHeading.querySelector(".theme-total");
     const newsList = firstTheme.querySelector(".theme-news-list");
-    const newsRow = newsList.querySelector(".news-row");
-    const newsRank = newsRow.querySelector(".news-rank");
-    const newsContent = newsRow.querySelector(".news-content");
-    const newsTitle = newsContent.querySelector("h2");
-    const newsSummary = newsContent.querySelector(".news-summary");
-    const association = newsContent.querySelector(".news-associations");
-    const toggle = newsContent.querySelector(".news-toggle");
-    const firstDetail = newsContent.querySelector(".news-detail");
-    const disclosure = {
-      closed: {
-        hidden: firstDetail.hidden,
-        ariaExpanded: toggle.getAttribute("aria-expanded"),
-        height: firstDetail.getBoundingClientRect().height,
-      },
-    };
-    toggle.click();
-    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
-    disclosure.open = {
-      hidden: firstDetail.hidden,
-      ariaExpanded: toggle.getAttribute("aria-expanded"),
-      height: firstDetail.getBoundingClientRect().height,
-    };
-    toggle.click();
-    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
-    disclosure.closedAgain = {
-      hidden: firstDetail.hidden,
-      ariaExpanded: toggle.getAttribute("aria-expanded"),
-      height: firstDetail.getBoundingClientRect().height,
-    };
-    toggle.click();
-    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
-    Array.from(document.querySelectorAll(".news-toggle[aria-expanded='false']")).forEach(
-      (candidate) => candidate.click(),
-    );
-    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
-    const sourceList = firstDetail.querySelector("[data-component='sources']");
+    const rows = Array.from(document.querySelectorAll(".news-row"));
+    const firstRow = rows[0];
+    const newsContent = firstRow.querySelector(".news-content");
+    const newsTitle = firstRow.querySelector(".news-content h2");
+    const newsSummary = firstRow.querySelector(".news-summary");
+    const newsScore = firstRow.querySelector(".news-score");
+    const newsRank = firstRow.querySelector(".news-rank");
+    const newsToggle = firstRow.querySelector(".news-toggle");
+    const firstDetail = firstRow.querySelector(".news-detail");
+    const firstSources = firstRow.querySelector("[data-component='sources']");
+
+    // Disclosure lifecycle on the first analysis row.
+    async function disclosureProbe() {
+      if (!newsToggle) return null;
+      const detail = document.getElementById(newsToggle.getAttribute("aria-controls"));
+      const state = () => ({
+        hidden: detail.hidden,
+        ariaExpanded: newsToggle.getAttribute("aria-expanded"),
+        label: newsToggle.textContent,
+        height: detail.getBoundingClientRect().height,
+      });
+      const closed = state();
+      newsToggle.click();
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const open = state();
+      newsToggle.click();
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const closedAgain = state();
+      return { closed, open, closedAgain };
+    }
+    const disclosure = await disclosureProbe();
+
     const reportNotes = document.querySelector("[data-component='report-notes']");
-    const reportNoteTitle = reportNotes.querySelector("h2");
-    const reportNoteSectionTitles = Array.from(reportNotes.querySelectorAll(".report-note-section h3"));
-    const reportNoteBody = reportNotes.querySelector(".report-note-intro, .report-note-section p, .report-note-section li");
-    const reportNoteLinks = Array.from(reportNotes.querySelectorAll("a"));
+    const reportNoteSummaryH2 = reportNotes.querySelector("summary h2");
+    const reportNoteSections = Array.from(
+      reportNotes.querySelectorAll("[data-component='report-note-section']"),
+    );
+    const reportNoteSectionH3s = reportNoteSections.map(
+      (section) => section.querySelector("h3"),
+    );
+    const reportNoteBodyParts = Array.from(
+      reportNotes.querySelectorAll(".report-note-intro p, .report-note-section p, .report-note-section li"),
+    );
     const otherImportant = document.querySelector("[data-component='other-important-news']");
     const pendingList = document.querySelector("[data-component='pending-list']");
+    const reportNoteLinks = Array.from(reportNotes.querySelectorAll("a"));
     const reportNoteContract = {
-      visible: reportNotes.getClientRects().length > 0 && reportNotes.getBoundingClientRect().height > 0,
-      title: reportNoteTitle.textContent.trim(),
-      sectionCount: reportNoteSectionTitles.length,
-      titleFontSize: parseFloat(getComputedStyle(reportNoteTitle).fontSize),
+      visible: reportNotes.getClientRects().length > 0,
+      title: reportNoteSummaryH2.textContent.trim(),
+      sectionCount: reportNoteSections.length,
+      summaryTitleFontSize: parseFloat(getComputedStyle(reportNoteSummaryH2).fontSize),
+      summaryTitleFontWeight: getComputedStyle(reportNoteSummaryH2).fontWeight,
       sectionTitleMaximumFontSize: Math.max(
-        ...reportNoteSectionTitles.map((title) => parseFloat(getComputedStyle(title).fontSize)),
+        ...reportNoteSectionH3s.map((title) => parseFloat(getComputedStyle(title).fontSize)),
       ),
-      bodyFontSize: parseFloat(getComputedStyle(reportNoteBody).fontSize),
+      bodyMaximumFontSize: Math.max(
+        ...reportNoteBodyParts.map((part) => parseFloat(getComputedStyle(part).fontSize)),
+      ),
       afterOther: otherImportant.getBoundingClientRect().bottom <= reportNotes.getBoundingClientRect().top,
       beforePending: reportNotes.getBoundingClientRect().bottom <= pendingList.getBoundingClientRect().top,
-      linkCount: reportNoteLinks.length,
       unsafeHrefCount: reportNoteLinks.filter(
         (link) => !["http:", "https:"].includes(new URL(link.href).protocol),
       ).length,
     };
-    const commonLeftLine = {
-      checkedCount: 0,
-      violations: [],
-      coverage: {
-        detailRows: 0,
-        sourceOnlyRows: 0,
-        otherImportantRows: 0,
-        associationPaths: 0,
-        sourcePaths: 0,
-      },
-    };
-    document.querySelectorAll(".news-row").forEach((row) => {
-      const content = row.querySelector(".news-content");
-      const contentLeft = content.getBoundingClientRect().left;
-      if (row.dataset.detailKind === "analysis") commonLeftLine.coverage.detailRows += 1;
-      if (row.dataset.detailKind === "sources-inline") commonLeftLine.coverage.sourceOnlyRows += 1;
-      if (row.closest(".other-important-news")) commonLeftLine.coverage.otherImportantRows += 1;
-      commonLeftLine.coverage.associationPaths += content.querySelectorAll(
-        ":scope > .news-associations",
-      ).length;
-      commonLeftLine.coverage.sourcePaths += content.querySelectorAll(
-        ":scope > [data-component='sources'], :scope > .news-detail > [data-component='sources']",
-      ).length;
 
-      const alignedElements = [
-        ...content.querySelectorAll(
-          ":scope > h2, :scope > .news-summary, :scope > .news-associations, "
-          + ":scope > .news-detail, :scope > [data-component='sources'], "
-          + ":scope > .news-detail > [data-component='sources']",
-        ),
-        row.querySelector(".news-score"),
-      ].filter(Boolean);
-      alignedElements.forEach((element) => {
-        const left = element.getBoundingClientRect().left;
-        commonLeftLine.checkedCount += 1;
-        if (Math.abs(left - contentLeft) > 1) {
-          commonLeftLine.violations.push({
-            row: row.id,
-            element: element.className || element.tagName,
-            contentLeft,
-            left,
-          });
-        }
-      });
-    });
     const navState = () => ({
       currentCount: navigationLinks.filter(
         (candidate) => candidate.getAttribute("aria-current") === "location",
@@ -452,115 +428,168 @@ try {
       )?.getAttribute("href") ?? null,
     });
     const initialNavigationCurrent = navState();
-    const geometry = {
+
+    const archiveGroup = document.querySelector(".archive-date-group[data-report-date='2026-08-11']");
+    const archiveLink = archiveGroup.querySelector(".archive-date-link");
+    const archiveSlots = document.getElementById(archiveLink.getAttribute("aria-controls"));
+
+    return {
       shell: metric(shell),
       card: metric(card),
       sidebar: metric(sidebar),
-      workspace: metric(workspace),
+      sidebarTopLink: metric(sidebarTopLink),
+      sidebarTopHref: sidebarTopLink.getAttribute("href"),
+      workspace: metric(document.querySelector(".report-workspace")),
       topbar: metric(header),
       reportMain: metric(reportMain),
       reportTitle: metric(reportTitle),
-      cutoff: metric(cutoff),
       navigation: metric(navigation),
+      navLinkCount: navigationLinks.length,
+      navHrefs: navigationLinks.map((candidate) => candidate.getAttribute("href")),
       theme: metric(firstTheme),
       secondTheme: metric(secondTheme),
+      themeCount: document.querySelectorAll(".theme-group").length,
       themeHeader: metric(themeHeader),
       themeKicker: metric(themeKicker),
       themeHeading: metric(themeHeading),
       themeTitle: metric(themeTitle),
       themeTotal: metric(themeTotal),
       newsList: metric(newsList),
-      newsRow: metric(newsRow),
+      rowCount: rows.length,
+      detailRowCount: rows.filter((row) => row.dataset.detailKind === "analysis").length,
+      firstRow: metric(firstRow),
       newsRank: metric(newsRank),
       newsTitle: metric(newsTitle),
       newsSummary: metric(newsSummary),
-      reportEyebrow: metric(document.querySelector(".report-eyebrow")),
+      newsScore: metric(newsScore),
+      newsToggle: metric(newsToggle),
+      newsDetail: metric(firstDetail),
+      newsSources: metric(firstSources),
       bodyFont: getComputedStyle(document.body).fontFamily,
       bodyBackground: getComputedStyle(document.body).backgroundColor,
       workspacePaddingLeft: getComputedStyle(reportMain).paddingLeft,
       reportTitleFontSize: getComputedStyle(reportTitle).fontSize,
       themeTitleFontSize: getComputedStyle(themeTitle).fontSize,
       newsTitleFontSize: getComputedStyle(newsTitle).fontSize,
-      newsContentLeft: newsContent.getBoundingClientRect().left,
-      newsTitleLeft: newsTitle.getBoundingClientRect().left,
-      newsSummaryLeft: newsSummary.getBoundingClientRect().left,
-      associationLeft: association.getBoundingClientRect().left,
-      firstDetailLeft: firstDetail.getBoundingClientRect().left,
-      firstSourceLeft: sourceList.getBoundingClientRect().left,
       reportNoteContract,
-      commonLeftLine,
       disclosure,
       initialNavigationCurrent,
-      firstNavigationHref: navigationLinks[0].getAttribute("href"),
-      titleCutoffBottomDelta: Math.abs(
-        reportTitle.getBoundingClientRect().bottom - cutoff.getBoundingClientRect().bottom
-      ),
-    };
-    const target = document.querySelectorAll(".theme-group")[2];
-    const link = document.querySelector('.theme-navigation a[href="#' + target.id + '"]');
-    scrollTo(0, 0);
-    link.click();
-    await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
-    const headerRect = header.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const clickedNavigationCurrent = navState();
-    const currentLink = navigationLinks.find(
-      (candidate) => candidate.getAttribute("aria-current") === "location",
-    );
-    const inactiveLink = navigationLinks.find((candidate) => candidate !== currentLink);
-    return {
-      ...geometry,
-      headerBottom: headerRect.bottom,
-      headerPosition: getComputedStyle(header).position,
-      scrollMarginTop: parseFloat(getComputedStyle(target).scrollMarginTop),
-      targetTop: targetRect.top,
-      anchorHash: location.hash,
-      anchorTargetId: target.id,
-      directTargetId: document.querySelectorAll(".theme-group")[4].id,
-      clickedNavigationCurrent,
-      currentNavigationLink: currentLink ? metric(currentLink) : null,
-      inactiveNavigationLink: inactiveLink ? metric(inactiveLink) : null,
-    };
-  })()`);
-
-  await navigate(cdp, pathToFileURL(sourceOnlyReport).href);
-  const sourceOnlyAlignment = await evaluate(cdp, `(() => {
-    const rows = Array.from(document.querySelectorAll(
-      ".news-row[data-detail-kind='sources-inline']",
-    ));
-    const violations = [];
-    let checkedCount = 0;
-    rows.forEach((row) => {
-      const content = row.querySelector(".news-content");
-      const contentLeft = content.getBoundingClientRect().left;
-      content.querySelectorAll(
-        ":scope > h2, :scope > .news-summary, :scope > [data-component='sources']",
-      ).forEach((element) => {
-        const left = element.getBoundingClientRect().left;
-        checkedCount += 1;
-        if (Math.abs(left - contentLeft) > 1) {
-          violations.push({ row: row.id, element: element.className, contentLeft, left });
-        }
-      });
-    });
-    const reportNoteLinks = Array.from(
-      document.querySelectorAll("[data-component='report-notes'] a"),
-    );
-    return {
-      rowCount: rows.length,
-      checkedCount,
-      violations,
-      reportNoteLinkSafety: {
-        linkCount: reportNoteLinks.length,
-        unsafeHrefCount: reportNoteLinks.filter(
-          (link) => !["http:", "https:"].includes(new URL(link.href).protocol),
-        ).length,
+      firstNavigationHref: navigationLinks[0]?.getAttribute("href") ?? null,
+      archive: {
+        groupCount: document.querySelectorAll(".archive-date-group").length,
+        linkHref: archiveLink.getAttribute("href"),
+        ariaExpanded: archiveLink.getAttribute("aria-expanded"),
+        slotsHidden: archiveSlots.hidden,
       },
     };
   })()`);
 
+  // Expand every row, then verify the common left line across all rows.
+  const expandedAlignment = await evaluate(cdp, `(async () => {
+    document.querySelector('.report-tab-button[data-pane-target="news"]').click();
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+    document.querySelectorAll(".news-toggle[aria-expanded='false']").forEach(
+      (candidate) => candidate.click(),
+    );
+    await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
+    const rows = Array.from(document.querySelectorAll(".news-row"));
+    const firstRow = rows[0];
+    const newsContent = firstRow.querySelector(".news-content");
+    const contentLeft = newsContent.getBoundingClientRect().left;
+    const alignedElements = [
+      newsContent.querySelector("h2"),
+      newsContent.querySelector(".news-summary"),
+      newsContent.querySelector(".news-toggle"),
+      newsContent.querySelector("[data-component='sources']"),
+      newsContent.querySelector(".news-detail"),
+    ].filter(Boolean);
+    const alignment = {
+      contentLeft,
+      mismatches: alignedElements
+        .filter((element) => Math.abs(element.getBoundingClientRect().left - contentLeft) > 1)
+        .map((element) => ({ element: element.className || element.tagName, left: element.getBoundingClientRect().left })),
+    };
+    const commonLeftLine = { checkedCount: 0, violations: [], coverage: { detailRows: 0, sourceOnlyRows: 0 } };
+    rows.forEach((row) => {
+      const content = row.querySelector(".news-content");
+      const left = content.getBoundingClientRect().left;
+      if (row.dataset.detailKind === "analysis") commonLeftLine.coverage.detailRows += 1;
+      else commonLeftLine.coverage.sourceOnlyRows += 1;
+      const candidates = [
+        ...content.querySelectorAll(
+          ":scope > h2, :scope > .news-summary, :scope > .news-toggle, :scope > .news-detail",
+        ),
+        ...content.querySelectorAll(":scope > .news-detail [data-component='sources']"),
+        row.querySelector(".news-score"),
+      ].filter(Boolean);
+      candidates.forEach((element) => {
+        commonLeftLine.checkedCount += 1;
+        if (Math.abs(element.getBoundingClientRect().left - left) > 1) {
+          commonLeftLine.violations.push({
+            row: row.id,
+            element: element.className || element.tagName,
+            contentLeft: left,
+            left: element.getBoundingClientRect().left,
+          });
+        }
+      });
+    });
+    return { alignment, commonLeftLine, expandedRowCount: rows.filter((row) => !row.querySelector(".news-detail").hidden).length };
+  })()`);
+  Object.assign(desktop, expandedAlignment);
+
+  // Interaction probe: theme-navigation click with smooth-scroll settlement.
+  const navClick = await evaluate(cdp, `(async () => {
+    document.querySelector('.report-tab-button[data-pane-target="news"]').click();
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+    const navigationLinks = Array.from(document.querySelectorAll(".theme-navigation a"));
+    const header = document.querySelector(".topbar");
+    const navState = () => ({
+      currentCount: navigationLinks.filter(
+        (candidate) => candidate.getAttribute("aria-current") === "location",
+      ).length,
+      currentHref: navigationLinks.find(
+        (candidate) => candidate.getAttribute("aria-current") === "location",
+      )?.getAttribute("href") ?? null,
+    });
+    const initial = navState();
+    scrollTo(0, 0);
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 300));
+    const target = document.querySelectorAll(".theme-group")[2];
+    const link = navigationLinks.find((candidate) => candidate.getAttribute("href") === ("#" + target.id));
+    link.click();
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      if (Math.abs(target.getBoundingClientRect().top) <= 1) break;
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
+    }
+    const clicked = navState();
+    const currentLink = navigationLinks.find(
+      (candidate) => candidate.getAttribute("aria-current") === "location",
+    );
+    const inactiveLink = navigationLinks.find((candidate) => candidate !== currentLink);
+    const metric = (element) => {
+      if (!element) return null;
+      const style = getComputedStyle(element);
+      return { color: style.color, fontWeight: style.fontWeight };
+    };
+    return {
+      initialNavigationCurrent: initial,
+      firstNavigationHref: navigationLinks[0]?.getAttribute("href") ?? null,
+      headerPosition: getComputedStyle(header).position,
+      scrollMarginTop: parseFloat(getComputedStyle(target).scrollMarginTop),
+      targetTop: target.getBoundingClientRect().top,
+      anchorHash: location.hash,
+      anchorTargetId: target.id,
+      clickedNavigationCurrent: clicked,
+      currentNavigationLink: metric(currentLink),
+      inactiveNavigationLink: metric(inactiveLink),
+    };
+  })()`);
+  Object.assign(desktop, navClick);
+
+  // Direct-hash navigation: app.js must mark the matching theme link current.
   await navigate(cdp, "about:blank");
-  await navigate(cdp, `${pathToFileURL(report).href}#${desktop.directTargetId}`);
+  await navigate(cdp, `${pathToFileURL(themedReport).href}#${desktop.anchorTargetId}`);
   const directHashNavigation = await evaluate(cdp, `(() => {
     const links = Array.from(document.querySelectorAll(".theme-navigation a"));
     const current = links.filter((link) => link.getAttribute("aria-current") === "location");
@@ -571,6 +600,7 @@ try {
     };
   })()`);
 
+  // Guarded clicks (modified keys / prevented) must not pollute current state.
   const guardedClickNavigation = await evaluate(cdp, `(() => {
     const links = Array.from(document.querySelectorAll(".theme-navigation a"));
     const target = links[0];
@@ -605,160 +635,80 @@ try {
     ];
   })()`);
 
-  await evaluate(cdp, `(async () => {
-    const archiveLink = document.querySelector(
-      ".archive-date-group[data-report-date='2026-08-11'] .archive-date-link",
-    );
-    const changed = new Promise((resolvePromise) =>
-      addEventListener("hashchange", resolvePromise, { once: true })
-    );
-    archiveLink.click();
-    await changed;
-    document.querySelectorAll(".news-toggle[aria-expanded='false']").forEach(
-      (toggle) => toggle.click(),
-    );
-    document.querySelector(".pending-details").open = true;
+  // Plain (non-themed) report: filter-bar contract and sources-inline alignment.
+  await navigate(cdp, pathToFileURL(plainReport).href);
+  const plain = await evaluate(cdp, `(async () => {
+    document.querySelector('.report-tab-button[data-pane-target="news"]').click();
     await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
-  })()`);
-
-  const contrast = await evaluate(cdp, `(() => {
-    const parse = (color) => {
-      const channels = color.match(/[\\d.]+/g)?.map(Number) ?? [];
-      return {
-        red: channels[0] ?? 0,
-        green: channels[1] ?? 0,
-        blue: channels[2] ?? 0,
-        alpha: channels[3] ?? 1,
-      };
-    };
-    const composite = (foreground, background) => {
-      const alpha = foreground.alpha + background.alpha * (1 - foreground.alpha);
-      if (alpha === 0) return { red: 0, green: 0, blue: 0, alpha: 0 };
-      return {
-        red: (
-          foreground.red * foreground.alpha
-          + background.red * background.alpha * (1 - foreground.alpha)
-        ) / alpha,
-        green: (
-          foreground.green * foreground.alpha
-          + background.green * background.alpha * (1 - foreground.alpha)
-        ) / alpha,
-        blue: (
-          foreground.blue * foreground.alpha
-          + background.blue * background.alpha * (1 - foreground.alpha)
-        ) / alpha,
-        alpha,
-      };
-    };
-    const luminance = (rgb) => {
-      const values = [rgb.red, rgb.green, rgb.blue].map((value) => {
-        const channel = value / 255;
-        return channel <= 0.04045
-          ? channel / 12.92
-          : Math.pow((channel + 0.055) / 1.055, 2.4);
-      });
-      return 0.2126 * values[0] + 0.7152 * values[1] + 0.0722 * values[2];
-    };
-    const path = (element) => {
-      const parts = [];
-      let node = element;
-      while (node && node.nodeType === Node.ELEMENT_NODE) {
-        let part = node.tagName.toLowerCase();
-        if (node.id) {
-          part += '#' + node.id;
-          parts.unshift(part);
-          break;
+    const filterBar = document.querySelector(".filter-bar");
+    const filterButtons = Array.from(document.querySelectorAll(".filter-button"));
+    const rows = Array.from(document.querySelectorAll(".news-row"));
+    document.querySelectorAll(".news-toggle[aria-expanded='false']").forEach(
+      (candidate) => candidate.click(),
+    );
+    await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
+    const violations = [];
+    let checkedCount = 0;
+    rows.forEach((row) => {
+      const content = row.querySelector(".news-content");
+      const contentLeft = content.getBoundingClientRect().left;
+      content.querySelectorAll(
+        ":scope > h2, :scope > .news-summary, :scope > .news-toggle, :scope > .news-detail",
+      ).forEach((element) => {
+        const left = element.getBoundingClientRect().left;
+        checkedCount += 1;
+        if (Math.abs(left - contentLeft) > 1) {
+          violations.push({ row: row.id, element: element.className, contentLeft, left });
         }
-        const classes = Array.from(node.classList).slice(0, 2);
-        if (classes.length) part += '.' + classes.join('.');
-        const siblings = node.parentElement
-          ? Array.from(node.parentElement.children).filter(
-            (sibling) => sibling.tagName === node.tagName,
-          )
-          : [];
-        if (siblings.length > 1) part += ':nth-of-type(' + (siblings.indexOf(node) + 1) + ')';
-        parts.unshift(part);
-        node = node.parentElement;
-      }
-      return parts.join(' > ');
-    };
-    const effectiveBackground = (element) => {
-      const ancestors = [];
-      for (let node = element; node; node = node.parentElement) ancestors.unshift(node);
-      return ancestors.reduce(
-        (background, node) => composite(parse(getComputedStyle(node).backgroundColor), background),
-        { red: 255, green: 255, blue: 255, alpha: 1 },
-      );
-    };
-    const scan = () => {
-      const seen = new Set();
-      const results = [];
-      document.querySelectorAll("*").forEach((element) => {
-        if (seen.has(element)) return;
-        seen.add(element);
-        const directText = Array.from(element.childNodes)
-          .filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim())
-          .map((node) => node.textContent.trim())
-          .join(" ");
-        if (!directText) return;
-        const style = getComputedStyle(element);
-        if (
-          parseFloat(style.fontSize) >= 18
-          || style.display === "none"
-          || style.visibility === "hidden"
-          || parseFloat(style.opacity) === 0
-          || element.getClientRects().length === 0
-        ) return;
-        const background = effectiveBackground(element);
-        const color = parse(style.color);
-        const foreground = composite(color, background);
-        const foregroundLuminance = luminance(foreground);
-        const backgroundLuminance = luminance(background);
-        results.push({
-          path: path(element),
-          text: directText.slice(0, 60),
-          foreground: style.color,
-          background: [background.red, background.green, background.blue, background.alpha],
-          fontSize: style.fontSize,
-          ratio: (Math.max(foregroundLuminance, backgroundLuminance) + 0.05)
-            / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05),
-        });
       });
-      return results;
+    });
+    // Category filter interaction: click a non-all button then restore.
+    const firstButton = filterButtons[1];
+    firstButton.click();
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+    const filtered = {
+      activeLabel: document.querySelector(".filter-button.is-active")?.textContent.trim(),
+      pressed: document.querySelector(".filter-button.is-active")?.getAttribute("aria-pressed"),
+      visibleRows: Array.from(document.querySelectorAll(".news-row"))
+        .filter((row) => !row.hidden).length,
+      totalRows: rows.length,
     };
-
-    const mutationTarget = document.querySelector(".news-content h2");
-    const originalStyle = mutationTarget.getAttribute("style");
-    const mutationRow = mutationTarget.closest(".news-row");
-    const originalRowStyle = mutationRow.getAttribute("style");
-    mutationRow.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-    mutationTarget.style.color = "rgb(146, 156, 171)";
-    const mutationResults = scan();
-    const mutationPath = path(mutationTarget);
-    if (originalStyle === null) mutationTarget.removeAttribute("style");
-    else mutationTarget.setAttribute("style", originalStyle);
-    if (originalRowStyle === null) mutationRow.removeAttribute("style");
-    else mutationRow.setAttribute("style", originalRowStyle);
-    const results = scan();
+    document.querySelector('.filter-button[data-category="all"]').click();
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+    const restoredVisible = Array.from(document.querySelectorAll(".news-row"))
+      .filter((row) => !row.hidden).length;
+    const notesLinks = Array.from(
+      document.querySelectorAll("[data-component='report-notes'] a"),
+    );
     return {
-      count: results.length,
-      results,
-      minimum: Math.min(...results.map((result) => result.ratio)),
-      reportNoteCount: results.filter((result) => result.path.includes("report-note")).length,
-      mutation: {
-        path: mutationPath,
-        result: mutationResults.find((result) => result.path === mutationPath),
+      hasFilterBar: !!filterBar,
+      filterMetaText: filterBar?.querySelector(".filter-meta")?.textContent.replace(/\\s+/g, " ").trim() ?? null,
+      filterButtonLabels: filterButtons.map((button) => button.textContent.trim()),
+      filterButtonCount: filterButtons.length,
+      sourcesInlineRows: rows.filter((row) => row.dataset.detailKind === "sources-inline").length,
+      rowCount: rows.length,
+      checkedCount,
+      violations,
+      filtered,
+      restoredVisible,
+      reportNoteLinks: {
+        linkCount: notesLinks.length,
+        unsafeHrefCount: notesLinks.filter(
+          (link) => !["http:", "https:"].includes(new URL(link.href).protocol),
+        ).length,
       },
     };
   })()`);
 
-  await navigate(cdp, pathToFileURL(report).href);
-
-  await evaluate(cdp, `(() => {
+  // Print lifecycle for the pending details (beforeprint expands, afterprint restores).
+  await navigate(cdp, pathToFileURL(themedReport).href);
+  await evaluate(cdp, `(async () => {
+    document.querySelector('.report-tab-button[data-pane-target="news"]').click();
     const conservativeDetailsUa = document.createElement("style");
     conservativeDetailsUa.media = "print";
     conservativeDetailsUa.textContent = "details:not([open]) > :not(summary) { display: none; }";
     document.head.append(conservativeDetailsUa);
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
   })()`);
   await cdp.send("Emulation.setEmulatedMedia", { media: "print" });
   const print = await evaluate(cdp, `(() => {
@@ -767,12 +717,11 @@ try {
     const items = Array.from(document.querySelectorAll(".pending-item"));
     const newsDetails = Array.from(document.querySelectorAll(".news-detail"));
     const reportNotes = document.querySelector("[data-component='report-notes']");
-    const reportNoteSections = Array.from(reportNotes.querySelectorAll("[data-component='report-note-section']"));
+    const reportNoteSections = Array.from(document.querySelectorAll("[data-component='report-note-section']"));
     const beforePrint = {
       mediaMatches: matchMedia("print").matches,
       detailsOpen: details.open,
       bodyDisplay: getComputedStyle(body).display,
-      bodyHeight: body.getBoundingClientRect().height,
       visibleItemCount: items.filter((item) => item.getClientRects().length > 0).length,
       itemCount: items.length,
       visibleNewsDetailCount: newsDetails.filter(
@@ -789,7 +738,6 @@ try {
     const duringPrint = {
       detailsOpen: details.open,
       bodyDisplay: getComputedStyle(body).display,
-      bodyHeight: body.getBoundingClientRect().height,
       visibleItemCount: items.filter((item) => item.getClientRects().length > 0).length,
       visibleNewsDetailCount: newsDetails.filter(
         (detail) => detail.getClientRects().length > 0 && detail.getBoundingClientRect().height > 0,
@@ -802,80 +750,52 @@ try {
     dispatchEvent(new Event("afterprint"));
     return { beforePrint, duringPrint, restoredOpen: details.open };
   })()`);
-
   await cdp.send("Emulation.setEmulatedMedia", { media: "screen" });
-  await navigate(cdp, pathToFileURL(report).href);
-  const archiveFirstClick = await evaluate(cdp, `(async () => {
-    const group = document.querySelector(".archive-date-group[data-report-date='2026-08-11']");
-    const link = group.querySelector(".archive-date-link");
-    const slots = document.getElementById(link.getAttribute("aria-controls"));
-    const themeLinks = Array.from(document.querySelectorAll(".theme-navigation a"));
-    const themeCurrent = () => {
-      const current = themeLinks.filter(
-        (candidate) => candidate.getAttribute("aria-current") === "location",
-      );
-      return {
-        count: current.length,
-        href: current[0]?.getAttribute("href") ?? null,
-        firstHref: themeLinks[0].getAttribute("href"),
-      };
-    };
-    const initial = {
-      expanded: link.getAttribute("aria-expanded"),
-      slotsHidden: slots.hidden,
-    };
-    const changed = new Promise((resolvePromise) => addEventListener("hashchange", resolvePromise, { once: true }));
-    link.click();
-    await changed;
+
+  // Sticky sidebar + 回到最上 pinned at the bottom, across scroll positions.
+  await navigate(cdp, pathToFileURL(longReport).href);
+  const sticky = await evaluate(cdp, `(async () => {
+    document.querySelector('.report-tab-button[data-pane-target="news"]').click();
     await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
-    return {
-      initial,
-      afterClick: {
-        hash: location.hash,
-        expanded: link.getAttribute("aria-expanded"),
-        slotsHidden: slots.hidden,
-        themeCurrent: themeCurrent(),
-      },
-    };
-  })()`);
-  const secondArchiveHref = await evaluate(cdp, `(() => {
-    const link = document.querySelector(".archive-date-group[data-report-date='2026-08-10'] .archive-date-link");
-    const href = link.href;
-    link.click();
-    return href;
-  })()`);
-  await poll(async () => {
-    const href = await evaluate(cdp, "location.href");
-    return href === secondArchiveHref ? true : undefined;
-  });
-  await poll(async () => {
-    const state = await evaluate(cdp, "document.readyState");
-    return state === "complete" ? true : undefined;
-  });
-  const archiveSecondClick = await evaluate(cdp, `(() => {
-    const state = (date) => {
-      const group = document.querySelector('.archive-date-group[data-report-date="' + date + '"]');
-      const link = group.querySelector(".archive-date-link");
-      const slots = document.getElementById(link.getAttribute("aria-controls"));
+    const sidebar = document.querySelector(".report-sidebar");
+    const topLink = document.querySelector(".sidebar-top-link");
+    const read = () => {
+      const rect = sidebar.getBoundingClientRect();
+      const linkRect = topLink.getBoundingClientRect();
       return {
-        expanded: link.getAttribute("aria-expanded"),
-        slotsHidden: slots.hidden,
+        scrollY: window.scrollY,
+        sidebarTop: rect.top,
+        sidebarBottom: rect.bottom,
+        linkTop: linkRect.top,
+        linkBottom: linkRect.bottom,
+        linkFullyVisible: linkRect.top >= 0 && linkRect.bottom <= window.innerHeight,
+        sidebarInViewport: rect.top >= 0 && rect.bottom <= window.innerHeight,
       };
     };
-    return {
-      hash: location.hash,
-      firstDate: state("2026-08-11"),
-      secondDate: state("2026-08-10"),
-    };
+    const initial = read();
+    window.scrollTo({ top: 1500, behavior: "instant" });
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if (window.scrollY >= 1490) break;
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 50));
+    }
+    const mid = read();
+    window.scrollTo({ top: 999999, behavior: "instant" });
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if (window.scrollY >= document.documentElement.scrollHeight - window.innerHeight - 10) break;
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 50));
+    }
+    const bottom = read();
+    return { initial, mid, bottom };
   })()`);
 
+  // Mobile: sidebar hidden, workspace paddings, navigation scrollable.
   await cdp.send("Emulation.setDeviceMetricsOverride", {
     width: 390,
     height: 844,
     deviceScaleFactor: 1,
     mobile: false,
   });
-  await navigate(cdp, pathToFileURL(report).href);
+  await navigate(cdp, pathToFileURL(themedReport).href);
   const mobile = await evaluate(cdp, `(async () => {
     const shell = document.querySelector(".page-shell");
     const card = document.querySelector(".report-card");
@@ -884,24 +804,21 @@ try {
     const reportMain = document.querySelector(".report-main");
     const mobileControl = document.querySelector(".mobile-report-control");
     const navigation = document.querySelector(".theme-navigation");
-    const navigationLinks = Array.from(navigation.querySelectorAll("a"));
     const themeTitle = document.querySelector(".theme-heading-line h2");
     const reportNotes = document.querySelector("[data-component='report-notes']");
-    const reportNotesRect = reportNotes.getBoundingClientRect();
+    document.querySelector('.report-tab-button[data-pane-target="news"]').click();
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+    const notesRect = reportNotes.getBoundingClientRect();
     const target = document.querySelectorAll(".theme-group")[4];
     const link = document.querySelector('.theme-navigation a[href="#' + target.id + '"]');
-    const initialCurrentLinks = navigationLinks.filter(
-      (candidate) => candidate.getAttribute("aria-current") === "location",
-    );
     scrollTo(0, 0);
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 300));
     link.click();
-    await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      if (Math.abs(target.getBoundingClientRect().top) <= 1) break;
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
+    }
     return {
-      headerPosition: getComputedStyle(header).position,
-      scrollMarginTop: parseFloat(getComputedStyle(target).scrollMarginTop),
-      targetTop: target.getBoundingClientRect().top,
-      anchorHash: location.hash,
-      anchorTargetId: target.id,
       shellPaddingLeft: getComputedStyle(shell).paddingLeft,
       cardBorderRadius: getComputedStyle(card).borderRadius,
       sidebarDisplay: getComputedStyle(sidebar).display,
@@ -910,31 +827,25 @@ try {
       mobileControlDisplay: getComputedStyle(mobileControl).display,
       navigationOverflowX: getComputedStyle(navigation).overflowX,
       navigationClientWidth: navigation.clientWidth,
-      navigationScrollWidth: navigation.scrollWidth,
       themeTitleFontSize: getComputedStyle(themeTitle).fontSize,
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
-      initialNavigationCurrentCount: initialCurrentLinks.length,
-      initialNavigationCurrentHref: initialCurrentLinks[0]?.getAttribute("href") ?? null,
-      firstNavigationHref: navigationLinks[0].getAttribute("href"),
-      clickedNavigationCurrentCount: navigationLinks.filter(
-        (candidate) => candidate.getAttribute("aria-current") === "location",
-      ).length,
-      clickedNavigationCurrentHref: navigationLinks.find(
-        (candidate) => candidate.getAttribute("aria-current") === "location",
-      )?.getAttribute("href") ?? null,
-      reportNotesClientWidth: reportNotes.clientWidth,
-      reportNotesScrollWidth: reportNotes.scrollWidth,
-      reportNotesLeft: reportNotesRect.left,
-      reportNotesRight: reportNotesRect.right,
+      notesClientWidth: reportNotes.clientWidth,
+      notesScrollWidth: reportNotes.scrollWidth,
+      notesLeft: notesRect.left,
+      notesRight: notesRect.right,
+      anchorHash: location.hash,
+      anchorTargetId: target.id,
+      targetTop: target.getBoundingClientRect().top,
     };
   })()`);
 
   const failures = [];
-  if (desktop.shell.maxWidth !== "980px" || desktop.shell.paddingTop !== "27px") failures.push("desktop shell geometry mismatch");
+  // Shell / card / canvas
+  if (desktop.shell.maxWidth !== "980px" || desktop.shell.paddingTop !== "27px") {
+    failures.push(`desktop shell geometry mismatch: ${JSON.stringify(desktop.shell)}`);
+  }
   if (Math.abs(desktop.card.width - 926) > 1) failures.push("desktop card width mismatch");
-  if (Math.abs(desktop.sidebar.width - 76) > 1) failures.push("desktop sidebar width mismatch");
-  if (desktop.workspacePaddingLeft !== "28px") failures.push("desktop workspace padding mismatch");
   if (desktop.card.borderRadius !== "16px") failures.push("desktop card radius mismatch");
   if (
     desktop.bodyBackground !== "rgb(237, 241, 246)"
@@ -943,32 +854,28 @@ try {
     failures.push("desktop canvas/card background mismatch");
   }
   if (
-    [
-      desktop.card.borderTopStyle,
-      desktop.card.borderRightStyle,
-      desktop.card.borderBottomStyle,
-      desktop.card.borderLeftStyle,
-    ].some((value) => value !== "solid")
-    || [
-      desktop.card.borderTopWidth,
-      desktop.card.borderRightWidth,
-      desktop.card.borderBottomWidth,
-      desktop.card.borderLeftWidth,
-    ].some((value) => value !== "2px")
-    || [
-      desktop.card.borderTopColor,
-      desktop.card.borderRightColor,
-      desktop.card.borderBottomColor,
-      desktop.card.borderLeftColor,
-    ].some((value) => value !== "rgb(202, 211, 225)")
+    [desktop.card.borderTopStyle].some((value) => value !== "solid")
+    || desktop.card.borderTopWidth !== "2px"
+    || desktop.card.borderTopColor !== "rgb(202, 211, 225)"
   ) {
     failures.push("desktop card border must be exactly 2px solid #cad3e1");
   }
   if (desktop.card.boxShadow !== "rgba(30, 40, 60, 0.1) 0px 16px 40px 0px") {
     failures.push(`desktop card shadow mismatch: ${desktop.card.boxShadow}`);
   }
+  // Sticky sidebar contract (2026-08 redesign)
   if (
-    desktop.sidebar.paddingTop !== "17px"
+    desktop.sidebar.position !== "sticky"
+    || desktop.sidebar.topPos !== "27px"
+    || Math.abs(desktop.sidebar.height - 846) > 1
+    || desktop.sidebar.overflowY !== "auto"
+    || desktop.sidebar.borderRadius !== "14px 0px 0px 14px"
+  ) {
+    failures.push(`desktop sidebar sticky contract mismatch: ${JSON.stringify(desktop.sidebar)}`);
+  }
+  if (
+    Math.abs(desktop.sidebar.width - 76) > 1
+    || desktop.sidebar.paddingTop !== "17px"
     || desktop.sidebar.paddingRight !== "9px"
     || desktop.sidebar.paddingBottom !== "17px"
     || desktop.sidebar.paddingLeft !== "9px"
@@ -976,6 +883,20 @@ try {
   ) {
     failures.push("desktop sidebar padding/background mismatch");
   }
+  // 回到最上 pinned at the sidebar bottom
+  if (
+    !desktop.sidebarTopLink
+    || desktop.sidebarTopHref !== "#top"
+    || desktop.sidebarTopLink.top < desktop.sidebar.bottom - 50
+    || desktop.sidebarTopLink.bottom > desktop.sidebar.bottom - 8
+  ) {
+    failures.push(`sidebar back-to-top is not pinned at the sidebar bottom: ${JSON.stringify({
+      link: desktop.sidebarTopLink,
+      href: desktop.sidebarTopHref,
+      sidebarBottom: desktop.sidebar.bottom,
+    })}`);
+  }
+  // Typography
   const normalizedBodyFont = desktop.bodyFont.split(",").map(
     (font) => font.trim().replace(/^['\"]|['\"]$/g, ""),
   );
@@ -991,23 +912,40 @@ try {
   if (desktop.reportTitleFontSize !== "21px") failures.push("report title size mismatch");
   if (desktop.themeTitleFontSize !== "25px") failures.push("theme title size mismatch");
   if (desktop.newsTitleFontSize !== "12px") failures.push("news title size mismatch");
-  const contentLeftEdges = {
-    title: desktop.newsTitleLeft,
-    summary: desktop.newsSummaryLeft,
-    association: desktop.associationLeft,
-    detail: desktop.firstDetailLeft,
-    source: desktop.firstSourceLeft,
-  };
-  if (Object.values(contentLeftEdges).some((left) => Math.abs(desktop.newsContentLeft - left) > 1)) {
-    failures.push(`news content/detail/source/association alignment mismatch: ${JSON.stringify(contentLeftEdges)}`);
+  if (
+    desktop.reportTitle.color !== "rgb(24, 32, 51)"
+    || desktop.reportTitle.fontWeight !== "800"
+    || desktop.themeKicker.color !== "rgb(36, 87, 210)"
+    || desktop.themeKicker.fontWeight !== "800"
+    || desktop.themeKicker.fontSize !== "9px"
+    || desktop.themeTitle.fontWeight !== "700"
+    || desktop.newsTitle.fontWeight !== "700"
+    || desktop.newsRank.fontWeight !== "400"
+    || desktop.themeTotal.fontWeight !== "400"
+  ) {
+    failures.push("desktop key color/font-weight hierarchy mismatch");
   }
+  if (desktop.themeTotal.fontSize !== "8px") failures.push("desktop theme metadata size mismatch");
+  // Topbar / workspace
   if (desktop.topbar.position !== "static" || desktop.topbar.marginLeft !== "28px") {
     failures.push("desktop topbar geometry mismatch");
   }
-  if (desktop.titleCutoffBottomDelta > 1) failures.push("desktop report title baseline mismatch");
-  if (desktop.navigation.columnGap !== "16px" || desktop.navigation.paddingTop !== "12px") {
+  if (desktop.workspacePaddingLeft !== "28px") failures.push("desktop workspace padding mismatch");
+  // Theme navigation
+  if (desktop.navigation.paddingTop !== "12px" || desktop.navigation.columnGap !== "14px") {
     failures.push("desktop theme navigation rhythm mismatch");
   }
+  if (
+    desktop.navLinkCount < 5
+    || !desktop.navHrefs.some((href) => href.startsWith("#theme-"))
+    || !desktop.navHrefs.includes("#other-important-news")
+    || !desktop.navHrefs.includes("#pending-notes")
+    || desktop.navHrefs.includes("#top")
+  ) {
+    failures.push(`desktop theme navigation link contract mismatch: ${JSON.stringify(desktop.navHrefs)}`);
+  }
+  // Theme groups
+  if (desktop.themeCount < 2) failures.push("desktop theme group count too small");
   if (desktop.theme.paddingTop !== "23px" || desktop.theme.paddingBottom !== "15px") {
     failures.push("desktop theme section rhythm mismatch");
   }
@@ -1021,26 +959,15 @@ try {
   if (desktop.themeHeading.alignItems !== "baseline" || desktop.themeHeading.columnGap !== "7px") {
     failures.push("desktop theme heading baseline mismatch");
   }
-  if (
-    desktop.reportTitle.color !== "rgb(24, 32, 51)"
-    || desktop.reportTitle.fontWeight !== "800"
-    || desktop.themeKicker.color !== "rgb(36, 87, 210)"
-    || desktop.themeKicker.fontWeight !== "800"
-    || desktop.themeTitle.fontWeight !== "700"
-    || desktop.newsTitle.fontWeight !== "700"
-    || desktop.newsRank.fontWeight !== "400"
-    || desktop.themeTotal.fontWeight !== "400"
-  ) {
-    failures.push("desktop key color/font-weight hierarchy mismatch");
-  }
-  if (desktop.themeTotal.fontSize !== "8px") failures.push("desktop theme metadata size mismatch");
   if (desktop.newsList.borderTopWidth !== "2px") failures.push("desktop news list divider mismatch");
+  // News rows
+  if (desktop.rowCount < 1 || desktop.detailRowCount < 1) failures.push("desktop news rows missing");
   if (
-    desktop.newsRow.gridTemplateColumns.trim().split(/\s+/).length !== 2
-    || desktop.newsRow.gridTemplateColumns.trim().split(/\s+/)[0] !== "30px"
+    desktop.firstRow.gridTemplateColumns.trim().split(/\s+/).length !== 2
+    || desktop.firstRow.gridTemplateColumns.trim().split(/\s+/)[0] !== "30px"
     || Math.abs(desktop.newsRank.width - 30) > 1
-    || desktop.newsRow.columnGap !== "9px"
-    || desktop.newsRow.paddingTop !== "12px"
+    || desktop.firstRow.columnGap !== "9px"
+    || desktop.firstRow.paddingTop !== "12px"
   ) {
     failures.push("desktop news grid mismatch");
   }
@@ -1048,36 +975,34 @@ try {
     failures.push("desktop news rank typography mismatch");
   }
   if (desktop.newsSummary.fontSize !== "9px") failures.push("desktop news summary size mismatch");
+  if (desktop.newsScore.fontSize !== "8px") failures.push("desktop news score size mismatch");
+  // Alignment
   if (
-    desktop.commonLeftLine.violations.length
+    desktop.alignment.mismatches.length
+    || desktop.commonLeftLine.violations.length
     || desktop.commonLeftLine.checkedCount < 1
-    || desktop.commonLeftLine.coverage.detailRows < 1
-    || desktop.commonLeftLine.coverage.otherImportantRows < 1
-    || desktop.commonLeftLine.coverage.associationPaths < 1
-    || desktop.commonLeftLine.coverage.sourcePaths < 1
   ) {
-    failures.push(`news common left-line coverage/alignment mismatch: ${JSON.stringify(desktop.commonLeftLine)}`);
+    failures.push(`news common left-line coverage/alignment mismatch: ${JSON.stringify({
+      alignment: desktop.alignment,
+      commonLeftLine: desktop.commonLeftLine,
+    })}`);
   }
+  // Disclosure lifecycle
   if (
-    sourceOnlyAlignment.rowCount < 1
-    || sourceOnlyAlignment.checkedCount < 1
-    || sourceOnlyAlignment.violations.length
-  ) {
-    failures.push(`source-only news common left-line mismatch: ${JSON.stringify(sourceOnlyAlignment)}`);
-  }
-  if (
-    !desktop.disclosure.closed.hidden
+    !desktop.disclosure
+    || desktop.disclosure.closed.hidden !== true
     || desktop.disclosure.closed.ariaExpanded !== "false"
     || desktop.disclosure.closed.height !== 0
-    || desktop.disclosure.open.hidden
+    || desktop.disclosure.open.hidden !== false
     || desktop.disclosure.open.ariaExpanded !== "true"
     || desktop.disclosure.open.height <= 0
-    || !desktop.disclosure.closedAgain.hidden
+    || desktop.disclosure.closedAgain.hidden !== true
     || desktop.disclosure.closedAgain.ariaExpanded !== "false"
     || desktop.disclosure.closedAgain.height !== 0
   ) {
     failures.push(`news disclosure lifecycle is incomplete: ${JSON.stringify(desktop.disclosure)}`);
   }
+  // Navigation current state
   if (
     desktop.initialNavigationCurrent.currentCount !== 1
     || desktop.initialNavigationCurrent.currentHref !== desktop.firstNavigationHref
@@ -1113,155 +1038,120 @@ try {
     })}`);
   }
   if (
-    directHashNavigation.hash !== `#${desktop.directTargetId}`
+    directHashNavigation.hash !== `#${desktop.anchorTargetId}`
     || directHashNavigation.currentCount !== 1
-    || directHashNavigation.currentHref !== `#${desktop.directTargetId}`
+    || directHashNavigation.currentHref !== `#${desktop.anchorTargetId}`
   ) {
     failures.push(`direct-hash theme current state is wrong: ${JSON.stringify(directHashNavigation)}`);
   }
   if (guardedClickNavigation.some((state) => (
-    state.hash !== `#${desktop.directTargetId}`
+    state.hash !== `#${desktop.anchorTargetId}`
     || state.currentCount !== 1
-    || state.currentHref !== `#${desktop.directTargetId}`
+    || state.currentHref !== `#${desktop.anchorTargetId}`
   ))) {
     failures.push(`guarded theme clicks polluted current state: ${JSON.stringify(guardedClickNavigation)}`);
   }
-  if (!contrast.mutation.result || contrast.mutation.result.ratio >= 4.5) {
-    failures.push(`all-visible contrast scanner missed its controlled mutant: ${JSON.stringify(contrast.mutation)}`);
-  }
-  const expectedMutationBackground = [124, 124.5, 125.5, 1];
+  // Archive sidebar
   if (
-    !contrast.mutation.result
-    || contrast.mutation.result.background.some(
-      (channel, index) => Math.abs(channel - expectedMutationBackground[index]) > 0.01,
-    )
+    desktop.archive.groupCount < 2
+    || desktop.archive.ariaExpanded !== "false"
+    || !desktop.archive.slotsHidden
+    || !/\.html$/.test(desktop.archive.linkHref)
   ) {
-    failures.push(`contrast scanner alpha composition is wrong: ${JSON.stringify({
-      actual: contrast.mutation.result?.background,
-      expected: expectedMutationBackground,
-    })}`);
+    failures.push(`sidebar archive initial state is wrong: ${JSON.stringify(desktop.archive)}`);
   }
-  const lowContrast = contrast.results
-    .filter((result) => result.ratio < 4.5)
-    .map(({ path, text, foreground, background, fontSize, ratio }) => ({
-      path,
-      text,
-      foreground,
-      background,
-      fontSize,
-      ratio,
-    }));
-  if (lowContrast.length) {
-    failures.push(`visible direct-text contrast below 4.5:1: ${JSON.stringify(lowContrast)}`);
-  }
+  // Report notes
   if (
     !desktop.reportNoteContract.visible
     || desktop.reportNoteContract.title !== "报告说明"
     || desktop.reportNoteContract.sectionCount < 1
-    || desktop.reportNoteContract.titleFontSize > 14
+    || desktop.reportNoteContract.summaryTitleFontSize > 14
+    || desktop.reportNoteContract.summaryTitleFontWeight !== "700"
     || desktop.reportNoteContract.sectionTitleMaximumFontSize > 10
-    || desktop.reportNoteContract.bodyFontSize > 10
+    || desktop.reportNoteContract.bodyMaximumFontSize > 10
     || !desktop.reportNoteContract.afterOther
     || !desktop.reportNoteContract.beforePending
     || desktop.reportNoteContract.unsafeHrefCount !== 0
   ) {
     failures.push(`report-note contract mismatch: ${JSON.stringify(desktop.reportNoteContract)}`);
   }
+  // Plain (filter-bar) report contract
   if (
-    sourceOnlyAlignment.reportNoteLinkSafety.linkCount < 1
-    || sourceOnlyAlignment.reportNoteLinkSafety.unsafeHrefCount !== 0
+    !plain.hasFilterBar
+    || plain.filterButtonCount !== 6
+    || JSON.stringify(plain.filterButtonLabels) !== JSON.stringify(["全部", "政策", "财报", "产业", "地缘", "其他"])
+    || !plain.filterMetaText?.includes("数据截止")
+    || plain.sourcesInlineRows < 1
+    || plain.rowCount < 1
+    || plain.checkedCount < 1
+    || plain.violations.length
+    || plain.filtered.activeLabel !== "政策"
+    || plain.filtered.pressed !== "true"
+    || plain.filtered.visibleRows < 1
+    || plain.restoredVisible !== plain.rowCount
+    || plain.reportNoteLinks.linkCount < 1
+    || plain.reportNoteLinks.unsafeHrefCount !== 0
   ) {
-    failures.push(
-      `report-note link safety mismatch: ${JSON.stringify(sourceOnlyAlignment.reportNoteLinkSafety)}`,
-    );
+    failures.push(`plain-report filter-bar/alignment contract mismatch: ${JSON.stringify(plain)}`);
   }
+  // Print lifecycle
   if (
     !print.beforePrint.mediaMatches
+    || print.beforePrint.detailsOpen
     || !print.duringPrint.detailsOpen
-    || print.duringPrint.bodyHeight <= 0
     || print.duringPrint.visibleItemCount !== print.beforePrint.itemCount
     || print.beforePrint.visibleNewsDetailCount !== print.beforePrint.newsDetailCount
     || print.duringPrint.visibleNewsDetailCount !== print.beforePrint.newsDetailCount
     || !print.beforePrint.reportNotesVisible
     || !print.duringPrint.reportNotesVisible
-    || print.beforePrint.visibleReportNoteSectionCount !== print.beforePrint.reportNoteSectionCount
-    || print.duringPrint.visibleReportNoteSectionCount !== print.beforePrint.reportNoteSectionCount
     || print.restoredOpen
   ) {
     failures.push(
       `print pending lifecycle is incomplete: ${JSON.stringify(print)}`,
     );
   }
+  // Sticky sidebar across scroll positions
   if (
-    archiveFirstClick.initial.expanded !== "false"
-    || !archiveFirstClick.initial.slotsHidden
-    || archiveFirstClick.afterClick.hash !== "#archive-2026-08-11"
-    || archiveFirstClick.afterClick.expanded !== "true"
-    || archiveFirstClick.afterClick.slotsHidden
-    || archiveFirstClick.afterClick.themeCurrent.count !== 1
-    || archiveFirstClick.afterClick.themeCurrent.href
-      !== archiveFirstClick.afterClick.themeCurrent.firstHref
-    || archiveSecondClick.hash !== "#archive-2026-08-10"
-    || archiveSecondClick.firstDate.expanded !== "false"
-    || !archiveSecondClick.firstDate.slotsHidden
-    || archiveSecondClick.secondDate.expanded !== "true"
-    || archiveSecondClick.secondDate.slotsHidden
+    sticky.initial.sidebarTop < 27
+    || sticky.initial.sidebarTop > 29
+    || !sticky.initial.sidebarInViewport
+    || !sticky.initial.linkFullyVisible
+    || Math.abs(sticky.mid.sidebarTop - 27) > 1
+    || !sticky.mid.sidebarInViewport
+    || !sticky.mid.linkFullyVisible
+    || !sticky.bottom.sidebarInViewport
+    || !sticky.bottom.linkFullyVisible
   ) {
-    failures.push(`archive date expand/collapse lifecycle is wrong: ${JSON.stringify({
-      archiveFirstClick,
-      archiveSecondClick,
-    })}`);
+    failures.push(`sticky sidebar scroll contract is wrong: ${JSON.stringify(sticky)}`);
   }
-  if (
-    mobile.headerPosition !== "static"
-    || mobile.scrollMarginTop !== 0
-    || mobile.anchorHash !== `#${mobile.anchorTargetId}`
-    || Math.abs(mobile.targetTop) > 1
-  ) {
-    failures.push(
-      `mobile anchor reset is wrong: header=${mobile.headerPosition}, scrollMargin=${mobile.scrollMarginTop}px, hash=${mobile.anchorHash}, top=${mobile.targetTop}px`,
-    );
-  }
+  // Mobile layout
   if (mobile.shellPaddingLeft !== "12px") failures.push("mobile outer padding mismatch");
+  if (mobile.cardBorderRadius !== "16px") failures.push("mobile card radius mismatch");
+  if (mobile.sidebarDisplay !== "none") failures.push("mobile sidebar remains visible");
   if (mobile.topbarMarginLeft !== "18px" || mobile.mainPaddingLeft !== "18px") {
     failures.push("mobile workspace padding mismatch");
   }
-  if (mobile.sidebarDisplay !== "none") failures.push("mobile sidebar remains visible");
   if (mobile.mobileControlDisplay === "none") failures.push("mobile report selector is hidden");
   if (mobile.themeTitleFontSize !== "21px") failures.push("mobile theme title size mismatch");
-  if (mobile.cardBorderRadius !== "16px") failures.push("mobile card radius mismatch");
   if (mobile.navigationOverflowX !== "auto") failures.push("mobile theme navigation does not scroll");
-  if (mobile.navigationScrollWidth <= mobile.navigationClientWidth) {
-    failures.push(
-      `mobile theme navigation does not have real horizontal overflow: ${mobile.navigationScrollWidth}px <= ${mobile.navigationClientWidth}px`,
-    );
-  }
-  if (
-    mobile.initialNavigationCurrentCount !== 1
-    || mobile.initialNavigationCurrentHref !== mobile.firstNavigationHref
-    || mobile.clickedNavigationCurrentCount !== 1
-    || mobile.clickedNavigationCurrentHref !== `#${mobile.anchorTargetId}`
-  ) {
-    failures.push(`mobile theme navigation current lifecycle is wrong: ${JSON.stringify(mobile)}`);
-  }
+  if (mobile.navigationClientWidth <= 0) failures.push("mobile theme navigation is not visible");
   if (mobile.scrollWidth > mobile.clientWidth) {
     failures.push(`mobile page overflows: ${mobile.scrollWidth}px > ${mobile.clientWidth}px`);
   }
   if (
-    mobile.reportNotesScrollWidth > mobile.reportNotesClientWidth
-    || mobile.reportNotesLeft < 0
-    || mobile.reportNotesRight > mobile.clientWidth
+    mobile.notesScrollWidth > mobile.notesClientWidth
+    || mobile.notesLeft < 0
+    || mobile.notesRight > mobile.clientWidth
   ) {
-    failures.push(`mobile report notes overflow: ${JSON.stringify({
-      clientWidth: mobile.clientWidth,
-      noteClientWidth: mobile.reportNotesClientWidth,
-      noteScrollWidth: mobile.reportNotesScrollWidth,
-      noteLeft: mobile.reportNotesLeft,
-      noteRight: mobile.reportNotesRight,
-    })}`);
+    failures.push(`mobile report notes overflow: ${JSON.stringify(mobile)}`);
   }
-  if (contrast.reportNoteCount < 1) {
-    failures.push(`contrast scan missed report-note text: ${contrast.reportNoteCount}`);
+  if (
+    mobile.anchorHash !== `#${mobile.anchorTargetId}`
+    || Math.abs(mobile.targetTop) > 1
+  ) {
+    failures.push(
+      `mobile anchor reset is wrong: hash=${mobile.anchorHash}, top=${mobile.targetTop}px`,
+    );
   }
   if (browserProblems.length) failures.push(`browser console: ${browserProblems.join(" | ")}`);
 
@@ -1281,50 +1171,43 @@ try {
       shell: desktop.shell,
       card: desktop.card,
       sidebar: desktop.sidebar,
-      reportMain: desktop.reportMain,
+      sidebarTopLink: desktop.sidebarTopLink,
+      topbar: desktop.topbar,
       reportTitle: desktop.reportTitle,
-      cutoff: desktop.cutoff,
       navigation: desktop.navigation,
+      navHrefs: desktop.navHrefs,
       theme: desktop.theme,
       secondTheme: desktop.secondTheme,
       themeKicker: desktop.themeKicker,
       themeTitle: desktop.themeTitle,
       themeTotal: desktop.themeTotal,
       newsList: desktop.newsList,
-      newsRow: desktop.newsRow,
+      firstRow: desktop.firstRow,
       newsRank: desktop.newsRank,
       newsTitle: desktop.newsTitle,
       newsSummary: desktop.newsSummary,
-      bodyFont: desktop.bodyFont,
-      bodyBackground: desktop.bodyBackground,
-      contentLeftEdges: { newsContent: desktop.newsContentLeft, ...contentLeftEdges },
+      newsScore: desktop.newsScore,
+      alignment: desktop.alignment,
       commonLeftLine: desktop.commonLeftLine,
-      sourceOnlyAlignment,
       disclosure: desktop.disclosure,
       initialNavigationCurrent: desktop.initialNavigationCurrent,
       clickedNavigationCurrent: desktop.clickedNavigationCurrent,
       currentNavigationLink: desktop.currentNavigationLink,
       inactiveNavigationLink: desktop.inactiveNavigationLink,
       reportNoteContract: desktop.reportNoteContract,
+      archive: desktop.archive,
       targetTop: desktop.targetTop,
     },
     directHashNavigation,
     guardedClickNavigation,
-    contrast: {
-      count: contrast.count,
-      minimum: contrast.minimum,
-      mutation: contrast.mutation,
-      reportNoteCount: contrast.reportNoteCount,
-      lowContrast,
-    },
+    plain,
     print,
-    archiveFirstClick,
-    archiveSecondClick,
+    sticky,
     mobile,
     browserProblems,
   }, null, 2));
   if (failures.length) throw new Error(failures.join("\n"));
-  console.log("PASS: reference geometry, typography, anchors, print appendix, contrast, and mobile layout");
+  console.log("PASS: shell, sticky sidebar, typography, anchors, filter-bar, print, and mobile layout");
 } finally {
   cdp?.close();
   if (chrome && chrome.exitCode === null) {
