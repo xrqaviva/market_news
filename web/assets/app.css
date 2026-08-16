@@ -67,7 +67,6 @@ select:focus-visible {
 .report-card {
   display: flex;
   min-height: calc(100vh - 54px);
-  overflow: hidden;
   background: var(--surface);
   border: 2px solid #cad3e1;
   border-radius: 16px;
@@ -75,13 +74,19 @@ select:focus-visible {
 }
 
 .report-sidebar {
+  position: sticky;
+  top: 27px;
   display: flex;
   flex-direction: column;
   flex: 0 0 76px;
   width: 76px;
+  height: calc(100vh - 54px);
+  overflow-y: auto;
   padding: 17px 9px;
   color: #94a1b5;
   background: var(--nav);
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
 }
 
 .brand {
