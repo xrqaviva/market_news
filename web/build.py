@@ -544,6 +544,24 @@ def _write_index(destination: Path, latest_url: str, latest_title: str) -> None:
     )
 
 
+def _write_404(destination: Path, latest_url: str, latest_title: str) -> None:
+    # GitHub Pages serves a custom 404.html for any missing path (including the
+    # brief deploy-switch window after each push); point it at the latest report
+    # so visitors never land on a blank/listing page.
+    escaped_url = _escape(latest_url)
+    destination.write_text(
+        "<!doctype html>\n"
+        '<html lang="zh-CN"><head><meta charset="utf-8">'
+        '<meta http-equiv="refresh" content="0; url={}">'
+        '<title>新闻速递</title><link rel="icon" href="data:,">'
+        "</head><body>"
+        '<p><a href="{}">{}</a></p></body></html>\n'.format(
+            escaped_url, escaped_url, _escape(latest_title)
+        ),
+        encoding="utf-8",
+    )
+
+
 def _copy_assets(project_root: Path, destination: Path) -> None:
     source = project_root / "web" / "assets"
     if source.is_dir():
@@ -648,6 +666,7 @@ def build_site(
             encoding="utf-8",
         )
         _write_index(next_output / "index.html", latest["url"], latest["title"])
+        _write_404(next_output / "404.html", latest["url"], latest["title"])
         _copy_assets(project_root, next_output)
         _validate_output(next_output, report_index)
         assert_public_tree_safe(next_output)
