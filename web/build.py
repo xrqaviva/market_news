@@ -432,7 +432,7 @@ def _calendar_filter(report_index: list[dict], current_date: str) -> str:
     payload = json.dumps(by_date, ensure_ascii=False)
     return (
         '<div class="calendar-filter" id="calendar-filter">'
-        '<input type="text" readonly value="{}" aria-label="按日期筛选报告">'
+        '<input type="text" readonly value="{}" aria-label="按日期筛选报告" title="点击选择报告日期">'
         '<div class="calendar-pop" hidden>'
         '<div class="calendar-head">'
         '<button type="button" data-nav="year-prev">«</button>'

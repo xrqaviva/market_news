@@ -213,16 +213,42 @@ select:focus-visible {
   margin: 0 0 12px;
 }
 
+.calendar-filter::before {
+  content: "🗓";
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8px;
+  pointer-events: none;
+}
+
+.calendar-filter::after {
+  content: "▾";
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8fa0b8;
+  font-size: 8px;
+  pointer-events: none;
+}
+
 .calendar-filter input {
   width: 100%;
-  padding: 4px 2px;
+  padding: 4px 14px 4px 16px;
   font-size: 9px;
   color: #dbe4f0;
   background: #263650;
-  border: 1px solid #3a4a66;
+  border: 1px solid #4a5c7e;
   border-radius: 5px;
   cursor: pointer;
 }
+
+.calendar-filter input:hover {
+  border-color: #6b82a8;
+}
+
 
 .calendar-pop {
   position: absolute;
