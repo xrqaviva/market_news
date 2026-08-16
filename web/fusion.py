@@ -34,6 +34,7 @@ _SOURCE_SHORT_NAMES = {
     "tencent": "腾讯",
     "eastmoney_global_history": "东方财富",
     "eastmoney_futures": "东方财富",
+    "sina": "新浪",
     "sina_global_history": "新浪",
     "sina_futures": "新浪",
     "smm": "SMM",
