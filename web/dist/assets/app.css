@@ -29,25 +29,6 @@ html {
   scroll-behavior: smooth;
 }
 
-a.back-to-top {
-  position: fixed;
-  /* 卡片框架内悬浮：page-shell max-width 980px 居中 + padding 27px + 20px 内距 */
-  right: calc((100vw - min(980px, 100vw)) / 2 + 47px);
-  bottom: 36px;
-  z-index: 60;
-  color: #fff;
-  background: var(--accent);
-  border-radius: 999px;
-  padding: 9px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-  box-shadow: 0 2px 10px rgba(36, 87, 210, 0.35);
-}
-
-a.back-to-top:hover {
-  background: var(--nav-active);
-}
 
 body {
   min-width: 320px;
@@ -914,10 +895,6 @@ select:focus-visible {
     padding: 12px;
   }
 
-  a.back-to-top {
-    right: 32px;
-    bottom: 24px;
-  }
 
   .report-card {
     min-height: calc(100vh - 24px);
