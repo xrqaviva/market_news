@@ -130,6 +130,26 @@ reports/YYYY-MM-DD-HHMM-<slug>.md
 
 同题材不等于同一事件；合并必须保留目标事件 ID，排除必须保留具体原因。若财联社、东方财富等多家核心媒体出现同一重要事实，交付前必须完成跨媒体覆盖对账。
 
+### 3.2.1 强制采集源清单（2026-08-16 用户裁定：每次跑任务必须全跑，不许少源）
+
+**每次采集任务（含增量）必须按以下 7 源全部采集**，缺一不可；任何源未采集=任务未完成（除非记录失败原因并如实标注，不允许静默跳过）：
+
+| # | 源 | 通道 | 入口 | 登录要求 |
+|---|---|---|---|---|
+| 1 | 新浪 7×24 | API 回放 | `zhibo.sina.com.cn/api/zhibo/feed?page={n}&page_size=100&zhibo_id=152&tag_id=0&dire=f&dpc=1` | 无 |
+| 2 | 东方财富 7×24 | `scripts/fetch_em7x24.py` | `np-listapi.eastmoney.com/comm/web/getNewsByColumns?client=web&biz=web_724&column=350&order=1&page_index={n}&page_size=100&req_trace={n}` | 无 |
+| 3 | 财联社电报 | 浏览器 DOM | `https://www.cls.cn/telegraph` | 无 |
+| 4 | 韭研公社 | 浏览器 DOM / curl SSR | `https://www.jiuyangongshe.com/` | 无 |
+| 5 | 雪球 | 浏览器 DOM | `https://xueqiu.com/`（热股榜+时间线+热门话题） | 登录（用户已在 IAB 登录） |
+| 6 | X | 浏览器 DOM | `https://x.com/home`（Home timeline） | 登录（用户已在 IAB 登录） |
+| 7 | 微博热搜 | 浏览器 DOM | `https://s.weibo.com/top/summary` | 登录（用户已在 IAB 登录） |
+| 8 | 淘股吧 | 浏览器 DOM | `https://www.taoguba.com.cn/`（题材分布+复盘帖+极速快讯） | 登录（用户已在 IAB 登录） |
+| 9 | 东方财富人气榜 | 浏览器 DOM | `https://guba.eastmoney.com/rank/?tab=rank-7&type=7` | 无 |
+
+**执行顺序：** API 双源（1-2）→ 浏览器源（3-9）→ 九路并集去重 → 全窗口遍历分析 → 报告。
+**浏览器源原则：** 只读页面可见内容，不读取/不输出任何凭据；登录由用户在 IAB 完成；webview 故障时按台账 §10.5 规则重试或如实记录缺源。
+**增量采集：** 截点后的增量窗口同样按此清单执行（周末低密度时浏览器源快照仍须取，不得省略）。
+
 ### 3.3 15分钟并行工作流
 
 盘前任务的性能目标是**15分钟内尽量交付**，但全面性和准确性优先：超过15分钟时不中断，继续运行直至完整交付。
@@ -303,6 +323,10 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory web/dist
 - 候选账本无未处置条目，待核不计分。
 - 财报、IPO、政策和旧闻异动满足特殊字段要求。
 - 没有操作建议、买卖信号、伪造分钟或伪造互动数据。
+
+### 5.1.1 来源齐全性验收（强制）
+
+交付前逐项核对 3.2.1 强制清单：**9 个源每个都要有采集动作或失败记录**（evidence 文件、DOM 快照、或失败原因标注）。缺源即验收不通过，须补齐后再交付；不得以"该源本轮无新增"为由跳过采集动作。
 
 ### 5.2 自动测试
 
