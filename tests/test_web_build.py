@@ -669,14 +669,14 @@ if (scoreCell.innerHTML.includes('<strong>')) {
 
         manifest = json.loads((ROOT / "web/dist/reports.json").read_text(encoding="utf-8"))
         self.assertEqual("reports/2026-08-14-0800.html", manifest["latest"])
-        self.assertIn('href="2026-08-11-0800.html#archive-2026-08-11"', page)
+        self.assertIn('href="2026-08-11-0800.html"', page)
         self.assertIn(manifest["latest"], (ROOT / "web/dist/index.html").read_text(encoding="utf-8"))
 
     def test_report_archive_links_resolve_from_report_directory(self):
         with TemporaryDirectory() as tmp:
             output = build_site(ROOT, Path(tmp) / "dist").output_dir
             page = (output / "reports/2026-07-31-0800.html").read_text(encoding="utf-8")
-            self.assertIn('href="2026-07-31-0800.html#archive-2026-07-31"', page)
+            self.assertIn('href="2026-07-31-0800.html"', page)
             self.assertNotIn('href="reports/2026-07-31-0800.html"', page)
 
     def test_archive_groups_dates_and_targets_latest_real_report(self):
@@ -706,7 +706,7 @@ if (scoreCell.innerHTML.includes('<strong>')) {
 
         self.assertLess(page.index("2026-08-10"), page.index("2026-07-30"))
         self.assertEqual(1, page.count('data-report-date="2026-07-30"'))
-        self.assertIn('href="2026-07-30-1800.html#archive-2026-07-30"', page)
+        self.assertIn('href="2026-07-30-1800.html"', page)
         self.assertLess(page.index(">盘前</a>"), page.index(">盘后</a>"))
         self.assertNotIn(">盘中</a>", page)
         self.assertIn('data-report-label="2026-07-30 · 盘后"', page)

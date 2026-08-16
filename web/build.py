@@ -341,10 +341,12 @@ def _report_archive(document: ReportDocument, report_index: list[dict]) -> str:
         target = reports[-1]
         anchor = "archive-{}".format(report_date)
         slots_id = "archive-slots-{}".format(report_date)
-        target_url = "{}#{}".format(Path(str(target.get("url", ""))).name, anchor)
+        # plain jump to the report page top; no #archive anchor so the page
+        # does not scroll to the sidebar archive after a date switch
+        target_url = Path(str(target.get("url", ""))).name
         slot_links = []
         for report in reports:
-            url = "{}#{}".format(Path(str(report.get("url", ""))).name, anchor)
+            url = Path(str(report.get("url", ""))).name
             current = ' aria-current="page"' if report.get("id") == document.meta.report_id else ""
             slot_links.append(
                 '<a data-report-link data-report-label="{}" href="{}"{}>{}</a>'.format(
