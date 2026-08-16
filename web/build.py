@@ -142,6 +142,8 @@ def _theme_navigation(document: ReportDocument) -> str:
         )
         for theme in document.themes
     )
+    if document.other_items:
+        links += '<a href="#other-important-news">其他重要新闻</a>'
     return (
         '<nav class="theme-navigation" data-component="theme-navigation" '
         'aria-label="核心方向">{}</nav>'
@@ -207,7 +209,7 @@ def _other_important_news(document: ReportDocument, theme_names: dict[str, str])
         for item in document.other_items
     )
     return (
-        '<section class="other-important-news" data-component="other-important-news">'
+        '<section class="other-important-news" data-component="other-important-news" id="other-important-news">'
         '<h2>其他重要新闻</h2><section data-component="news-list">{}</section></section>'
     ).format(rows)
 

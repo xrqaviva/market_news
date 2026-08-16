@@ -107,7 +107,7 @@ class WebBuildTest(unittest.TestCase):
         self.assertIn('href="#theme-ascii-theme-alpha">甲题材</a>', page)
         self.assertIn('href="#theme-ascii-theme-beta">乙题材</a>', page)
         self.assertLess(page.index("核心方向 01"), page.index("核心方向 02"))
-        self.assertLess(page.index("核心方向 02"), page.index("其他重要新闻"))
+        self.assertLess(page.index("核心方向 02"), page.index('id="other-important-news"'))
         self.assertIn('data-component="theme-group" id="theme-ascii-theme-alpha"', page)
         self.assertIn('<p class="theme-total">2条 · 170</p>', page)
         self.assertIn('<p class="theme-total">2条 · 160</p>', page)
@@ -627,7 +627,7 @@ if (scoreCell.innerHTML.includes('<strong>')) {
             ["01", "02", "03", "04", "05"],
             re.findall(r'<p class="theme-kicker">核心方向 (\d{2})</p>', page),
         )
-        self.assertLess(page.index("核心方向 05"), page.index("其他重要新闻"))
+        self.assertLess(page.index("核心方向 05"), page.index('id="other-important-news"'))
         self.assertLess(page.index("其他重要新闻"), page.index("待核验线索"))
         self.assertIn('<summary>待核验线索 <span>· 5</span></summary>', page)
         self.assertNotIn('<details class="pending-details" open>', page)
