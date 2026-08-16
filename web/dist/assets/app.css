@@ -31,7 +31,8 @@ html {
 
 a.back-to-top {
   position: fixed;
-  right: 36px;
+  /* 卡片框架内悬浮：page-shell max-width 980px 居中 + padding 27px + 20px 内距 */
+  right: calc((100vw - min(980px, 100vw)) / 2 + 47px);
   bottom: 36px;
   z-index: 60;
   color: #fff;
@@ -911,6 +912,11 @@ select:focus-visible {
 @media (max-width: 700px) {
   .page-shell {
     padding: 12px;
+  }
+
+  a.back-to-top {
+    right: 32px;
+    bottom: 24px;
   }
 
   .report-card {
