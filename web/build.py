@@ -216,17 +216,36 @@ def _other_important_news(document: ReportDocument, theme_names: dict[str, str])
     ).format(rows)
 
 
+def _news_mode_switch() -> str:
+    return (
+        '<div class="news-mode-switch" data-component="news-mode-switch" '
+        'role="group" aria-label="新闻视图模式">'
+        '<button type="button" class="news-mode-button is-active" data-news-mode="themed" '
+        'aria-pressed="true">板块概念模式</button>'
+        '<button type="button" class="news-mode-button" data-news-mode="ranked" '
+        'aria-pressed="false">排序模式</button>'
+        '</div>'
+    )
+
+
 def _theme_content(document: ReportDocument) -> str:
     if not document.themes:
         return ""
     theme_names = {theme.theme_id: theme.name for theme in document.themes}
-    return "{}{}{}".format(
-        _theme_navigation(document),
-        "".join(
-            _theme_group(document, theme, theme_names, ordinal)
-            for ordinal, theme in enumerate(document.themes, start=1)
+    return "{}{}{}{}{}".format(
+        _news_mode_switch(),
+        '<section class="themed-view" data-component="themed-view">',
+        "{}{}{}".format(
+            _theme_navigation(document),
+            "".join(
+                _theme_group(document, theme, theme_names, ordinal)
+                for ordinal, theme in enumerate(document.themes, start=1)
+            ),
+            _other_important_news(document, theme_names),
         ),
-        _other_important_news(document, theme_names),
+        "</section>",
+        '<section class="ranked-list" data-component="ranked-list" '
+        'hidden aria-label="按新闻热度排序的列表"></section>',
     )
 
 

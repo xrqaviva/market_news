@@ -99,6 +99,22 @@ class WebBuildTest(unittest.TestCase):
         self.assertNotIn('data-component="news-index"', page)
         self.assertNotIn("单条新闻热榜索引", page)
         self.assertNotIn("接下来的方向", page)
+        self.assertIn('data-component="news-mode-switch"', page)
+        self.assertIn('class="news-mode-button is-active" data-news-mode="themed"', page)
+        self.assertIn('>板块概念模式</button>', page)
+        self.assertIn('class="news-mode-button" data-news-mode="ranked"', page)
+        self.assertIn('>排序模式</button>', page)
+        self.assertIn('data-component="themed-view"', page)
+        self.assertIn('<section class="ranked-list" data-component="ranked-list" '
+                      'hidden aria-label="按新闻热度排序的列表"></section>', page)
+        self.assertLess(
+            page.index('data-component="news-mode-switch"'),
+            page.index('data-component="themed-view"'),
+        )
+        self.assertLess(
+            page.index('data-component="themed-view"'),
+            page.index('data-component="theme-navigation"'),
+        )
         self.assertIn(
             '<nav class="theme-navigation" data-component="theme-navigation" '
             'aria-label="核心方向">',
@@ -284,6 +300,12 @@ class WebBuildTest(unittest.TestCase):
                 'href="https://apnews.com/article/stock-markets-rates-korea-ai-oil-99b5702d93a2b5c6e513fb952ccdcc92"',
                 article,
             )
+            # plain (non-themed) reports keep the filter-bar and must not
+            # render the news mode switch / ranked list.
+            self.assertIn('class="filter-bar"', page)
+            self.assertNotIn('data-component="news-mode-switch"', page)
+            self.assertNotIn('data-component="ranked-list"', page)
+            self.assertNotIn('data-component="themed-view"', page)
 
     def test_report_shell_matches_reference_structure(self):
         page = render_report(self._themed_document(), [{

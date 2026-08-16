@@ -111,6 +111,64 @@
     });
   }
 
+  function buildRankedList() {
+    const container = document.querySelector("[data-component='ranked-list']");
+    if (!container || container.dataset.built) return;
+    const entries = [];
+    document.querySelectorAll(".theme-group").forEach((group) => {
+      const themeName = group.querySelector(".theme-heading-line h2")?.textContent.trim() ?? "";
+      group.querySelectorAll(".news-row").forEach((row) => {
+        entries.push({ row, themeName });
+      });
+    });
+    document.querySelectorAll(".other-important-news .news-row").forEach((row) => {
+      entries.push({ row, themeName: "其他" });
+    });
+    const scoreOf = (row) => {
+      const match = row.querySelector(".news-score")?.textContent.match(/(\d+)/);
+      return match ? Number(match[1]) : 0;
+    };
+    entries.sort((a, b) => scoreOf(b.row) - scoreOf(a.row));
+    entries.forEach((entry, index) => {
+      const row = entry.row;
+      const title = row.querySelector(".news-content h2")?.textContent.trim() ?? "";
+      const item = document.createElement("article");
+      item.className = "ranked-item";
+      item.dataset.eventId = row.dataset.eventId ?? "";
+      const rank = document.createElement("span");
+      rank.className = "ranked-rank";
+      rank.textContent = String(index + 1).padStart(2, "0");
+      const heading = document.createElement("h3");
+      heading.textContent = title;
+      const tag = document.createElement("span");
+      tag.className = "ranked-theme";
+      tag.textContent = entry.themeName;
+      const score = document.createElement("span");
+      score.className = "ranked-score";
+      score.textContent = scoreOf(row);
+      item.append(rank, heading, tag, score);
+      container.appendChild(item);
+    });
+    container.dataset.built = "true";
+  }
+
+  function selectNewsMode(mode) {
+    document.querySelectorAll(".news-mode-button").forEach((button) => {
+      const active = button.dataset.newsMode === mode;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    const themedView = document.querySelector("[data-component='themed-view']");
+    const rankedList = document.querySelector("[data-component='ranked-list']");
+    if (themedView) themedView.hidden = mode !== "themed";
+    if (rankedList) rankedList.hidden = mode !== "ranked";
+  }
+
+  function selectNewsModeForHash() {
+    if (!document.querySelector("[data-component='news-mode-switch']")) return;
+    if (/^#theme-/.test(window.location.hash)) selectNewsMode("themed");
+  }
+
   var paneButtons = document.querySelectorAll(".report-tab-button");
   var panes = document.querySelectorAll(".fusion-pane");
   function selectPane(target) {
@@ -135,8 +193,26 @@
   populateReportSelect();
   applyArchiveState();
   applyThemeNavigationCurrent();
+  buildRankedList();
+  selectNewsModeForHash();
   window.addEventListener("hashchange", applyArchiveState);
   window.addEventListener("hashchange", () => applyThemeNavigationCurrent());
+  window.addEventListener("hashchange", selectNewsModeForHash);
+
+  document.querySelectorAll(".news-mode-button").forEach((button) => {
+    button.addEventListener("click", () => selectNewsMode(button.dataset.newsMode));
+  });
+  document.querySelector("[data-component='ranked-list']")?.addEventListener("click", (event) => {
+    const item = event.target.closest(".ranked-item");
+    if (!item) return;
+    selectNewsMode("themed");
+    const target = document.querySelector(`.news-row[data-event-id="${item.dataset.eventId}"]`);
+    if (target) {
+      target.scrollIntoView({ block: "center" });
+      target.classList.add("ranked-target-flash");
+      setTimeout(() => target.classList.remove("ranked-target-flash"), 1200);
+    }
+  });
 
   const closedPendingDetailsForPrint = new Set();
   window.addEventListener("beforeprint", () => {
@@ -164,6 +240,8 @@
       && !event.shiftKey
       && !event.altKey
     ) {
+      const themedView = document.querySelector("[data-component='themed-view']");
+      if (themedView && themedView.hidden) selectNewsMode("themed");
       applyThemeNavigationCurrent(themeLink.getAttribute("href"));
     }
 
