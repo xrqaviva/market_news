@@ -539,7 +539,8 @@ try {
   })()`);
   Object.assign(desktop, expandedAlignment);
 
-  // News view mode switch: themed (default) vs ranked list.
+  // News view mode switch: themed (default) vs ranked list. Ranked mode reuses
+  // the full news rows (moved, not re-rendered) so no information is lost.
   const rankedMode = await evaluate(cdp, `(async () => {
     document.querySelector('.report-tab-button[data-pane-target="news"]').click();
     await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
@@ -556,48 +557,59 @@ try {
       })),
       themedVisible: themedView && !themedView.hidden,
       rankedHidden: rankedList && rankedList.hidden,
-      rankedItemCount: rankedList ? rankedList.querySelectorAll(".ranked-item").length : 0,
       totalRowCount: document.querySelectorAll(".news-row").length,
+      firstThemeFirstRank: document.querySelector(".theme-group .news-row .news-rank")?.textContent ?? null,
     };
     document.querySelector('.news-mode-button[data-news-mode="ranked"]').click();
     await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
-    const items = Array.from(rankedList.querySelectorAll(".ranked-item"));
-    const scores = items.map((item) => Number(item.querySelector(".ranked-score").textContent));
-    const navigation = document.querySelector(".theme-navigation");
+    const rankedRows = Array.from(rankedList.querySelectorAll(".news-row"));
+    const scores = rankedRows.map((row) => Number(row.querySelector(".news-score").textContent.match(/\d+/)?.[0] ?? 0));
+    const firstRow = rankedRows[0];
     const afterSwitch = {
       themedHidden: themedView.hidden,
       rankedVisible: !rankedList.hidden,
       activeButton: document.querySelector(".news-mode-button.is-active")?.dataset.newsMode,
-      itemCount: items.length,
-      firstRank: items[0]?.querySelector(".ranked-rank").textContent ?? null,
-      firstTheme: items[0]?.querySelector(".ranked-theme").textContent.trim() ?? null,
-      hasThemeTagOnEveryItem: items.every(
-        (item) => (item.querySelector(".ranked-theme")?.textContent.trim().length ?? 0) > 0,
-      ),
+      rowCount: rankedRows.length,
+      firstRank: firstRow?.querySelector(".news-rank").textContent ?? null,
+      firstTitle: firstRow?.querySelector(".news-content h2")?.textContent.trim().slice(0, 30) ?? null,
+      firstTag: firstRow?.querySelector(".news-row-theme-tag")?.textContent.trim() ?? null,
+      firstSummary: firstRow?.querySelector(".news-summary")?.textContent.trim().slice(0, 30) ?? null,
+      firstHasToggle: !!firstRow?.querySelector(".news-toggle"),
+      firstHasDetail: !!firstRow?.querySelector(".news-detail"),
+      firstHasSources: !!firstRow?.querySelector("[data-component='sources']"),
+      tagOnEveryRow: rankedRows.every((row) => (row.querySelector(".news-row-theme-tag")?.textContent.trim().length ?? 0) > 0),
       sortedByScore: scores.every((score, index) => index === 0 || scores[index - 1] >= score),
-      navigationHidden: navigation.getClientRects().length === 0,
+      navigationHidden: document.querySelector(".theme-navigation").getClientRects().length === 0,
+      themedGroupRowCounts: Array.from(document.querySelectorAll(".theme-group"))
+        .map((g) => g.querySelectorAll(".news-row").length),
     };
-    items[0].click();
-    for (let attempt = 0; attempt < 30; attempt += 1) {
-      const rect = document.querySelector('.news-row[data-event-id="' + items[0].dataset.eventId + '"]')?.getBoundingClientRect();
-      if (rect && rect.top >= 0 && rect.bottom <= window.innerHeight) break;
-      await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
+    // toggle detail inside ranked mode: information must still be interactive
+    const toggle = firstRow?.querySelector(".news-toggle");
+    let detailExpandedInRanked = null;
+    if (toggle) {
+      const detail = document.getElementById(toggle.getAttribute("aria-controls"));
+      const before = detail.hidden;
+      toggle.click();
+      await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
+      detailExpandedInRanked = detail.hidden !== before;
+      toggle.click();
+      await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
     }
-    const targetRow = document.querySelector('.news-row[data-event-id="' + items[0].dataset.eventId + '"]');
-    const targetRect = targetRow?.getBoundingClientRect();
-    return {
-      initial,
-      afterSwitch,
-      afterJump: {
-        themedVisible: !themedView.hidden,
-        rankedHidden: rankedList.hidden,
-        activeMode: document.querySelector(".news-mode-button.is-active")?.dataset.newsMode,
-        targetRowInViewport: !!targetRect && targetRect.top >= 0 && targetRect.bottom <= window.innerHeight,
-      },
+    // switch back: rows must return to their original theme groups with rank restored
+    document.querySelector('.news-mode-button[data-news-mode="themed"]').click();
+    await new Promise((resolvePromise) => requestAnimationFrame(resolvePromise));
+    const afterJump = {
+      themedVisible: !themedView.hidden,
+      rankedHidden: rankedList.hidden,
+      activeMode: document.querySelector(".news-mode-button.is-active")?.dataset.newsMode,
+      restoredRowCount: document.querySelectorAll(".news-row").length,
+      themedGroupRowCounts: Array.from(document.querySelectorAll(".theme-group"))
+        .map((g) => g.querySelectorAll(".news-row").length),
+      firstRowRankRestored: document.querySelector(".theme-group .news-row .news-rank")?.textContent ?? null,
+      tagsRemoved: document.querySelectorAll(".news-row-theme-tag").length,
     };
+    return { initial, afterSwitch, detailExpandedInRanked, afterJump };
   })()`);
-
-  Object.assign(desktop, expandedAlignment);
 
   // Interaction probe: theme-navigation click with smooth-scroll settlement.
   const navClick = await evaluate(cdp, `(async () => {
@@ -1214,7 +1226,7 @@ try {
       `mobile anchor reset is wrong: hash=${mobile.anchorHash}, top=${mobile.targetTop}px`,
     );
   }
-  // News view mode switch contract
+  // News view mode switch contract (ranked = full rows moved, no info loss)
   if (
     !rankedMode.initial.hasSwitch
     || rankedMode.initial.buttons.length !== 2
@@ -1226,7 +1238,6 @@ try {
     || rankedMode.initial.buttons[1].pressed !== "false"
     || !rankedMode.initial.themedVisible
     || !rankedMode.initial.rankedHidden
-    || rankedMode.initial.rankedItemCount !== rankedMode.initial.totalRowCount
     || rankedMode.initial.totalRowCount < 10
   ) {
     failures.push(`news mode switch initial state is wrong: ${JSON.stringify(rankedMode.initial)}`);
@@ -1235,21 +1246,30 @@ try {
     !rankedMode.afterSwitch.themedHidden
     || !rankedMode.afterSwitch.rankedVisible
     || rankedMode.afterSwitch.activeButton !== "ranked"
-    || rankedMode.afterSwitch.itemCount !== rankedMode.initial.totalRowCount
+    || rankedMode.afterSwitch.rowCount !== rankedMode.initial.totalRowCount
     || rankedMode.afterSwitch.firstRank !== "01"
-    || !rankedMode.afterSwitch.hasThemeTagOnEveryItem
+    || !rankedMode.afterSwitch.firstSummary
+    || !rankedMode.afterSwitch.firstHasToggle
+    || !rankedMode.afterSwitch.firstHasDetail
+    || !rankedMode.afterSwitch.firstHasSources
+    || !rankedMode.afterSwitch.tagOnEveryRow
     || !rankedMode.afterSwitch.sortedByScore
     || !rankedMode.afterSwitch.navigationHidden
+    || rankedMode.afterSwitch.themedGroupRowCounts.some((count) => count !== 0)
+    || !rankedMode.detailExpandedInRanked
   ) {
-    failures.push(`ranked news mode is wrong: ${JSON.stringify(rankedMode.afterSwitch)}`);
+    failures.push(`ranked news mode is wrong: ${JSON.stringify(rankedMode)}`);
   }
   if (
     !rankedMode.afterJump.themedVisible
     || !rankedMode.afterJump.rankedHidden
     || rankedMode.afterJump.activeMode !== "themed"
-    || !rankedMode.afterJump.targetRowInViewport
+    || rankedMode.afterJump.restoredRowCount !== rankedMode.initial.totalRowCount
+    || rankedMode.afterJump.themedGroupRowCounts.some((count) => count === 0)
+    || rankedMode.afterJump.firstRowRankRestored !== rankedMode.initial.firstThemeFirstRank
+    || rankedMode.afterJump.tagsRemoved !== 0
   ) {
-    failures.push(`ranked item jump back to themed view is wrong: ${JSON.stringify(rankedMode.afterJump)}`);
+    failures.push(`ranked mode restore to themed view is wrong: ${JSON.stringify(rankedMode.afterJump)}`);
   }
   if (browserProblems.length) failures.push(`browser console: ${browserProblems.join(" | ")}`);
 

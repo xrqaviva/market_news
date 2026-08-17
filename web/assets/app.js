@@ -111,45 +111,37 @@
     });
   }
 
+  const rankedEntries = [];
+  let rankedBuilt = false;
+
   function buildRankedList() {
-    const container = document.querySelector("[data-component='ranked-list']");
-    if (!container || container.dataset.built) return;
-    const entries = [];
+    if (rankedBuilt) return;
+    rankedBuilt = true;
     document.querySelectorAll(".theme-group").forEach((group) => {
       const themeName = group.querySelector(".theme-heading-line h2")?.textContent.trim() ?? "";
       group.querySelectorAll(".news-row").forEach((row) => {
-        entries.push({ row, themeName });
+        rankedEntries.push({ row, themeName });
       });
     });
     document.querySelectorAll(".other-important-news .news-row").forEach((row) => {
-      entries.push({ row, themeName: "其他" });
+      rankedEntries.push({ row, themeName: "其他" });
     });
     const scoreOf = (row) => {
       const match = row.querySelector(".news-score")?.textContent.match(/(\d+)/);
       return match ? Number(match[1]) : 0;
     };
-    entries.sort((a, b) => scoreOf(b.row) - scoreOf(a.row));
-    entries.forEach((entry, index) => {
-      const row = entry.row;
-      const title = row.querySelector(".news-content h2")?.textContent.trim() ?? "";
-      const item = document.createElement("article");
-      item.className = "ranked-item";
-      item.dataset.eventId = row.dataset.eventId ?? "";
-      const rank = document.createElement("span");
-      rank.className = "ranked-rank";
-      rank.textContent = String(index + 1).padStart(2, "0");
-      const heading = document.createElement("h3");
-      heading.textContent = title;
+    rankedEntries.sort((a, b) => scoreOf(b.row) - scoreOf(a.row));
+    rankedEntries.forEach((entry) => {
+      const rankCell = entry.row.querySelector(".news-rank");
+      const content = entry.row.querySelector(".news-content");
       const tag = document.createElement("span");
-      tag.className = "ranked-theme";
+      tag.className = "news-row-theme-tag";
       tag.textContent = entry.themeName;
-      const score = document.createElement("span");
-      score.className = "ranked-score";
-      score.textContent = scoreOf(row);
-      item.append(rank, heading, tag, score);
-      container.appendChild(item);
+      entry.tag = tag;
+      entry.originalRankText = rankCell.textContent;
+      entry.originalParent = entry.row.parentElement;
+      entry.originalIndex = Array.prototype.indexOf.call(entry.row.parentElement.children, entry.row);
     });
-    container.dataset.built = "true";
   }
 
   function selectNewsMode(mode) {
@@ -160,6 +152,22 @@
     });
     const themedView = document.querySelector("[data-component='themed-view']");
     const rankedList = document.querySelector("[data-component='ranked-list']");
+    if (mode === "ranked") {
+      buildRankedList();
+      rankedEntries.forEach((entry, index) => {
+        entry.row.querySelector(".news-rank").textContent = String(index + 1).padStart(2, "0");
+        entry.row.querySelector(".news-content").prepend(entry.tag);
+        rankedList.appendChild(entry.row);
+      });
+    } else {
+      rankedEntries.forEach((entry) => {
+        entry.tag.remove();
+        entry.row.querySelector(".news-rank").textContent = entry.originalRankText;
+        const ref = entry.originalParent.children[entry.originalIndex];
+        if (ref && ref !== entry.row) entry.originalParent.insertBefore(entry.row, ref);
+        else entry.originalParent.appendChild(entry.row);
+      });
+    }
     if (themedView) themedView.hidden = mode !== "themed";
     if (rankedList) rankedList.hidden = mode !== "ranked";
   }
@@ -201,17 +209,6 @@
 
   document.querySelectorAll(".news-mode-button").forEach((button) => {
     button.addEventListener("click", () => selectNewsMode(button.dataset.newsMode));
-  });
-  document.querySelector("[data-component='ranked-list']")?.addEventListener("click", (event) => {
-    const item = event.target.closest(".ranked-item");
-    if (!item) return;
-    selectNewsMode("themed");
-    const target = document.querySelector(`.news-row[data-event-id="${item.dataset.eventId}"]`);
-    if (target) {
-      target.scrollIntoView({ block: "center" });
-      target.classList.add("ranked-target-flash");
-      setTimeout(() => target.classList.remove("ranked-target-flash"), 1200);
-    }
   });
 
   const closedPendingDetailsForPrint = new Set();
