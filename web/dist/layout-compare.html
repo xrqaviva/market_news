@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>布局方案对比</title>
+<style>
+  body { margin: 0; background: #0e1626; color: #fff; font: 14px/1.55 -apple-system, "PingFang SC", sans-serif; padding: 24px; }
+  h1 { font-size: 18px; margin: 0 0 8px; color: #94a1b5; }
+  h1 span { color: #fff; }
+  .pair { display: flex; flex-direction: column; gap: 24px; margin-bottom: 32px; }
+  figure { margin: 0; background: #1c2940; border-radius: 10px; padding: 14px; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 6px; }
+  figcaption { margin-top: 10px; color: #94a1b5; font-size: 13px; }
+  figcaption b { color: #fff; }
+</style>
+</head>
+<body>
+  <h1>布局方案对比 <span>（两种目录与正文比例）</span></h1>
+  <div class="pair">
+    <figure>
+      <img src="planA.png" alt="方案 A">
+      <figcaption>
+        <b>方案 A · 撑满 100%（目录 15%）</b> — Sidebar 占视口左侧 15%（1440px 视口下 216px），正文撑满右 85%（1224px）。日期列表单行展示 `2026-08-17 ›`，宽屏信息密度高。适合数据型阅读。
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="planB.png" alt="方案 B">
+      <figcaption>
+        <b>方案 B · 之前样式（居中卡片）</b> — Sidebar 76px 固定窄条在左缘，正文卡片 max-width 980px 居中，左右两侧浅色画布。日期列表多行展示 `2026-08-17`+`›`，行长可控、阅读节奏稳。
+      </figcaption>
+    </figure>
+  </div>
+</body>
+</html>
