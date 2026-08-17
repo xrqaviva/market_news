@@ -636,6 +636,36 @@ select:focus-visible {
   border-radius: 999px;
 }
 
+/* 排序模式：标题 + 板块标签 + 热度同一行（先标题，再板块，热度靠最右） */
+.ranked-mode-row {
+  display: flex;
+  align-items: baseline;
+  column-gap: 9px;
+}
+
+.ranked-mode-row .news-rank {
+  flex: 0 0 30px;
+}
+
+.ranked-mode-row .news-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ranked-mode-row .news-score {
+  flex: 0 0 auto;
+}
+
+.ranked-mode-row .news-content h2 {
+  display: inline;
+}
+
+.ranked-mode-row .news-content .news-row-theme-tag {
+  display: inline-block;
+  margin: 0 0 0 8px;
+  vertical-align: middle;
+}
+
 .news-row {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);

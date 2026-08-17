@@ -157,11 +157,13 @@
       rankedEntries.forEach((entry, index) => {
         entry.row.querySelector(".news-rank").textContent = String(index + 1).padStart(2, "0");
         entry.row.querySelector(".news-content").prepend(entry.tag);
+        entry.row.classList.add("ranked-mode-row");
         rankedList.appendChild(entry.row);
       });
     } else {
       rankedEntries.forEach((entry) => {
         entry.tag.remove();
+        entry.row.classList.remove("ranked-mode-row");
         entry.row.querySelector(".news-rank").textContent = entry.originalRankText;
         const ref = entry.originalParent.children[entry.originalIndex];
         if (ref && ref !== entry.row) entry.originalParent.insertBefore(entry.row, ref);
