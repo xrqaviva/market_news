@@ -915,10 +915,10 @@ try {
 
   const failures = [];
   // Shell / card / canvas
-  if (desktop.shell.maxWidth !== "980px" || desktop.shell.paddingTop !== "27px") {
+  if (desktop.shell.maxWidth !== "none" || desktop.shell.paddingTop !== "27px") {
     failures.push(`desktop shell geometry mismatch: ${JSON.stringify(desktop.shell)}`);
   }
-  if (Math.abs(desktop.card.width - 877) > 1) failures.push("desktop card width mismatch");
+  if (Math.abs(desktop.card.width - 1197) > 1) failures.push("desktop card width mismatch");
   if (desktop.card.borderRadius !== "16px") failures.push("desktop card radius mismatch");
   if (
     desktop.bodyBackground !== "rgb(237, 241, 246)"
@@ -936,7 +936,7 @@ try {
   if (desktop.card.boxShadow !== "rgba(30, 40, 60, 0.1) 0px 16px 40px 0px") {
     failures.push(`desktop card shadow mismatch: ${desktop.card.boxShadow}`);
   }
-  // Fixed sidebar contract (2026-08 redesign, fills viewport edge-to-edge)
+  // Fixed sidebar contract (2026-08 redesign, 15vw edge-to-edge)
   if (
     desktop.sidebar.position !== "fixed"
     || desktop.sidebar.topPos !== "0px"
@@ -947,11 +947,11 @@ try {
     failures.push(`desktop sidebar contract mismatch: ${JSON.stringify(desktop.sidebar)}`);
   }
   if (
-    Math.abs(desktop.sidebar.width - 76) > 1
+    Math.abs(desktop.sidebar.width - 216) > 1
     || desktop.sidebar.paddingTop !== "50px"
-    || desktop.sidebar.paddingRight !== "9px"
-    || desktop.sidebar.paddingBottom !== "8px"
-    || desktop.sidebar.paddingLeft !== "9px"
+    || desktop.sidebar.paddingRight !== "18px"
+    || desktop.sidebar.paddingBottom !== "14px"
+    || desktop.sidebar.paddingLeft !== "18px"
     || desktop.sidebar.backgroundColor !== "rgb(28, 41, 64)"
   ) {
     failures.push("desktop sidebar padding/background mismatch");
