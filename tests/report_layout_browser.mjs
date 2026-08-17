@@ -918,7 +918,7 @@ try {
   if (desktop.shell.maxWidth !== "980px" || desktop.shell.paddingTop !== "27px") {
     failures.push(`desktop shell geometry mismatch: ${JSON.stringify(desktop.shell)}`);
   }
-  if (Math.abs(desktop.card.width - 926) > 1) failures.push("desktop card width mismatch");
+  if (Math.abs(desktop.card.width - 877) > 1) failures.push("desktop card width mismatch");
   if (desktop.card.borderRadius !== "16px") failures.push("desktop card radius mismatch");
   if (
     desktop.bodyBackground !== "rgb(237, 241, 246)"
@@ -936,15 +936,15 @@ try {
   if (desktop.card.boxShadow !== "rgba(30, 40, 60, 0.1) 0px 16px 40px 0px") {
     failures.push(`desktop card shadow mismatch: ${desktop.card.boxShadow}`);
   }
-  // Sticky sidebar contract (2026-08 redesign, ::before extends background across viewport)
+  // Fixed sidebar contract (2026-08 redesign, fills viewport edge-to-edge)
   if (
-    desktop.sidebar.position !== "sticky"
-    || desktop.sidebar.topPos !== "27px"
-    || Math.abs(desktop.sidebar.height - 846) > 1
+    desktop.sidebar.position !== "fixed"
+    || desktop.sidebar.topPos !== "0px"
+    || Math.abs(desktop.sidebar.height - 900) > 1
     || desktop.sidebar.overflowY !== "auto"
     || desktop.sidebar.borderRadius !== "0px"
   ) {
-    failures.push(`desktop sidebar sticky contract mismatch: ${JSON.stringify(desktop.sidebar)}`);
+    failures.push(`desktop sidebar contract mismatch: ${JSON.stringify(desktop.sidebar)}`);
   }
   if (
     Math.abs(desktop.sidebar.width - 76) > 1
@@ -1183,19 +1183,18 @@ try {
       `print pending lifecycle is incomplete: ${JSON.stringify(print)}`,
     );
   }
-  // Sticky sidebar across scroll positions (initial = 29 viewport offset from page-shell padding)
+  // Fixed sidebar across scroll positions (anchored to viewport 0)
   if (
-    sticky.initial.sidebarTop < 29
-    || sticky.initial.sidebarTop > 31
+    Math.abs(sticky.initial.sidebarTop) > 1
     || !sticky.initial.sidebarInViewport
     || !sticky.initial.linkFullyVisible
-    || Math.abs(sticky.mid.sidebarTop - 27) > 1
+    || Math.abs(sticky.mid.sidebarTop) > 1
     || !sticky.mid.sidebarInViewport
     || !sticky.mid.linkFullyVisible
     || !sticky.bottom.sidebarInViewport
     || !sticky.bottom.linkFullyVisible
   ) {
-    failures.push(`sticky sidebar scroll contract is wrong: ${JSON.stringify(sticky)}`);
+    failures.push(`sidebar scroll contract is wrong: ${JSON.stringify(sticky)}`);
   }
   // Mobile layout
   if (mobile.shellPaddingLeft !== "12px") failures.push("mobile outer padding mismatch");
