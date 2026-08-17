@@ -936,19 +936,19 @@ try {
   if (desktop.card.boxShadow !== "rgba(30, 40, 60, 0.1) 0px 16px 40px 0px") {
     failures.push(`desktop card shadow mismatch: ${desktop.card.boxShadow}`);
   }
-  // Sticky sidebar contract (2026-08 redesign)
+  // Sticky sidebar contract (2026-08 redesign, ::before extends background across viewport)
   if (
     desktop.sidebar.position !== "sticky"
     || desktop.sidebar.topPos !== "27px"
     || Math.abs(desktop.sidebar.height - 846) > 1
     || desktop.sidebar.overflowY !== "auto"
-    || desktop.sidebar.borderRadius !== "14px 0px 0px 14px"
+    || desktop.sidebar.borderRadius !== "0px"
   ) {
     failures.push(`desktop sidebar sticky contract mismatch: ${JSON.stringify(desktop.sidebar)}`);
   }
   if (
     Math.abs(desktop.sidebar.width - 76) > 1
-    || desktop.sidebar.paddingTop !== "8px"
+    || desktop.sidebar.paddingTop !== "50px"
     || desktop.sidebar.paddingRight !== "9px"
     || desktop.sidebar.paddingBottom !== "8px"
     || desktop.sidebar.paddingLeft !== "9px"
@@ -1183,7 +1183,7 @@ try {
       `print pending lifecycle is incomplete: ${JSON.stringify(print)}`,
     );
   }
-  // Sticky sidebar across scroll positions
+  // Sticky sidebar across scroll positions (initial = 29 viewport offset from page-shell padding)
   if (
     sticky.initial.sidebarTop < 29
     || sticky.initial.sidebarTop > 31
