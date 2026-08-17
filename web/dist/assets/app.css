@@ -636,6 +636,19 @@ select:focus-visible {
   border-radius: 999px;
 }
 
+.news-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  column-gap: 9px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid #dfe4eb;
+}
+
+.news-row:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
 /* 排序模式：标题 + 板块标签 + 热度同一行（先标题，再板块，热度靠最右） */
 .ranked-mode-row {
   display: flex;
@@ -664,19 +677,6 @@ select:focus-visible {
   display: inline-block;
   margin: 0 0 0 8px;
   vertical-align: middle;
-}
-
-.news-row {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  column-gap: 9px;
-  align-items: start;
-  padding: 12px 0;
-  border-bottom: 1px solid #dfe4eb;
-}
-
-.news-row:hover {
-  background: rgba(255, 255, 255, 0.45);
 }
 
 .news-rank {

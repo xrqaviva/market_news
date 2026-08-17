@@ -156,7 +156,7 @@
       buildRankedList();
       rankedEntries.forEach((entry, index) => {
         entry.row.querySelector(".news-rank").textContent = String(index + 1).padStart(2, "0");
-        entry.row.querySelector(".news-content").prepend(entry.tag);
+        entry.row.querySelector(".news-content h2").after(entry.tag);
         entry.row.classList.add("ranked-mode-row");
         rankedList.appendChild(entry.row);
       });
