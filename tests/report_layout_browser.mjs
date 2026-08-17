@@ -438,6 +438,7 @@ try {
       shell: metric(shell),
       card: metric(card),
       sidebar: metric(sidebar),
+      brand: metric(sidebar.querySelector(".brand")),
       sidebarTopLink: metric(sidebarTopLink),
       sidebarTopHref: sidebarTopLink.getAttribute("href"),
       workspace: metric(document.querySelector(".report-workspace")),
@@ -955,6 +956,10 @@ try {
     || desktop.sidebar.backgroundColor !== "rgb(28, 41, 64)"
   ) {
     failures.push("desktop sidebar padding/background mismatch");
+  }
+  // Brand + date list font sizing
+  if (desktop.brand.fontSize !== "18px" || desktop.brand.fontWeight !== "800") {
+    failures.push(`desktop brand font mismatch: ${JSON.stringify(desktop.brand)}`);
   }
   // 回到最上 pinned at the sidebar bottom
   if (

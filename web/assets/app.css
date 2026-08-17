@@ -89,10 +89,10 @@ select:focus-visible {
 
 
 .brand {
-  margin-bottom: 16px;
+  margin-bottom: 22px;
   padding: 0 4px;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
@@ -109,14 +109,14 @@ select:focus-visible {
   gap: 6px;
   color: #aeb9ca;
   border-radius: 7px;
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.4;
   text-decoration: none;
 }
 
 .report-sidebar .archive-date-link {
   position: relative;
-  padding: 8px 10px;
+  padding: 10px 12px;
 }
 
 .report-sidebar .archive-date-link::after {
