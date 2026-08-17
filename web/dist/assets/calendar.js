@@ -54,6 +54,14 @@
 
   function show() {
     render();
+    var rect = input.getBoundingClientRect();
+    var popHeight = pop.offsetHeight || 280;
+    var top = rect.bottom + 4;
+    if (top + popHeight > window.innerHeight - 8) {
+      top = rect.top - popHeight - 4;
+    }
+    pop.style.top = top + "px";
+    pop.style.left = rect.left + "px";
     pop.hidden = false;
   }
 
@@ -106,6 +114,6 @@
   }
 
   document.addEventListener("click", function (e) {
-    if (!filter.contains(e.target)) hide();
+    if (!filter.contains(e.target) && !pop.contains(e.target)) hide();
   });
 })();
