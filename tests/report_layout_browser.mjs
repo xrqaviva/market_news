@@ -939,8 +939,8 @@ try {
   // Sticky sidebar contract (2026-08 redesign)
   if (
     desktop.sidebar.position !== "sticky"
-    || desktop.sidebar.topPos !== "13px"
-    || Math.abs(desktop.sidebar.height - 868) > 1
+    || desktop.sidebar.topPos !== "27px"
+    || Math.abs(desktop.sidebar.height - 846) > 1
     || desktop.sidebar.overflowY !== "auto"
     || desktop.sidebar.borderRadius !== "14px 0px 0px 14px"
   ) {
@@ -1189,7 +1189,7 @@ try {
     || sticky.initial.sidebarTop > 31
     || !sticky.initial.sidebarInViewport
     || !sticky.initial.linkFullyVisible
-    || Math.abs(sticky.mid.sidebarTop - 13) > 1
+    || Math.abs(sticky.mid.sidebarTop - 27) > 1
     || !sticky.mid.sidebarInViewport
     || !sticky.mid.linkFullyVisible
     || !sticky.bottom.sidebarInViewport
