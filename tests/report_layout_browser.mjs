@@ -962,7 +962,7 @@ try {
   if (desktop.brand.fontSize !== "18px" || desktop.brand.fontWeight !== "800") {
     failures.push(`desktop brand font mismatch: ${JSON.stringify(desktop.brand)}`);
   }
-  if (desktop.dateLinkFontSize !== "18px") {
+  if (desktop.dateLinkFontSize !== "12px") {
     failures.push(`desktop date list font mismatch: ${desktop.dateLinkFontSize}`);
   }
   // 回到最上 pinned at the sidebar bottom
