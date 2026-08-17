@@ -4,7 +4,7 @@
  *   "news" pane; app.js converts each news-detail article into a .news-row
  *   (rank / content / score) at runtime.
  * - non-themed reports render a filter-bar with category buttons instead.
- * - the sidebar is sticky (position: sticky; top: 27px) with its own
+ * - the sidebar is sticky (position: sticky; top: 13px) with its own
  *   overflow-y and a pinned "回到最上" link at the bottom.
  * - anchor jumps use CSS scroll-behavior: smooth, so assertions must wait
  *   for the scroll to settle instead of reading one frame after the click.
@@ -939,8 +939,8 @@ try {
   // Sticky sidebar contract (2026-08 redesign)
   if (
     desktop.sidebar.position !== "sticky"
-    || desktop.sidebar.topPos !== "27px"
-    || Math.abs(desktop.sidebar.height - 846) > 1
+    || desktop.sidebar.topPos !== "13px"
+    || Math.abs(desktop.sidebar.height - 868) > 1
     || desktop.sidebar.overflowY !== "auto"
     || desktop.sidebar.borderRadius !== "14px 0px 0px 14px"
   ) {
@@ -948,9 +948,9 @@ try {
   }
   if (
     Math.abs(desktop.sidebar.width - 76) > 1
-    || desktop.sidebar.paddingTop !== "17px"
+    || desktop.sidebar.paddingTop !== "8px"
     || desktop.sidebar.paddingRight !== "9px"
-    || desktop.sidebar.paddingBottom !== "17px"
+    || desktop.sidebar.paddingBottom !== "8px"
     || desktop.sidebar.paddingLeft !== "9px"
     || desktop.sidebar.backgroundColor !== "rgb(28, 41, 64)"
   ) {
@@ -1185,11 +1185,11 @@ try {
   }
   // Sticky sidebar across scroll positions
   if (
-    sticky.initial.sidebarTop < 27
-    || sticky.initial.sidebarTop > 29
+    sticky.initial.sidebarTop < 29
+    || sticky.initial.sidebarTop > 31
     || !sticky.initial.sidebarInViewport
     || !sticky.initial.linkFullyVisible
-    || Math.abs(sticky.mid.sidebarTop - 27) > 1
+    || Math.abs(sticky.mid.sidebarTop - 13) > 1
     || !sticky.mid.sidebarInViewport
     || !sticky.mid.linkFullyVisible
     || !sticky.bottom.sidebarInViewport
