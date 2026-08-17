@@ -89,6 +89,18 @@ select:focus-visible {
   border-bottom-left-radius: 14px;
 }
 
+/* 深蓝列贯穿视口上下，消除侧边栏上下的浅色/白底条带 */
+.report-sidebar::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: calc((100vw - min(980px, 100vw)) / 2 + 27px);
+  width: 76px;
+  background: var(--nav);
+  pointer-events: none;
+}
+
 .brand {
   margin-bottom: 22px;
   color: #ffffff;
