@@ -439,6 +439,7 @@ try {
       card: metric(card),
       sidebar: metric(sidebar),
       brand: metric(sidebar.querySelector(".brand")),
+      dateLinkFontSize: getComputedStyle(sidebar.querySelector(".archive-date-link")).fontSize,
       sidebarTopLink: metric(sidebarTopLink),
       sidebarTopHref: sidebarTopLink.getAttribute("href"),
       workspace: metric(document.querySelector(".report-workspace")),
@@ -960,6 +961,9 @@ try {
   // Brand + date list font sizing
   if (desktop.brand.fontSize !== "18px" || desktop.brand.fontWeight !== "800") {
     failures.push(`desktop brand font mismatch: ${JSON.stringify(desktop.brand)}`);
+  }
+  if (desktop.dateLinkFontSize !== "18px") {
+    failures.push(`desktop date list font mismatch: ${desktop.dateLinkFontSize}`);
   }
   // 回到最上 pinned at the sidebar bottom
   if (

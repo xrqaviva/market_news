@@ -109,7 +109,7 @@ select:focus-visible {
   gap: 6px;
   color: #aeb9ca;
   border-radius: 7px;
-  font-size: 15px;
+  font-size: 18px;
   line-height: 1.4;
   text-decoration: none;
 }
@@ -238,7 +238,7 @@ select:focus-visible {
 .calendar-filter input {
   width: 100%;
   padding: 4px 14px 4px 16px;
-  font-size: 9px;
+  font-size: 10px;
   color: #dbe4f0;
   background: #263650;
   border: 1px solid #4a5c7e;
