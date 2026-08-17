@@ -95,6 +95,7 @@ def _news_item(
 ) -> str:
     detail_fields = (
         ("发布时段", item.release_session),
+        ("事件日期", item.event_date),
         ("关键信号/预期差", item.signal),
         ("市场反馈", item.market_feedback),
         ("即时市场定价", item.pricing),

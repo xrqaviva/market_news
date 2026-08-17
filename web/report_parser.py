@@ -337,6 +337,7 @@ def _make_top_item(rank: int, title: str, block: str) -> NewsItem:
         variables=_field(block, "后续变量") or _field(block, "后续关键变量"),
         heat_change=_field(block, "热度变化"),
         release_session=_field(block, "发布时段"),
+        event_date=_field(block, "事件日期"),
         category=_category(title, core), sources=sources,
         supplemental_details=supplemental_details,
     )
@@ -449,6 +450,7 @@ def _parse_nested_news_blocks(text: str) -> Tuple[NewsItem, ...]:
             pricing=_pricing(block), boundary=_field(block, "判断边界"),
             variables=_field(block, "后续变量"), heat_change=_field(block, "热度变化"),
             release_session=_field(block, "发布时段"),
+            event_date=_field(block, "事件日期"),
             category=_category(_plain(title), _field(block, "核心信息")), sources=sources,
             theme_ids=_theme_ids(_field(block, "关联题材")),
         )

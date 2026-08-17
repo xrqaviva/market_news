@@ -109,3 +109,9 @@ class OperationsRunbookContractTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_event_date_field_contract_is_explicit(self) -> None:
+        self.assertIn("**事件日期：**", self.text)
+        self.assertIn("YYYY-MM-DD", self.text)
+        self.assertIn("未取得（原因）", self.text)
+        self.assertIn("绝不补造", self.text)

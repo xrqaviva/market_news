@@ -40,6 +40,7 @@ class NewsItem:
     variables: str = ""
     heat_change: str = ""
     release_session: str = ""
+    event_date: str = ""
     category: str = "其他"
     sources: Tuple[SourceLink, ...] = field(default_factory=tuple)
     event_id: str = ""

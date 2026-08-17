@@ -602,3 +602,19 @@ class WebReportParserTest(unittest.TestCase):
             self.assertEqual("事实说明。", item.core)
             self.assertEqual("财联社周末要闻汇总：示例主题", item.sources[0].label)
             self.assertEqual("原始来源", item.sources[0].channel)
+
+
+    def test_themed_report_parses_event_date_field(self):
+        text = self._themed_report()
+        # evt-1 出现在两个题材，两处副本必须带相同事件日期（canonical 一致性）
+        text = text.replace(
+            "**带时间市场反馈：** 共享反馈。",
+            "**事件日期：** 2026-08-20（依据：公告披露的申购日）\n\n"
+            "**带时间市场反馈：** 共享反馈。",
+        )
+        document = self._parse_themed_report(text)
+        shared = document.themes[0].items[0]
+        self.assertEqual("2026-08-20（依据：公告披露的申购日）", shared.event_date)
+        without = [item for item in document.items if item.event_id in ("evt-2", "evt-3", "evt-4")]
+        for item in without:
+            self.assertEqual("", item.event_date)

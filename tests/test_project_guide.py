@@ -280,3 +280,9 @@ class ProjectGuideContractTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_event_date_field_contract_is_explicit(self) -> None:
+        text = GUIDE.read_text(encoding="utf-8")
+        self.assertIn("**事件日期：**", text)
+        self.assertIn("未取得（原因）", text)
+        self.assertIn("机器解析", text)
