@@ -63,21 +63,35 @@ def main():
         themes = use or themes
 
     for name, keys in themes.items():
+        seen = set()
         hits = []
         for r, t in sina:
             if any(k in t for k in keys):
                 if args.with_link_only and not r.get("docurl"):
                     continue
+                key = (r.get("create_time", ""), t)
+                if key in seen:
+                    continue
+                seen.add(key)
                 hits.append((r.get("create_time", ""), "sina", t, bool(r.get("docurl"))))
         for r, t in em:
             if any(k in t for k in keys):
                 if args.with_link_only and not r.get("url"):
                     continue
+                key = (r.get("time", ""), t)
+                if key in seen:
+                    continue
+                seen.add(key)
                 hits.append((r.get("time", ""), "em", t, bool(r.get("url"))))
         hits.sort(key=lambda h: h[0])
         print("\n===== {} | {} 条 (sina+em)".format(name, len(hits)))
         for h in hits[:args.max]:
             tag = "LINK" if h[3] else "    "
+            # 彭博/路透转引标记（2026-08-18：原站不可抓，转引通道在报告里显式标注）
+            if "彭博" in h[2]:
+                tag += " [BBG]"
+            elif "路透" in h[2]:
+                tag += " [RT]"
             print("  {} [{}][{}] {}".format(h[0], h[1], tag, h[2][:100]))
 
 

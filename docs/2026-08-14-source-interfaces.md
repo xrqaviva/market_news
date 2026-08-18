@@ -63,13 +63,31 @@
 
 登录态仅在本次 ZCode 进程内有效；每日启动按方法文档第9节核验。
 
+**X 大V扫描（2026-08-18 用户要求新增）：** 每日 X 采集除用户 Home timeline 外，追加读取以下大V主页最新帖（逐一 `x.com/<handle>` 打开读 DOM，只读不碰凭据）。清单以**财经/市场/科技**方向为主，均为公开知名账号：
+
+| handle | 定位 | 采集价值 |
+|---|---|---|
+| `ReutersBiz` | 路透财经官方 | 全球市场突发（原站被 401 挡，官方 X 号是替代通道） |
+| `markets` | 彭博市场官方 | 美股/全球市场快讯（原站 CAPTCHA，官方 X 号是替代通道） |
+| `charliebitar` | Charlie Bilello，宏观/资产配置数据 | 美股/国债/大类资产观点 |
+| `LizAnnSonders` | Schwab 首席投资策略师 | 美股策略与情绪 |
+| `fundstrat` | Tom Lee 策略团队 | 美股目标价/观点 |
+| `CathieDWood` | ARK Invest CEO | AI/创新科技主线 |
+| `KobeissiLetter` | 市场评论高流量号 | 市场情绪快照 |
+
+每日采集时按此顺序开 3-4 个（避免 webview 过载，batch 间留 5-10s），结果落 `evidence/x-<handle>-<date>.txt`；**Home timeline 仍为第一优先级**。清单可随用户关注方向增删，改 handle 前先验证存在（避免 404）。
+
 ## 5. 不可用或受限（有替代）
 
 | 源 | 原因 | 替代 |
 |---|---|---|
 | Reuters / AP / Investing | 浏览器导航超时 | 财联社环球市场稿/美股收盘稿 |
+| **Bloomberg 原站** | CAPTCHA/付费墙（`bloomberg.com/markets` 返回验证码页；jina reader 代理同样被 CAPTCHA 拦截） | **新浪7×24转引**（文本标注"彭博"且带 docurl 直链，见第 1 节） |
+| **Reuters 原站** | HTTP 401（`reuters.com/markets` 直连与 WebFetch 均被拒；jina reader 代理 403） | **新浪7×24转引**（文本标注"据路透社"且带 docurl 直链） |
 | The Information / Wind / Choice / Datayes | 付费墙/付费授权 | 公开转载/公司IR |
 | 开盘啦实时情绪字段 | App内 | 无 |
+
+> **彭博/路透转引来源规则（2026-08-18 实测登记）：** 彭博社与路透社原站均无法直接抓取（Bloomberg CAPTCHA 墙、Reuters 401），但**新浪 7×24 回放 API 稳定转引两家内容**（08-17 12:00—08-18 08:20 窗口实测：彭博 7 条、路透 4 条，全部带 docurl 直链）。报告引用时来源标注为「新浪7×24快讯（转引彭博/路透）」，docurl 指向新浪详情页作为永久链接。若需更及时的原生稿，可考虑 Bloomberg 官方 API（需付费授权）或 Reuters Connect（需企业授权），当前不接入。
 
 ## 6. 使用注意（实操沉淀）
 
