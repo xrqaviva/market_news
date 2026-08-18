@@ -1,0 +1,95 @@
+{
+  "$schema_note": "X 大V每日采集清单（2026-08-18 固化）。WebFetch 直读 x.com/<handle>（无需登录/IAB）。采集时按 priority 顺序执行；每次执行后结果落 evidence/x-<handle>-<date>.txt。清单变更须实测验证存在后再改。",
+  "channel": "WebFetch https://x.com/<handle>（fast-model 提取）",
+  "priority": [
+    {
+      "handle": "aleabitoreddit",
+      "name": "Serenity",
+      "field": "半导体/存储/被动元件",
+      "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
+      "note": "用户点名号；MLCC/存储需求/光通信一手信号。落盘后转存到次日素材（data/next-day-leads/）。"
+    },
+    {
+      "handle": "KobeissiLetter",
+      "name": "The Kobeissi Letter",
+      "field": "市场评论/突发",
+      "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
+      "note": "宏观/地缘突发高价值。",
+      "name_alias": "kobeissi"
+    },
+    {
+      "handle": "ReutersBiz",
+      "name": "路透财经官方",
+      "field": "路透突发（原站401，X为替代）",
+      "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
+      "note": "全球市场/公司独家。"
+    },
+    {
+      "handle": "ZeroHedge",
+      "name": "Zero Hedge",
+      "field": "新闻聚合/反共识",
+      "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
+      "note": "突发/债市/美联储。"
+    },
+    {
+      "handle": "WSJmarkets",
+      "name": "WSJ Markets",
+      "field": "WSJ市场官方",
+      "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
+      "note": "宏观/市场快讯。"
+    },
+    {
+      "handle": "business",
+      "name": "Bloomberg",
+      "field": "彭博官方",
+      "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
+      "note": "全球商业/公司（原站CAPTCHA，X为替代）。"
+    },
+    {
+      "handle": "SquawkCNBC",
+      "name": "Squawk Box CNBC",
+      "field": "CNBC开市晨间",
+      "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
+      "note": "隔夜/盘前公司焦点。"
+    },
+    {
+      "handle": "fundstrat",
+      "name": "Fundstrat",
+      "field": "Tom Lee策略",
+      "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
+      "note": "美股观点/目标价。"
+    }
+  ],
+  "deprecated": [
+    {
+      "handle": "charliebitar",
+      "reason": "0 posts，无效"
+    },
+    {
+      "handle": "vtcheung",
+      "reason": "404 不存在"
+    },
+    {
+      "handle": "ClaudiaSahm",
+      "reason": "0 posts（真实活跃号另有handle，勿猜）"
+    },
+    {
+      "handle": "RampCapitalLLC",
+      "reason": "内容偏闲聊，财经数据流少，暂不入列"
+    },
+    {
+      "handle": "markets",
+      "reason": "只读到2025旧帖，低频低价值"
+    }
+  ],
+  "pending_verification": [
+    {
+      "handle": "LizAnnSonders",
+      "note": "Schwab首席策略师，尚未实测"
+    },
+    {
+      "handle": "CathieDWood",
+      "note": "ARK CEO，尚未实测"
+    }
+  ]
+}

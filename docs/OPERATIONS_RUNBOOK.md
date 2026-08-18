@@ -438,7 +438,43 @@ git -C ../market-news-site rev-parse '@{upstream}'
 
 不要关闭安全检查。核对目标目录名、远端、分支、未提交/未跟踪文件和 `web/dist` 安全扫描；在 dry-run 通过前不能 apply。
 
-## 9. 新会话启动提示词
+## 8.5 每日盘前采集固化流程（2026-08-18 用户裁定：确保之后都会采集、不遗漏）
+
+**这是每次盘前报告必须完整执行的采集顺序。各环节是否完成由 `scripts/daily_scrum.py` 核查，缺一不可；[MISS] 项必须补齐才能发布报告。**
+
+```
+步骤 0  登录态/浏览器核验（如使用浏览器源）
+步骤 1  API 源（并发，约10s）
+        python3 scripts/fetch_api_sources.py --start "<YYYY-MM-DD 00:00>" --out-dir evidence
+步骤 2  浏览器源（IAB 串行）：韭研公社 / 东财人气榜 / 微博热搜 / 淘股吧 / 财联社电报 / 雪球
+        → evidence/<key>-<MMDD>.txt  （key 见 daily_scrum.py 第2节清单）
+步骤 3  X 大V扫描（WebFetch 通道，不依赖 IAB，priority 顺序执行）
+        for handle in config/x-influencers.json#priority:
+          WebFetch "https://x.com/<handle>" → 提取最近5条帖文
+          python3 scripts/save_x_scan.py --handle <handle> --date <date> --text <结果>
+        + X Home timeline（如有浏览器会话）→ evidence/x-timeline-<MMDD>.txt
+步骤 4  次日素材衔接：读 data/next-day-leads/<今日>.md（昨日生成）并入候选账本
+步骤 5  完整性核查（必须全绿才继续）
+        python3 scripts/daily_scrum.py --date <YYYY-MM-DD>
+步骤 6  分析：python3 scripts/scan_evidence.py --sina ... --em ... --with-link-only
+                        （候选账本 + [BBG]/[RT]/LINK 标记）
+步骤 7  填数据层 data/reports/<date>.json → python3 scripts/gen_report.py --data ... --out ...
+步骤 8  构建/测试/部署（现有流程）
+```
+
+**关键脚本（已固化）**：
+- `scripts/fetch_api_sources.py`：并发抓新浪7×24+东财7×24（此前手写串行提速 ~7x）
+- `scripts/scan_evidence.py`：主题词带扫描，输出候选账本，标 [LINK]/[BBG]/[RT]
+- `scripts/daily_scrum.py`：每日采集完整性核查（API/浏览器/X大V/timeline/报告），[MISS] 即退出非零
+- `scripts/save_x_scan.py`：把 WebFetch 返回落盘为 evidence/x-<handle>-<date>.txt（统一命名）
+- `scripts/gen_report.py`：读 JSON 数据层生成符合解析器契约的报告（沿用 8.2）
+- `config/x-influencers.json`：X 大V清单（priority/deprecated/pending_verification）
+
+**不遗漏保证**：`daily_scrum.py` 在每天采集后强制执行（步骤5），X 大V文件名统一 `x-<handle>-<MMDD>.txt`（save_x_scan 保证），漏任何源都会 [MISS] 阻止进入生成。次日素材（next-day-leads）在步骤4读取，从数据上杜绝"上一天发现、次日忘用"。
+
+**X 大V通道说明**：X 公开主页由 WebFetch 工具提取（curl 无 SSR 数据，无法脚本化直抓）；主代理对每个 handle 依次调用 WebFetch 后用 save_x_scan 落盘。若某个 handle 超时（WebFetch 不稳定），记入当日缺口并在次日重试，**不跳过不省略**。
+
+
 
 ### 9.1 Codex CLI
 
