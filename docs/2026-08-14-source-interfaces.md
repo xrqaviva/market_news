@@ -121,6 +121,33 @@
 
 **用户原话**："这些问题全部都持久化下来，把如何避坑也记录下来，确保下一次任务没问题"。本节为下次接到类似任务时的**强制自检清单**，每条都对应一次真实失败模式。
 
+### 8.2 报告生成提速（2026-08-18 用户裁定：不能折损数据质量")
+
+**用户原话**："你现在跑一次太慢了，需要提升效率……可以考虑技术手段，例如优化代码、并行跑等，注意不是要折损数据质量（例如少采集等）。"
+
+**耗时实测（08-18 全流程）：**
+
+| 阶段 | 原耗时 | 优化后 | 手段 |
+|---|---|---|---|
+| 新浪 7×24 翻页 | ~40-60s（串行+间隔） | **~5s（两天窗口 2315 条）** | `scripts/fetch_api_sources.py` 8 线程并发翻页，不损条数 |
+| 东财 7×24 | ~30s | **~5s（700 条）** | 复用 `fetch_em7x24.py`（本身已较快） |
+| 主题候选账本分析 | 人工多次手工扫描 | **0.13s** | `scripts/scan_evidence.py` 词带扫描，输出时间+来源+LINK 标记 |
+| 报告生成（数据编制） | 大量时间（引号 bug 反复） | **minutes** | `data/reports/<日期>.json` JSON 数据层 + `scripts/gen_report.py` 自动匹配来源/套契约 |
+| 浏览器 7 源采集 | ~60-75s | 串行下限（无法并行） | IAB webview 单例 + Browser Use 为 main-agent-only，**subagent 不能开浏览器** |
+
+**新流程（下次跑）：**
+1. `python3 scripts/fetch_api_sources.py --start "YYYY-MM-DD 00:00" --out-dir evidence` → 并发抓新浪+东财
+2. 主代理浏览器串行采 7 源（韭研/人气榜/微博/X/淘股吧/财联社/雪球），evidence 落盘
+3. `python3 scripts/scan_evidence.py --sina "...窗口..." --em "...窗口..." --with-link-only` → 候选账本（LINK 列即带 docurl 的来源，直接规避"needs source link"）
+4. 填 `data/reports/<日期>.json`（NEW/OLD/THEMES + pending/coverage，字段天然无引号地狱）
+5. `python3 scripts/gen_report.py --data data/reports/<日期>.json --sina ... --em ... --out reports/<日期>-0800-news-ranking-preview.md` → 自动生成 + 校验
+6. 构建 dist / 测试 / 部署（现有流程）
+
+**浏览器源为何不能 subagent 并行**：Browser Use 技能声明 main-agent-only，subagent 无法加载；且 IAB webview 单例（批量 tabs.new 会触发 "guest not attached"）。7 个浏览器源只能由主代理串行，每个约 12-18s 是环境下限。**这不属数据质量折损**——只是无法压缩传输/渲染等待。
+
+**JSON 数据层要点**：`data/reports/<日期>.json` 用 `evt_prefix`（如 "evt-20260818"）+ THEMES 成员编号自动映射完整 id；`other_news`/`pending`/`coverage` 可选字段控制报告尾段；生成器在输出前用 `("sina"|"em", time, url, text)` 结构自动建来源表，缺 LINK 会 `sys.exit(2)` 提前暴露。**不再需要手写 41 条 Python 元组。**
+
+
 #### A. 数据/接口层
 
 1. **任何"未来日期标记"问题，必须先复用 `_normalize_stamp` 模式，不要重新发明规则**。盘前/周末/节假日所有源都可能在快照日期上"撒谎"——价格是上一交易日的，日期标当天。**自检**：列出该品种的全部源，逐个调用看 `market_date`；凡超出 expected_date 且 ≤3 天的，配合 as_of 在非交易时段 → 一律归一化。
