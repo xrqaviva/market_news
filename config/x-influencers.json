@@ -7,7 +7,9 @@
       "name": "Serenity",
       "field": "半导体/存储/被动元件",
       "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
-      "note": "用户点名号；MLCC/存储需求/光通信一手信号。落盘后转存到次日素材（data/next-day-leads/）。"
+      "note": "用户点名号；MLCC/存储需求/光通信一手信号。落盘后转存到次日素材（data/next-day-leads/）。",
+      "credibility": "independent_analyst",
+      "credibility_note": "Serenity，半导体/存储/被动元件一线产业链分析师（用户点名）；MLCC/存储需求一手信号价值高，但为个人号，事实需二源确认"
     },
     {
       "handle": "KobeissiLetter",
@@ -15,49 +17,63 @@
       "field": "市场评论/突发",
       "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
       "note": "宏观/地缘突发高价值。",
-      "name_alias": "kobeissi"
+      "name_alias": "kobeissi",
+      "credibility": "commentary",
+      "credibility_note": "百万级粉丝市场评论，常发BREAKING快讯；作情绪/突发事件线索用，事实须二源核实，单源不入主榜"
     },
     {
       "handle": "ReutersBiz",
       "name": "路透财经官方",
       "field": "路透突发（原站401，X为替代）",
       "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
-      "note": "全球市场/公司独家。"
+      "note": "全球市场/公司独家。",
+      "credibility": "official",
+      "credibility_note": "路透官方；原站401，X号为转发；可信度高，直接引用"
     },
     {
       "handle": "ZeroHedge",
       "name": "Zero Hedge",
       "field": "新闻聚合/反共识",
       "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
-      "note": "突发/债市/美联储。"
+      "note": "突发/债市/美联储。",
+      "credibility": "commentary",
+      "credibility_note": "新闻聚合/反共识，标题激进；快讯/反共识观点参考，事实必须二源核实，单源不入主榜"
     },
     {
       "handle": "WSJmarkets",
       "name": "WSJ Markets",
       "field": "WSJ市场官方",
       "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
-      "note": "宏观/市场快讯。"
+      "note": "宏观/市场快讯。",
+      "credibility": "official",
+      "credibility_note": "WSJ市场官方；可信度高，直接引用"
     },
     {
       "handle": "business",
       "name": "Bloomberg",
       "field": "彭博官方",
       "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
-      "note": "全球商业/公司（原站CAPTCHA，X为替代）。"
+      "note": "全球商业/公司（原站CAPTCHA，X为替代）。",
+      "credibility": "official",
+      "credibility_note": "彭博官方；原站CAPTCHA，X号为转发；可信度高，直接引用"
     },
     {
       "handle": "SquawkCNBC",
       "name": "Squawk Box CNBC",
       "field": "CNBC开市晨间",
       "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
-      "note": "隔夜/盘前公司焦点。"
+      "note": "隔夜/盘前公司焦点。",
+      "credibility": "official",
+      "credibility_note": "CNBC开市晨间官方；视频访谈为主；可信度高"
     },
     {
       "handle": "fundstrat",
       "name": "Fundstrat",
       "field": "Tom Lee策略",
       "prompt": "列出此账号最近 5 条帖文标题/摘要及其链接。若账号不存在或无法读取请明确说明。",
-      "note": "美股观点/目标价。"
+      "note": "美股观点/目标价。",
+      "credibility": "institutional",
+      "credibility_note": "Tom Lee策略团队；市场观点/目标价；可信度中高，注明为观点"
     }
   ],
   "deprecated": [
@@ -91,5 +107,27 @@
       "handle": "CathieDWood",
       "note": "ARK CEO，尚未实测"
     }
-  ]
+  ],
+  "credibility_scale": {
+    "official": {
+      "label": "官方媒体",
+      "rank": 5,
+      "rule": "媒体官方号，内容=该媒体已审核报道，可信度高；引用时为直接来源"
+    },
+    "institutional": {
+      "label": "机构观点",
+      "rank": 4,
+      "rule": "持牌机构/研究员，观点/预测类；可信度中高，注明为观点"
+    },
+    "independent_analyst": {
+      "label": "独立分析师",
+      "rank": 3,
+      "rule": "个人一线产业链分析师，产业脉络信号价值高但需二源/官方确认"
+    },
+    "commentary": {
+      "label": "评论/聚合",
+      "rank": 2,
+      "rule": "高流量评论或新闻聚合，快讯/情绪参考；事实必须二源核实，单源不入主榜"
+    }
+  }
 }
