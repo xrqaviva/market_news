@@ -63,19 +63,20 @@
 
 登录态仅在本次 ZCode 进程内有效；每日启动按方法文档第9节核验。
 
-**X 大V扫描（2026-08-18 用户要求新增）：** 每日 X 采集除用户 Home timeline 外，追加读取以下大V主页最新帖（逐一 `x.com/<handle>` 打开读 DOM，只读不碰凭据）。清单以**财经/市场/科技**方向为主，均为公开知名账号：
+**X 大V扫描（2026-08-18 用户要求新增，含当日实测）：** 每日 X 采集除用户 Home timeline 外，追加读取以下大V主页最新帖。**采集通道用 WebFetch 直读 `x.com/<handle>`（2026-08-18 实测有效，未登录可读公开帖；不依赖 IAB webview，规避其故障状态）**。清单以**财经/市场/科技**方向为主，均为公开知名账号：
 
-| handle | 定位 | 采集价值 |
-|---|---|---|
-| `ReutersBiz` | 路透财经官方 | 全球市场突发（原站被 401 挡，官方 X 号是替代通道） |
-| `markets` | 彭博市场官方 | 美股/全球市场快讯（原站 CAPTCHA，官方 X 号是替代通道） |
-| `charliebitar` | Charlie Bilello，宏观/资产配置数据 | 美股/国债/大类资产观点 |
-| `LizAnnSonders` | Schwab 首席投资策略师 | 美股策略与情绪 |
-| `fundstrat` | Tom Lee 策略团队 | 美股目标价/观点 |
-| `CathieDWood` | ARK Invest CEO | AI/创新科技主线 |
-| `KobeissiLetter` | 市场评论高流量号 | 市场情绪快照 |
+| handle | 定位 | 采集价值 | 2026-08-18 实测 |
+|---|---|---|---|
+| `aleabitoreddit`（Serenity） | 半导体/存储/被动元件一线分析师 | MLCC 缺货、存储需求失衡、光通信（用户点名的号） | ✅ 5 条今日帖（MLCC 交期40周、宇树上市416.6亿美元、Phison 2027存储荒、Strait of America） |
+| `KobeissiLetter` | 市场评论高流量号 | 市场情绪快照/突发 | ✅ 5 条今日帖（特朗普称与伊朗无谈判、霍尔木兹"新美国领土"油价→85、美债利息1.4万亿、杠杆ETF 4200亿） |
+| `ReutersBiz` | 路透财经官方 | 全球市场突发（原站 401，X 号替代） | ✅ 5 条今日帖（宇树基于美军资助设计、全球债券抛售、中国信贷低迷） |
+| `fundstrat` | Tom Lee 策略团队 | 美股目标价/观点 | ✅ 5 条（看多8月/ETH突破/科技去杠杆） |
+| `markets` | 彭博市场官方 | 美股/全球市场快讯（原站 CAPTCHA，X 号替代） | ⚠️ 只读到 2025 旧帖（官方号低频，价值低） |
+| `LizAnnSonders` | Schwab 首席投资策略师 | 美股策略与情绪 | 未实测 |
+| `CathieDWood` | ARK Invest CEO | AI/创新科技主线 | 未实测 |
+| ~~`charliebitar`~~ | ~~Charlie Bilello~~ | ~~宏观数据~~ | ❌ handle 无效（WebFetch 返回 0 posts，弃用，勿编造） |
 
-每日采集时按此顺序开 3-4 个（避免 webview 过载，batch 间留 5-10s），结果落 `evidence/x-<handle>-<date>.txt`；**Home timeline 仍为第一优先级**。清单可随用户关注方向增删，改 handle 前先验证存在（避免 404）。
+> **实测结论**：WebFetch 直读 X 公开主页是稳定通道（与 IAB 是否可用无关、无需登录态），每日轮询 3-4 个即可覆盖核心大V；Home timeline 仍为第一优先级。**若有用户点名的账号（如 Serenity）应优先入列。** 改名/失效账号先 WebFetch 验证存在再入列；当日结果落 `evidence/x-<handle>-<date>.txt`。
 
 ## 5. 不可用或受限（有替代）
 
