@@ -95,6 +95,57 @@ def card(rank, evt, title, score, breakdown, core, keys, rows, signal, feedback,
     ).format(rank, evt, title, tag, score, score, breakdown, core, rows, signal, feedback, boundary, heat, session, theme) if rows else None
 
 
+def _contract_errors(data):
+    """生成前一次列出全部契约错误（避免生成后解析器逐条失败→改→重生成）。"""
+    errs = []
+    new, old = data.get("NEW", []), data.get("OLD", [])
+    themes = data.get("THEMES", [])
+    cards = new + old
+    evt_pfx = data.get("evt_prefix", "evt")
+    def evt_id(n):
+        return "{}-{:03d}".format(evt_pfx, int(n)) if str(n).isdigit() else str(n)
+
+    if not new:
+        errs.append("NEW 为空")
+    # evt id 唯一
+    seen = {}
+    for c in cards:
+        seen.setdefault(c[0], 0); seen[c[0]] += 1
+    for e, cnt in seen.items():
+        if cnt > 1:
+            errs.append("重复 evt id: {}".format(e))
+    # 分数非递增（跨层拼接顺序：NEW后OLD）
+    scores = [c[1] for c in cards]
+    for i in range(len(scores) - 1):
+        if scores[i] < scores[i + 1]:
+            errs.append("分数随排名递增(rank{}:{} < rank{}:{})：需重排或降分".format(i + 1, scores[i], i + 2, scores[i + 1]))
+    # 主题：≥2 成员、evt 存在、无跨主题重复
+    meme = {}
+    tid_count = {}
+    for tid, _n, _c, nums in themes:
+        full = [evt_id(n) for n in nums]
+        tid_count[tid] = full
+        if len(full) < 2:
+            errs.append("主题 {} 只有 {} 条（需≥2）".format(tid, len(full)))
+        for e in full:
+            if e not in seen:
+                errs.append("主题 {} 引用不存在的 {}(可并入相邻主题或补条目)".format(tid, e))
+            meme.setdefault(e, []).append(tid)
+    for e, tlist in meme.items():
+        if len(tlist) > 1:
+            errs.append("同一 evt {} 被多个主题引用 {}：需保持每主题成员互斥".format(e, tlist))
+    # theme_ids 一致性：每主题成员必须在 NEWS 记录[11]标注对应 theme
+    for tid, _n, _c, nums in themes:
+        for n in nums:
+            e = evt_id(n)
+            rec = next((c for c in cards if c[0] == e), None)
+            if rec is None:
+                continue
+            if len(rec) < 12 or rec[11] != tid:
+                errs.append("evt {} 的关联题材(正文 last)为 {}，但主题 {} 声明它；应改为 {}".format(e, rec[11] if len(rec) >= 12 else "缺", tid, tid))
+    return errs
+
+
 def build(data, sina, em):
     new, old = data["NEW"], data["OLD"]
     themes = data["THEMES"]
@@ -109,6 +160,12 @@ def build(data, sina, em):
     for tid, _n, _c, nums in themes:
         for n in nums:
             theme_of[evt_id(n)] = tid
+    preerr = _contract_errors(data)
+    if preerr:
+        print("CONTRACT PRE-CHECK FAILED ({} 项):".format(len(preerr)), file=sys.stderr)
+        for e in preerr:
+            print("  -", e, file=sys.stderr)
+        sys.exit(3)
 
     lines = []
     lines.append("# {} A股盘前新闻热榜\n".format(data.get("date", "")))
