@@ -459,7 +459,11 @@ git -C ../market-news-site rev-parse '@{upstream}'
 步骤 6  分析：python3 scripts/scan_evidence.py --sina ... --em ... --with-link-only
                         （候选账本 + [BBG]/[RT]/LINK 标记）
 步骤 7  填数据层 data/reports/<date>.json → python3 scripts/gen_report.py --data ... --out ...
-步骤 8  构建/测试/部署（现有流程）
+步骤 8  同步测试计数（跑一次即可，手改会漏）：
+        python3 scripts/sync_test_suite.py
+        （自动更新 test_web_parser 字段计数、test_web_build 的 report_count/latest、
+          test_report_layout_browser.mjs 的报告映射与 buildInputs）
+步骤 9  构建/测试/部署（现有流程）
 ```
 
 **关键脚本（已固化）**：
@@ -467,7 +471,8 @@ git -C ../market-news-site rev-parse '@{upstream}'
 - `scripts/scan_evidence.py`：主题词带扫描，输出候选账本，标 [LINK]/[BBG]/[RT]
 - `scripts/daily_scrum.py`：每日采集完整性核查（API/浏览器/X大V/timeline/报告），[MISS] 即退出非零
 - `scripts/save_x_scan.py`：把 WebFetch 返回落盘为 evidence/x-<handle>-<date>.txt（统一命名）
-- `scripts/gen_report.py`：读 JSON 数据层生成符合解析器契约的报告（沿用 8.2）
+- `scripts/gen_report.py`：读 JSON 数据层生成符合解析器契约的报告（沿用 8.2）；已内置契约预检（生成前一次列出分数非递增/主题<2/theme_ids不一致/evt重复等全部问题，避免"生成→失败→改→重生成"循环）
+- `scripts/sync_test_suite.py`：新增报告后一键同步三处测试计数断言（test_web_parser 字段计数、test_web_build report_count/latest、layout 报告映射），替代手改十几个数字
 - `config/x-influencers.json`：X 大V清单（priority/deprecated/pending_verification）
 
 **不遗漏保证**：`daily_scrum.py` 在每天采集后强制执行（步骤5），X 大V文件名统一 `x-<handle>-<MMDD>.txt`（save_x_scan 保证），漏任何源都会 [MISS] 阻止进入生成。次日素材（next-day-leads）在步骤4读取，从数据上杜绝"上一天发现、次日忘用"。
