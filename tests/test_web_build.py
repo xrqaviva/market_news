@@ -566,9 +566,9 @@ if (scoreCell.innerHTML.includes('<strong>')) {
             result = build_site(ROOT, Path(tmp) / "dist")
             output = result.output_dir
             manifest = json.loads((output / "reports.json").read_text(encoding="utf-8"))
-            self.assertEqual(12, result.report_count)
-            self.assertEqual(12, len(manifest["reports"]))
-            self.assertEqual("reports/2026-08-18-0800.html", manifest["latest"])
+            self.assertEqual(13, result.report_count)
+            self.assertEqual(13, len(manifest["reports"]))
+            self.assertEqual("reports/2026-08-19-0800.html", manifest["latest"])
             self.assertTrue((output / manifest["latest"]).exists())
             self.assertIn(manifest["latest"], (output / "index.html").read_text(encoding="utf-8"))
 
@@ -690,7 +690,7 @@ if (scoreCell.innerHTML.includes('<strong>')) {
         self.assertNotIn("分 ·", pending_html)
 
         manifest = json.loads((ROOT / "web/dist/reports.json").read_text(encoding="utf-8"))
-        self.assertEqual("reports/2026-08-18-0800.html", manifest["latest"])
+        self.assertEqual("reports/2026-08-19-0800.html", manifest["latest"])
         self.assertIn('href="2026-08-11-0800.html"', page)
         self.assertIn(manifest["latest"], (ROOT / "web/dist/index.html").read_text(encoding="utf-8"))
 
