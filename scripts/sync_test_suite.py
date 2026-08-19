@@ -58,10 +58,10 @@ def sync_parser(path, n, totals):
         "heat_change": "heat_change", "release_session": "release_session",
     }
     for key, field in bool_map.items():
-        m = re.search(
-            r"self\.assertEqual\((\d+), sum\(bool\(item\.{} \) for item in items\)\)".format(field), s2)
+        pat = "sum(bool(item.{}) for item in items)".format(field)
+        m = re.search(r"self\.assertEqual\((\d+), " + re.escape(pat) + r"\)", s2)
         if m:
-            s2 = s2.replace(m.group(0), "self.assertEqual({}, sum(bool(item.{} ) for item in items))".format(totals[key], field), 1)
+            s2 = s2.replace(m.group(0), "self.assertEqual({}, {})".format(totals[key], pat), 1)
     # catalog: 报告数 len(found)
     m = re.search(r"self\.assertEqual\((\d+), len\(found\)\)", s2)
     if m:
