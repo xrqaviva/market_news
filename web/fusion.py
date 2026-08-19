@@ -171,7 +171,10 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
         if "push2his.eastmoney.com" in raw_url or "push2.eastmoney.com" in raw_url:
             return "https://quote.eastmoney.com/"
         if "stock2.finance.sina.com.cn" in raw_url or "hq.sinajs.cn" in raw_url:
-            return "https://finance.sina.com.cn/7x24/"
+            # 数据接口（新浪行情/期货/全球）不映射到 7x24 新闻页；已由 daily_info
+            # 侧的 display_url 指向对应行情页，这里让未配 display 的保留原始数据页，
+            # 而不是误跳新闻流。
+            return raw_url
         if "cdn.cboe.com" in raw_url:
             return "https://www.cboe.com/us/indices/dashboard/spx/"
         if "data-api.ecb.europa.eu" in raw_url:
