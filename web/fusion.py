@@ -164,6 +164,9 @@ def _transform_brief_body(body: str) -> tuple[str, list[str]]:
                 if symbol.startswith("gz"):
                     # gzXXX redirects to the wrong page on gu.qq.com; us-prefix works
                     symbol = "us" + symbol[2:]
+                if symbol.startswith("jp"):
+                    # 日经/日本股：行情 API 用 jp 前缀，页面 URL 用 gp 前缀
+                    symbol = "gp" + symbol[2:]
                 return "https://gu.qq.com/{}".format(symbol)
         if "push2his.eastmoney.com" in raw_url or "push2.eastmoney.com" in raw_url:
             return "https://quote.eastmoney.com/"
