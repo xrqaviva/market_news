@@ -527,8 +527,8 @@ def _validate_themed_document(
     for theme in themes:
         if len(theme.event_ids) != len(set(theme.event_ids)):
             raise ValueError("theme has duplicate event_id")
-        if len(theme.items) < 2:
-            raise ValueError("theme needs at least two ranked items")
+        if len(theme.items) < 1:
+            raise ValueError("theme needs at least one ranked item")
         if sum(item.score for item in theme.items) != theme.total_score:
             raise ValueError("theme declared total differs from summed member scores")
         for item in theme.items:

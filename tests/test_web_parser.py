@@ -137,11 +137,35 @@ class WebReportParserTest(unittest.TestCase):
         document = self._parse_themed_report(text)
         self.assertEqual(["theme-beta", "theme-alpha"], [theme.theme_id for theme in document.themes])
 
-    def test_themed_report_rejects_single_item_theme(self):
-        text = self._themed_report().replace("关联新闻2条", "关联新闻1条", 1)
-        text = text.replace("#### 新闻：2｜evt-2｜甲题材新闻｜80/100", "#### 已删除：2｜evt-2｜甲题材新闻｜80/100")
-        with self.assertRaisesRegex(ValueError, "at least two"):
-            self._parse_themed_report(text)
+    def test_themed_report_allows_single_item_theme(self):
+        # 2026-08-19 用户裁定：允许单条主题（商业航天/地缘/AI算力等细分板块常各1条，
+        # 硬性≥2会逼迫错误跨概念合并）。契约放宽为每主题至少1条。
+        text = (
+            "# 单条题材测试\n\n"
+            "> **新闻窗口：** 2026-08-11 00:00—08:30（北京时间）\n"
+            "> **实际截点：** 2026-08-11 08:30。\n\n"
+            "## 单条新闻热榜索引\n\n"
+            "| 原排名 | 事件ID | 新闻标题 | 热点分 | 关联题材 | 跳转锚点 |\n"
+            "|---:|---|---|---:|---|---|\n"
+            "| 1 | evt-S | 单条题材新闻 | 80 | theme-solo | #evt-S |\n\n"
+            "## 题材主线\n\n"
+            "### 主线1：单条题材｜80分｜关联新闻1条\n\n"
+            "**题材ID：** theme-solo\n\n"
+            "**核心催化：** 单条题材的共同催化。\n\n"
+            "**题材风险边界：** 单条风险。\n\n"
+            "#### 新闻：1｜evt-S｜单条题材新闻｜80/100\n\n"
+            "**核心信息：** 单条核心。\n\n"
+            "| 传播渠道 | 北京时间 | 消息或热度 |\n"
+            "|---|---:|---|\n"
+            "| 官方 | 08-11 08:00 | [单条直链](https://example.com/solo) |\n\n"
+            "**关联题材：** theme-solo\n\n"
+            "## 其他重要新闻\n\n"
+            "（无）\n"
+        )
+        document = self._parse_themed_report(text)
+        solo = next(t for t in document.themes if t.theme_id == "theme-solo")
+        self.assertEqual(len(solo.items), 1)
+        self.assertEqual(solo.total_score, 80)
 
     def test_themed_report_rejects_duplicate_event_within_a_theme(self):
         text = self._themed_report()

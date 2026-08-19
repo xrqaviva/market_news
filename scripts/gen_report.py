@@ -119,14 +119,14 @@ def _contract_errors(data):
     for i in range(len(scores) - 1):
         if scores[i] < scores[i + 1]:
             errs.append("分数随排名递增(rank{}:{} < rank{}:{})：需重排或降分".format(i + 1, scores[i], i + 2, scores[i + 1]))
-    # 主题：≥2 成员、evt 存在、无跨主题重复
+    # 主题：≥1 成员、evt 存在、无跨主题重复（2026-08-19 用户裁定：允许单条主题）
     meme = {}
     tid_count = {}
     for tid, _n, _c, nums in themes:
         full = [evt_id(n) for n in nums]
         tid_count[tid] = full
-        if len(full) < 2:
-            errs.append("主题 {} 只有 {} 条（需≥2）".format(tid, len(full)))
+        if not full:
+            errs.append("主题 {} 无成员".format(tid))
         for e in full:
             if e not in seen:
                 errs.append("主题 {} 引用不存在的 {}(可并入相邻主题或补条目)".format(tid, e))
