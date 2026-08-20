@@ -119,8 +119,13 @@ def sync_layout(path, md_files):
             dt = rid[:4] + "-" + rid[4:6] + "-" + rid[6:8]
             html = "reports/{}-{}.html".format(dt, slot)
             insert = '  ["{}", "{}"],\n'.format(md, html)
-            idx = s2.rfind("]);")
-            if idx != -1:
+            # 只插到 EXPECTED_REPORT_OUTPUT_BY_INPUT map 的收尾 "]);" 前，
+            # 不能 rfind 全文件最后一个 "]);"（后面 Promise.race 等也有 "]);"）。
+            m = re.search(
+                r"const EXPECTED_REPORT_OUTPUT_BY_INPUT = new Map\(\[(.*?)\n\]\);",
+                s2, re.S)
+            if m:
+                idx = m.end() - 2  # 落到 "]);" 前
                 s2 = s2[:idx] + insert + s2[idx:]
     if s2 != s:
         path.write_text(s2, encoding="utf-8")

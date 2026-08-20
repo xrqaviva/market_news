@@ -1,0 +1,3 @@
+[2026-08-20 07:5x 微博热搜采集失败]
+通道：IAB webview 不可用；WebFetch s.weibo.com/top/summary + m.weibo.cn 均跳转登录墙（visitor passport）。
+本次微博热搜源未采到，见缺口。替代覆盖：新浪7×24 socio-news 流。

@@ -1,0 +1,3 @@
+[2026-08-20 07:5x X Home timeline 采集失败]
+通道：IAB webview 不可用（guest not attached，x.com/home 标签存在但无法恢复激活）。
+本次 X Home timeline 未采到，见缺口。替代覆盖：8 个大V 主页扫描已完成。

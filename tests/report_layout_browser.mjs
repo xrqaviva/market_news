@@ -35,6 +35,7 @@ const EXPECTED_REPORT_OUTPUT_BY_INPUT = new Map([
   ["reports/2026-08-17-0800-news-ranking-preview.md", "reports/2026-08-17-0800.html"],
   ["reports/2026-08-18-0800-news-ranking-preview.md", "reports/2026-08-18-0800.html"],
   ["reports/2026-08-19-0800-news-ranking-preview.md", "reports/2026-08-19-0800.html"],
+  ["reports/2026-08-20-0800-news-ranking-preview.md", "reports/2026-08-20-0800.html"],
 ]);
 
 function assertSameStringSet(label, actual, expected) {
@@ -189,7 +190,7 @@ try {
   // catalog deliberately does not build. The browser guard therefore verifies that
   // every build input is tracked in git, not that tracked == build inputs.
   const buildInputs = [...EXPECTED_REPORT_OUTPUT_BY_INPUT.keys()];
-  if (buildInputs.length !== 13) {
+  if (buildInputs.length !== 14) {
     throw new Error(
       `fresh browser build must consume exactly 12 tracked report Markdown files, got ${buildInputs.length}`,
     );

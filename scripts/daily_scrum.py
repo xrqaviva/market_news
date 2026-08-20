@@ -49,14 +49,20 @@ def main():
     print("== 每日盘前采集核查 {}（窗口 {} 起）==".format(date, window_start))
 
     # 1. API 源
+    # 兼容两种命名：fetch_api_sources.py 的 "2026-08-19-00-00"（带横线）
+    # 与历史脚本的 "20260819-0000"（无横线）；取当日窗口起始的最新文件。
     print("[1] API 源")
-    sina_files = sorted((ROOT / "evidence").glob("sina7x24-window-*{}-*.jsonl".format(prev_day.replace("-", ""))))
-    em_files = sorted((ROOT / "evidence").glob("em7x24-window-*{}-*.jsonl".format(prev_day.replace("-", ""))))
-    # 更宽松：支持 date 前缀
-    if not sina_files:
-        sina_files = sorted((ROOT / "evidence").glob("sina7x24-window-{}*.jsonl".format(date.replace("-", "")[:6])))
-    check(bool(sina_files and sina_files[-1].stat().st_size > 100), "新浪7×24 evidence（{}）".format(sina_files[-1].name if sina_files else stamp), missing)
-    check(bool(em_files), "东财7×24 evidence（{}）".format(em_files[-1].name if em_files else stamp), missing)
+    for key, label in (("sina7x24", "新浪7×24"), ("em7x24", "东财7×24")):
+        files = sorted(
+            list((ROOT / "evidence").glob("{}-window-*{}*.jsonl".format(key, prev_day.replace("-", ""))))
+            + list((ROOT / "evidence").glob("{}-window-*{}*.jsonl".format(key, prev_day)))
+        )
+        if not files:
+            files = sorted((ROOT / "evidence").glob("{}-window-*{}*.jsonl".format(key, date.replace("-", "")[:6])))
+        ok = bool(files and files[-1].stat().st_size > 100)
+        current = (ROOT / "evidence").glob("{}-window-*-to-now.jsonl".format(key))
+        ok = ok if ok else bool(current and max(current, key=lambda p: p.stat().st_mtime).stat().st_size > 100)
+        check(ok, "{} evidence（{}）".format(label, files[-1].name if files else stamp), missing)
 
     # 2. 浏览器源（当日关键词文件，date 转换 MM-DD 无横线）
     dd = date.replace("-", "")

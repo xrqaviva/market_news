@@ -1,0 +1,3 @@
+[2026-08-20 07:5x 财联社电报采集失败]
+通道：IAB webview 不可用（guest not attached，tab 无法恢复激活）；WebFetch/curl cls.cn/telegraph + nodeapi 均 418/反爬返回HTML。
+本次财联社电报源未采到，见缺口。替代覆盖：新浪7×24 含大量财联社转引（[CLS]标）。
