@@ -446,8 +446,13 @@ git -C ../market-news-site rev-parse '@{upstream}'
 步骤 0  登录态/浏览器核验（如使用浏览器源）
 步骤 1  API 源（并发，约10s）
         python3 scripts/fetch_api_sources.py --start "<YYYY-MM-DD 00:00>" --out-dir evidence
-步骤 2  浏览器源（IAB 串行）：韭研公社 / 东财人气榜 / 微博热搜 / 淘股吧 / 财联社电报 / 雪球
-        → evidence/<key>-<MMDD>.txt  （key 见 daily_scrum.py 第2节清单）
+步骤 2  浏览器源（headless Chrome + CDP，2026-08-24 起替代 IAB 串行）：
+        python3 scripts/fetch_browser_sources.py --date <YYYY-MM-DD> --out-dir evidence
+        （韭研公社 / 东财人气榜 / 微博热搜 / 淘股吧 / 财联社电报 / 雪球 → evidence/<key>-<MMDD>.txt；
+        key 与 daily_scrum.py 第2节清单一致。CDP 起不来或单源正文过少时逐源交回主代理
+        WebFetch/API 兜底，绝不静默丢源。依赖：本机 Chrome/Chromium + pip websocket-client。）
+        历史说明：此前为 IAB 串行，webview 偶发 "guest not attached" 导致整批归零；
+        headless 通道不依赖 GUI 会话，实测 5/6 源稳定（雪球反爬常 502，属可选增强，失败记缺口）。
 步骤 3  X 大V扫描（WebFetch 通道，不依赖 IAB，priority 顺序执行）
         for handle in config/x-influencers.json#priority:
           WebFetch "https://x.com/<handle>" → 提取最近5条帖文
@@ -468,6 +473,7 @@ git -C ../market-news-site rev-parse '@{upstream}'
 
 **关键脚本（已固化）**：
 - `scripts/fetch_api_sources.py`：并发抓新浪7×24+东财7×24（此前手写串行提速 ~7x）
+- `scripts/fetch_browser_sources.py`：浏览器源 headless Chrome + CDP 采集（2026-08-24 固化；起不来逐源回退 WebFetch/API，规避 IAB webview "guest not attached"）
 - `scripts/scan_evidence.py`：主题词带扫描，输出候选账本，标 [LINK]/[BBG]/[RT]
 - `scripts/daily_scrum.py`：每日采集完整性核查（API/浏览器/X大V/timeline/报告），[MISS] 即退出非零
 - `scripts/save_x_scan.py`：把 WebFetch 返回落盘为 evidence/x-<handle>-<date>.txt（统一命名）
