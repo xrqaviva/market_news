@@ -125,7 +125,7 @@ def sync_layout(path, md_files):
                 r"const EXPECTED_REPORT_OUTPUT_BY_INPUT = new Map\(\[(.*?)\n\]\);",
                 s2, re.S)
             if m:
-                idx = m.end() - 2  # 落到 "]);" 前
+                idx = s2.rfind("]);", m.start(), m.end())  # 该 map 的收尾 "]);"
                 s2 = s2[:idx] + insert + s2[idx:]
     if s2 != s:
         path.write_text(s2, encoding="utf-8")
