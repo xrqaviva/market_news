@@ -75,12 +75,27 @@ def main():
         "xueqiu-hot": "雪球热股",
     }
     print("[2] 浏览器源")
+    gap_files = []
     for fn_key, label in browser_needed.items():
         # 兼容 jsonl 与 txt、feed 后缀
         hit = list((ROOT / "evidence").glob("{}-*{}.txt".format(fn_key, dd))) + \
               list((ROOT / "evidence").glob("{}-*{}.jsonl".format(fn_key, dd))) + \
               list((ROOT / "evidence").glob("{}-*{}-*.txt".format(fn_key, dd)))
         check(bool(hit), "{}（{}）".format(label, fn_key), missing)
+        # 内容真实性提示（2026-08-24 UAT 固化）：文件存在≠数据在——
+        # 缺口标记文件（内容含"采集失败"）不算真实采集，列 [WARN] 供 coverage 引用，
+        # 不阻塞生成（与"采集不齐不阻塞"规则一致），但必须显式可见。
+        for f in hit:
+            try:
+                body = f.read_text(encoding="utf-8", errors="ignore")
+                markers = ("采集失败", "未采到", "HTTP ERROR", "502 Bad Gateway")
+                if f.stat().st_size < 600 and any(m in body for m in markers):
+                    gap_files.append(f.name)
+            except OSError:
+                pass
+    if gap_files:
+        for name in sorted(set(gap_files)):
+            print("  [WARN] {} 为缺口标记文件（非真实数据），发布时须写入 coverage 缺口".format(name))
 
     # 3. X 大V + Home timeline
     print("[3] X 采集")

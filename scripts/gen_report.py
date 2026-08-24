@@ -30,10 +30,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def _expand_pattern(pattern):
+    """通配符按仓库根展开；绝对路径直接使用（便于外部管线/UAT 复用）。"""
+    path = Path(pattern)
+    if path.is_absolute():
+        return [path] if path.is_file() else []
+    return sorted(ROOT.glob(pattern))
+
+
 def load_evidence(sina_patterns, em_patterns):
     sina, em = [], []
     for pat in sina_patterns:
-        for p in sorted(ROOT.glob(pat)):
+        for p in _expand_pattern(pat):
             for line in p.read_text(encoding="utf-8").splitlines():
                 try:
                     r = json.loads(line)
@@ -43,7 +51,7 @@ def load_evidence(sina_patterns, em_patterns):
                 if t:
                     sina.append((r.get("create_time", ""), r.get("docurl"), t))
     for pat in em_patterns:
-        for p in sorted(ROOT.glob(pat)):
+        for p in _expand_pattern(pat):
             for line in p.read_text(encoding="utf-8").splitlines():
                 try:
                     r = json.loads(line)
@@ -53,6 +61,39 @@ def load_evidence(sina_patterns, em_patterns):
                 if t:
                     em.append((r.get("time", ""), r.get("url"), t))
     return sina, em
+
+
+def parse_window(window_str):
+    """解析 data["window"]（如 "2026-08-21 00:00:00—2026-08-24 08:00:00（北京时间）"）。
+
+    返回 (start, end) 字符串元组；解析失败返回 None（不过滤，保持旧行为）。
+    """
+    if not window_str or "—" not in window_str:
+        return None
+    start, end = window_str.split("—", 1)
+    start = start.strip()
+    end = end.split("（")[0].strip()
+    if len(start) >= 10 and len(end) >= 10:
+        return start, end
+    return None
+
+
+def filter_window(rows, window_str, label=""):
+    """只保留时间落在报告窗口内的来源条目（纵深防御）。
+
+    即使 evidence 目录混入多日文件或参数传错，来源行也不会跨窗口污染
+    （2026-08-24 审计事故的根本防线）。无法解析时间戳的条目一律丢弃。
+    """
+    bounds = parse_window(window_str)
+    if not bounds:
+        return rows
+    start, end = bounds
+    kept = [r for r in rows if r[0] and start <= r[0][:19] <= end]
+    dropped = len(rows) - len(kept)
+    if dropped:
+        print("window-filter [{}]: dropped {} out-of-window entries".format(label, dropped),
+              file=sys.stderr)
+    return kept
 
 
 def hits(sina, em, keywords):
@@ -79,7 +120,7 @@ def src_rows(sina, em, keys):
 
 
 def card(rank, evt, title, score, breakdown, core, keys, rows, signal, feedback, boundary, heat, session, theme, legacy):
-    tag = "（昨日已定价）" if legacy else ""
+    tag = "（昨日已定价）" if legacy and "（昨日已定价）" not in title else ""
     return (
         "#### 新闻：{}｜{}｜{}{}｜{}/100\n\n"
         "**热点权重：{}/100**（{}）\n\n"
@@ -264,6 +305,8 @@ def main():
     sina, em = load_evidence(
         args.sina or ["evidence/sina7x24-window-*.jsonl"],
         args.em or ["evidence/em7x24-window-*.jsonl"])
+    sina = filter_window(sina, data.get("window"), label="sina")
+    em = filter_window(em, data.get("window"), label="em")
     text, broken = build(data, sina, em)
     out = ROOT / args.out
     out.parent.mkdir(parents=True, exist_ok=True)
