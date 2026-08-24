@@ -193,7 +193,7 @@ try {
   const buildInputs = [...EXPECTED_REPORT_OUTPUT_BY_INPUT.keys()];
   if (buildInputs.length !== 15) {
     throw new Error(
-      `fresh browser build must consume exactly 12 tracked report Markdown files, got ${buildInputs.length}`,
+      `fresh browser build report mapping count mismatch (EXPECTED_REPORT_OUTPUT_BY_INPUT), got ${buildInputs.length}`,
     );
   }
   for (const relativePath of buildInputs) {

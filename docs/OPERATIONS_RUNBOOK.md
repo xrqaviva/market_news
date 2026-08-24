@@ -476,6 +476,11 @@ git -C ../market-news-site rev-parse '@{upstream}'
         （自动更新 test_web_parser 字段计数、test_web_build 的 report_count/latest、
           test_report_layout_browser.mjs 的报告映射与 buildInputs）
 步骤 9  构建/测试/部署（现有流程）
+步骤 10 次日素材落盘（生产端，2026-08-24 审计固化——此前只有消费端无生产端）：
+        把当日发现但未入主榜的信号（X 大V单源/待核/阈值下）写入
+        data/next-day-leads/<次日>.md（含来源+待核原因+次日动作），
+        供次日步骤 4 消费；消费后在文件内标注状态。
+        无新素材时也写文件注明"本日无遗留信号"，保持闭环可查。
 ```
 
 **关键脚本（已固化）**：

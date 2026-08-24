@@ -252,14 +252,18 @@ def build(data, sina, em):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
-    ap.add_argument("--sina", action="append", default=["evidence/sina7x24-window-*.jsonl"])
-    ap.add_argument("--em", action="append", default=["evidence/em7x24-window-*.jsonl"])
+    # default=None：传参时完全替换（append 到含通配符的 default 会把全部窗口
+    # 的证据文件混入匹配，导致来源行跨窗口污染——2026-08-24 审计发现）
+    ap.add_argument("--sina", action="append", default=None)
+    ap.add_argument("--em", action="append", default=None)
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
     data = json.loads(Path(args.data).read_text(encoding="utf-8"))
     data.setdefault("other_news", ""); data.setdefault("pending", []); data.setdefault("coverage", [])
-    sina, em = load_evidence(args.sina, args.em)
+    sina, em = load_evidence(
+        args.sina or ["evidence/sina7x24-window-*.jsonl"],
+        args.em or ["evidence/em7x24-window-*.jsonl"])
     text, broken = build(data, sina, em)
     out = ROOT / args.out
     out.parent.mkdir(parents=True, exist_ok=True)
