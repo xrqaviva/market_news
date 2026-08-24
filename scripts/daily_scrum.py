@@ -109,6 +109,23 @@ def main():
     report = ROOT / "reports" / ("{}-0800-news-ranking-preview.md".format(date))
     check(bool(report.exists()), "报告文件 {}".format(report.name), missing)
 
+    # 5. daily_info 晨报新鲜度（2026-08-24 固化：晨报周一不自动生成，
+    # 外围美股数据会停留在前一交易日；构建嵌入的是 reports/index 最新快照，
+    # 若与报告日期不符会静默携带旧数据上线）
+    print("[5] daily_info 晨报新鲜度")
+    brief_state = ROOT / ".." / "daily_info" / "reports" / "index" / "state.json"
+    if brief_state.is_file():
+        import json as _json
+        try:
+            st = _json.loads(brief_state.read_text(encoding="utf-8"))
+            last_date = st.get("last_report_date")
+        except Exception:
+            last_date = None
+        check(last_date == date,
+              "晨报已更新至当日 {}（state={}）".format(date, last_date), missing)
+    else:
+        check(False, "daily_info reports/index/state.json 不存在（晨报未生成）", missing)
+
     if missing:
         print("\n== 缺失 {} 项；在补齐前不要发布报告 ==".format(len(missing)))
         sys.exit(1)

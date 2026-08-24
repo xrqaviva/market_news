@@ -459,6 +459,13 @@ git -C ../market-news-site rev-parse '@{upstream}'
           python3 scripts/save_x_scan.py --handle <handle> --date <date> --text <结果>
         + X Home timeline（如有浏览器会话）→ evidence/x-timeline-<MMDD>.txt
 步骤 4  次日素材衔接：读 data/next-day-leads/<今日>.md（昨日生成）并入候选账本
+步骤 4.5 外围晨报新鲜度（2026-08-24 固化：daily_info launchd 仅周二~周六 07:30 运行，
+        周一/假日盘前晨报不会自动生成，融合页会带着前一交易日的美股数据静默上线）
+        - 检查 daily_info/reports/index/state.json 的 last_report_date == 今日
+        - 若过期（尤其周一）：先补跑
+          cd /Users/aviva/Projects/daily_info && python3 -m morning_brief run --root . --force
+          （--as-of <今日 08:00> 指定截止；重复跑幂等）
+        - daily_scrum.py 已内置该检查（[5] 晨报新鲜度，不符即 MISS 阻止发布）
 步骤 5  完整性核查（必须全绿才继续）
         python3 scripts/daily_scrum.py --date <YYYY-MM-DD>
 步骤 6  分析：python3 scripts/scan_evidence.py --sina ... --em ... --with-link-only
