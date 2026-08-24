@@ -112,19 +112,41 @@ def main():
     # 5. daily_info 晨报新鲜度（2026-08-24 固化：晨报周一不自动生成，
     # 外围美股数据会停留在前一交易日；构建嵌入的是 reports/index 最新快照，
     # 若与报告日期不符会静默携带旧数据上线）
+    # 兜底规则（用户裁定 2026-08-24）：校验不过 → 自动补跑 daily_info（force）→
+    # 复查；仍不过才 MISS。晨报正确性是盘前流程的一部分，不由用户手动接管。
     print("[5] daily_info 晨报新鲜度")
     brief_state = ROOT / ".." / "daily_info" / "reports" / "index" / "state.json"
-    if brief_state.is_file():
-        import json as _json
+
+    def _last_brief_date():
+        if not brief_state.is_file():
+            return None
         try:
-            st = _json.loads(brief_state.read_text(encoding="utf-8"))
-            last_date = st.get("last_report_date")
+            import json as _json
+            return _json.loads(brief_state.read_text(encoding="utf-8")).get("last_report_date")
         except Exception:
-            last_date = None
-        check(last_date == date,
-              "晨报已更新至当日 {}（state={}）".format(date, last_date), missing)
-    else:
-        check(False, "daily_info reports/index/state.json 不存在（晨报未生成）", missing)
+            return None
+
+    def _rerun_brief():
+        """force 补跑 daily_info 直至 state 更新（幂等，可重复执行）。"""
+        daily_root = (ROOT / ".." / "daily_info").resolve()
+        if not (daily_root / "morning_brief").is_dir():
+            return False
+        import subprocess
+        proc = subprocess.run(
+            ["python3", "-m", "morning_brief", "run", "--root", str(daily_root),
+             "--as-of", "{}T08:00:00".format(date), "--force"],
+            cwd=str(daily_root), capture_output=True, text=True, timeout=300)
+        print("    [auto-rerun] daily_info force 补跑 exit={}（{}）".format(
+            proc.returncode, proc.stdout.strip().splitlines()[-1][:120] if proc.stdout.strip() else proc.stderr.strip()[:120]))
+        return proc.returncode == 0 and _last_brief_date() == date
+
+    last_date = _last_brief_date()
+    if last_date != date:
+        print("    [auto-rerun] 晨报 state={} ≠ {}，自动补跑 daily_info ...".format(last_date, date))
+        _rerun_brief()
+        last_date = _last_brief_date()
+    check(last_date == date,
+          "晨报已更新至当日 {}（state={}）".format(date, last_date), missing)
 
     if missing:
         print("\n== 缺失 {} 项；在补齐前不要发布报告 ==".format(len(missing)))

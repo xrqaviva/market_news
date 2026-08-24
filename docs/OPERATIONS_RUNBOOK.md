@@ -461,11 +461,11 @@ git -C ../market-news-site rev-parse '@{upstream}'
 步骤 4  次日素材衔接：读 data/next-day-leads/<今日>.md（昨日生成）并入候选账本
 步骤 4.5 外围晨报新鲜度（2026-08-24 固化：daily_info launchd 仅周二~周六 07:30 运行，
         周一/假日盘前晨报不会自动生成，融合页会带着前一交易日的美股数据静默上线）
-        - 检查 daily_info/reports/index/state.json 的 last_report_date == 今日
-        - 若过期（尤其周一）：先补跑
-          cd /Users/aviva/Projects/daily_info && python3 -m morning_brief run --root . --force
-          （--as-of <今日 08:00> 指定截止；重复跑幂等）
-        - daily_scrum.py 已内置该检查（[5] 晨报新鲜度，不符即 MISS 阻止发布）
+        - daily_scrum.py 已内置自动兜底（[5] 晨报新鲜度）：检查 reports/index/state.json
+          的 last_report_date == 今日；**不符则自动 force 补跑 daily_info 后复查**，
+          仍不符才 MISS 阻止发布；无需人工接管（用户裁定：流程兜底保证正确性）
+        - 兜底细节：补跑命令 python3 -m morning_brief run --root <daily_info> --as-of <今日 08:00> --force，
+          幂等可重复；补跑后美股数据为最近一个美股交易日收盘（周一→周五收盘）
 步骤 5  完整性核查（必须全绿才继续）
         python3 scripts/daily_scrum.py --date <YYYY-MM-DD>
 步骤 6  分析：python3 scripts/scan_evidence.py --sina ... --em ... --with-link-only
