@@ -142,18 +142,34 @@ def main():
             return None
 
     def _rerun_brief():
-        """force 补跑 daily_info 直至 state 更新（幂等，可重复执行）。"""
+        """force 补跑 daily_info 直至 state 更新（幂等，可重复执行）。
+
+        超时/异常不得让本核查崩溃（2026-08-25 事故：补跑超时抛
+        TimeoutExpired 使整个 daily_scrum 中断）——失败返回 False，
+        由调用方判 MISS 并按自愈规则继续流程。
+        """
         daily_root = (ROOT / ".." / "daily_info").resolve()
         if not (daily_root / "morning_brief").is_dir():
             return False
         import subprocess
-        proc = subprocess.run(
-            ["python3", "-m", "morning_brief", "run", "--root", str(daily_root),
-             "--as-of", "{}T08:00:00".format(date), "--force"],
-            cwd=str(daily_root), capture_output=True, text=True, timeout=300)
-        print("    [auto-rerun] daily_info force 补跑 exit={}（{}）".format(
-            proc.returncode, proc.stdout.strip().splitlines()[-1][:120] if proc.stdout.strip() else proc.stderr.strip()[:120]))
-        return proc.returncode == 0 and _last_brief_date() == date
+        for attempt in (1, 2):
+            try:
+                proc = subprocess.run(
+                    ["python3", "-m", "morning_brief", "run", "--root",
+                     str(daily_root),
+                     "--as-of", "{}T08:00:00".format(date), "--force"],
+                    cwd=str(daily_root), capture_output=True, text=True,
+                    timeout=600)
+                tail = (proc.stdout.strip().splitlines() or [""])[-1][:120]
+                print("    [auto-rerun] 第{}次 exit={}（{}）".format(
+                    attempt, proc.returncode, tail))
+                if proc.returncode == 0 and _last_brief_date() == date:
+                    return True
+            except subprocess.TimeoutExpired:
+                print("    [auto-rerun] 第{}次补跑超时（600s）".format(attempt))
+            except Exception as exc:  # noqa: BLE001
+                print("    [auto-rerun] 第{}次异常：{}".format(attempt, str(exc)[:120]))
+        return False
 
     last_date = _last_brief_date()
     if last_date != date:

@@ -227,11 +227,12 @@ def build(data, sina, em):
     lines.append("| 排名 | 事件ID | 新闻标题 | 热点分 | 关联题材 | 跳转锚点 |")
     lines.append("|---:|---|---:|---|---:|---|")
     for i, (evt, score, _bd, title, *_rest) in enumerate(cards, 1):
-        title_out = title + ("（昨日已定价）" if (evt in data.get("OLD", []) or evt in {c[0] for c in old}) else "")
-        # OLD 识别：evt 在 old set
+        # OLD 识别：evt 在 old set；标题已含后缀时不重复追加
+        # （与 card() 同款防御——2026-08-25 索引行重复事故）
         legacy = evt in {c[0] for c in old}
+        suffix = "（昨日已定价）" if legacy and "（昨日已定价）" not in title else ""
         lines.append("| {} | {} | {}{} | {} | {} | [查看](#{}) |".format(
-            i, evt, title, "（昨日已定价）" if legacy else "", score, theme_of.get(evt, ""), evt))
+            i, evt, title, suffix, score, theme_of.get(evt, ""), evt))
     lines.append("")
 
     # 题材主线

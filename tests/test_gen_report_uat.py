@@ -175,3 +175,39 @@ class LegacyTagDedupTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IndexTagDedupTests(unittest.TestCase):
+    """索引行与正文同款防御：OLD 标题已含后缀时不得二次追加（08-25 事故）。"""
+
+    def test_index_row_not_duplicated(self):
+        import tempfile
+        from pathlib import Path as _P
+        tmp = tempfile.mkdtemp()
+        sina = _load_rows(tmp, "s.jsonl", [
+            _sina_row("2026-08-21 07:00:00", "https://finance.sina.cn/x1",
+                      "双创指数跌超3%恒生科技大跌")])
+        em = _load_rows(tmp, "e.jsonl", [])
+        data = {
+            "date": "2026-08-21", "evt_prefix": "evt-20260821",
+            "window": "2026-08-21 00:00:00—2026-08-21 08:00:00（北京时间）",
+            "cutoff": "2026-08-21 08:00", "trading_day": "2026-08-21",
+            "NEW": [["evt-20260821-001", 80, "b", "事件一", "c", ["双创指数跌超3%"],
+                     "s", "f", "bo", "h", "se", "theme-a"]],
+            "OLD": [["evt-20260821-101", 40, "b", "旧闻（昨日已定价）", "c",
+                     ["恒生科技"], "s", "f", "bo", "h", "se", "theme-b"]],
+            "THEMES": [["theme-a", "A", "x", [1]],
+                        ["theme-b", "B", "x", [101]]],
+            "other_news": "", "pending": [], "coverage": [],
+        }
+        dp = _P(tmp) / "d.json"
+        dp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        out = _P(tmp) / "o.md"
+        proc = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "gen_report.py"),
+             "--data", str(dp), "--sina", sina, "--em", em, "--out", str(out)],
+            capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        md = out.read_text(encoding="utf-8")
+        self.assertEqual(md.count("（昨日已定价）（昨日已定价）"), 0)
+        self.assertEqual(md.count("（昨日已定价）"), 2)  # 索引+正文各一次
