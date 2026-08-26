@@ -1,0 +1,49 @@
+[WebFetch 2026-08-27 采集 @business 公开主页]
+@KobeissiLetter 最近5条帖文（2026-08-27）：
+1. 1小时前 Nvidia Q3指引增速意义："Never in history has a company of this size grown at such a fast pace" https://x.com/KobeissiLetter/status/2092733575787683971
+2. 2小时前 BREAKING: 英伟达盘后收复失地大涨+5%（创纪录财报）https://x.com/KobeissiLetter/status/2092724912473399494
+3. 3小时前 英伟达Q3营收指引1080亿美元 https://x.com/KobeissiLetter/status/2092711099262984319
+4. 3小时前 英伟达财报后先跌4%（营收962亿创纪录）https://x.com/KobeissiLetter/status/2092709284161155412
+
+@ReutersBiz 最近5条帖文（2026-08-27）：
+1. 贝森特压低债券收益率的举措搅浑沃什在Jackson Hole的控通胀信息 https://reut.rs/3SqrJyd
+2. OpenAI报告称其网络被自家 rogue AI agents 入侵 https://reut.rs/4y9ZOSp
+3. Meta同意支付最高180亿美元解决美国多州"儿童成瘾"诉讼 https://reut.rs/3SYC98m
+4. 德部长将与UniCredit CEO首次直接谈Commerzbank https://reut.rs/4gGBZdU
+5. STOXX 600 年末料温和上涨（民调）https://reut.rs/4wMFqFB
+
+@aleabitoreddit (Serenity) 最近5条帖文（2026-08-27）：
+1. "FY2028营收预计增长约70%，供给受限展望"——比财报超预期更重要；预期从+43.9%上调至70% https://x.com/aleabitoreddit/status/2092723047107355133
+2. 英伟达营收962.2亿 vs 预期921.7亿（beat）；hyperscaler收入487.1亿（上季430.5亿）https://x.com/aleabitoreddit/status/2092718416683819292
+3. Landmark与美国客户签4年CW协议保供给；LITE/COHR "capacity gone"、AAOI… https://x.com/aleabitoreddit/status/2092710854290764161
+4. "级联瓶颈"概念：DDR4供应冲击致ODM降级到DDR3/DDR2，Winbond等退出DDR2令瓶颈更严重 https://x.com/aleabitoreddit/status/2092665229880836597
+
+@ZeroHedge 最近5条帖文（2026-08-27）：
+1. 伊朗称"CIA资助"波斯语媒体为军事目标 https://t.co/qlGg8PGQ8u
+2. 印度原油进口账单飙升：霍尔木兹运费高企 https://t.co/LuqpkAtVYg
+3. Slok: 利率将higher for longer https://t.co/VMEDGWxGaX
+4. 又一家俄罗斯炼厂起火，柴油逼近历史高位 https://t.co/PILjhRXsGD
+
+@WSJmarkets 最近5条帖文（2026-08-27）：
+1. 投资者在英伟达财报前收敛预期，美股小幅走低 https://t.co/9asvSiX06w
+2. 美股微跌：权衡通胀数据 https://t.co/uyqP4y7dkX
+3. 美国原油库存温和累库 https://t.co/jcjLMgJfQR
+4. 银行对自身稳定币趋之若鹜 https://t.co/cXHfNaVhmN
+5. 美天然气期货受天气支撑 https://t.co/Sun830LOqA
+
+@SquawkCNBC 最近5条帖文（2026-08-27）：
+1. SJM CEO谈财报与通胀疑虑下的消费 https://x.com/SquawkCNBC/status/2092584244602077465
+2. 美银Arya：英伟达财报前"从基本面看每项都过关" https://x.com/SquawkCNBC/status/2092583628412703016
+3. 前美驻华大使Burns：防止伊朗成为霍尔木兹"教父" https://x.com/SquawkCNBC/status/2092583120755130470
+4. 摩根大通：Jackson Hole前"将坚决对抗通胀" https://x.com/SquawkCNBC/status/2092583002706493516
+
+@fundstrat (Tom Lee) 最近5条帖文（2026-08-27）：
+1. 以太坊在流动性与安全性领先，便于机构上链 https://x.com/fundstrat/status/2092694561613295770
+2. Coinbase：美国借款人可用比特币抵押首付 https://x.com/fundstrat/status/2092688475254587450
+3. Revolut将在以太坊推欧元稳定币EURR（又一家大金融机构）https://x.com/fundstrat/status/2092674723016556785
+4. 世界需要"人类证明"：AI面具骗过视频核验 https://x.com/fundstrat/status/2092670241595637901
+
+@business (Bloomberg) 最近5条帖文（2026-08-27）：
+1. 英伟达给出FY2028乐观销售展望，缓解AI支出放缓担忧 https://x.com/business/status/2092756538171539881
+2. 美加铝业团体呼吁停止互征铝关税、共同应对中国 https://x.com/business/status/2092756544932790724
+3. 萨斯喀彻温省对美国酒精饮料征50%报复税 https://x.com/business/status/2092759041063727118
