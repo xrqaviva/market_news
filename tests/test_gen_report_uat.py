@@ -82,7 +82,7 @@ class WindowFilterTests(unittest.TestCase):
                 "测试热度变化。", "08-21（北京时间）。", "theme-test"]],
             "OLD": [],
             "THEMES": [["theme-test", "测试主题", "测试催化。", [1]]],
-            "other_news": "", "pending": [], "coverage": [],
+            "other_news": "", "pending": [], "coverage": [], "floor_exempt": "UAT fixture", "floor_exempt": "UAT fixture",
         }
         data_path = Path(self.tmp) / "data.json"
         data_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
@@ -108,6 +108,7 @@ def _base_data():
             ["evt-20260821-001", 90, "b", "事件一", "c", ["k1"], "s", "f", "bo", "h", "se", "theme-a"],
             ["evt-20260821-002", 70, "b", "事件二", "c", ["k2"], "s", "f", "bo", "h", "se", "theme-b"],
         ],
+        "floor_exempt": "UAT fixture（不测收录线语义）",
         "OLD": [["evt-20260821-101", 40, "b", "旧闻（昨日已定价）", "c", ["k3"], "s", "f", "bo", "h", "se", "theme-c"]],
         "THEMES": [
             ["theme-a", "A", "x", [1]],
@@ -199,6 +200,7 @@ class IndexTagDedupTests(unittest.TestCase):
             "THEMES": [["theme-a", "A", "x", [1]],
                         ["theme-b", "B", "x", [101]]],
             "other_news": "", "pending": [], "coverage": [],
+            "floor_exempt": "UAT fixture（不测收录线语义）", "floor_exempt": "UAT fixture", "floor_exempt": "UAT fixture",
         }
         dp = _P(tmp) / "d.json"
         dp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")

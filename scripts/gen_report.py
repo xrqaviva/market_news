@@ -175,6 +175,21 @@ def _contract_errors(data):
     for e, tlist in meme.items():
         if len(tlist) > 1:
             errs.append("同一 evt {} 被多个主题引用 {}：需保持每主题成员互斥".format(e, tlist))
+    # 收录线（用户裁定 2026-08-28 机器化）：主榜 NEW 必须收录到 50 分，
+    # 最低分 > 55 视为"头部精选"回归（08-17=52条/08-18=41条的口径），
+    # 除非数据层显式声明 floor_exempt 说明当日窗口确无 50-60 分事件。
+    if cards and not data.get("floor_exempt"):
+        # 收录线只看 NEW 主榜（OLD 为 0.4 折扣层不计）
+        lo = min(c[1] for c in new) if new else 999
+        if lo > 55:
+            errs.append(
+                "收录线漂移：主榜最低分 {} > 55，50-60 分候选未收录；"
+                "按 50 分线补全或在数据层写 floor_exempt 说明当日无该分段事件".format(lo))
+        elif len(new) < 10:
+            errs.append(
+                "主榜 NEW 条数 {} < 10（50 分线口径下 08-17=45/08-18=35），"
+                "疑似仍有候选遗漏；确属事件稀疏请在 floor_exempt 说明".format(len(new)))
+
     # theme_ids 一致性：每主题成员必须在 NEWS 记录[11]标注对应 theme
     for tid, _n, _c, nums in themes:
         for n in nums:
@@ -272,7 +287,21 @@ def build(data, sina, em):
     # 尾部可选段：其他重要新闻 + 待核验线索 + 来源覆盖（JSON 提供，可为空）
     lines.append("")
     lines.append("## 其他重要新闻\n")
-    lines.append((data.get("other_news") or "（本窗口无评分阈值以上、且未归入任一题材主线的独立达标事件。）") + "\n")
+    other = data.get("other_news")
+    if isinstance(other, list):
+        # 明细模式（2026-08-28）：50 分以下未入主榜事件逐条列出，防"其他在哪里"
+        if other:
+            for entry in other:
+                if isinstance(entry, dict):
+                    lines.append("- **{}**（{}分）：{} 来源：{}。\n".format(
+                        entry.get("title", "—"), entry.get("score", "—"),
+                        entry.get("note", ""), entry.get("source", "—")))
+                else:
+                    lines.append("- {}\n".format(entry))
+        else:
+            lines.append("（本窗口无其他重要新闻。）\n")
+    else:
+        lines.append((other or "（本窗口无评分阈值以上、且未归入任一题材主线的独立达标事件。）") + "\n")
     pending = data.get("pending")
     if pending:
         lines.append("")

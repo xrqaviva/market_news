@@ -533,16 +533,16 @@ class WebReportParserTest(unittest.TestCase):
     def test_all_report_model_field_counts_do_not_regress_during_legacy_recovery(self):
         items = [item for document in self._documents().values() for item in document.items]
 
-        self.assertEqual(548, len(items))
-        self.assertEqual(966, sum(len(item.sources) for item in items))
-        self.assertEqual(548, sum(bool(item.core) for item in items))
-        self.assertEqual(488, sum(bool(item.score_breakdown) for item in items))
-        self.assertEqual(453, sum(bool(item.signal) for item in items))
-        self.assertEqual(453, sum(bool(item.market_feedback) for item in items))
-        self.assertEqual(453, sum(bool(item.boundary) for item in items))
+        self.assertEqual(556, len(items))
+        self.assertEqual(985, sum(len(item.sources) for item in items))
+        self.assertEqual(556, sum(bool(item.core) for item in items))
+        self.assertEqual(496, sum(bool(item.score_breakdown) for item in items))
+        self.assertEqual(461, sum(bool(item.signal) for item in items))
+        self.assertEqual(461, sum(bool(item.market_feedback) for item in items))
+        self.assertEqual(461, sum(bool(item.boundary) for item in items))
         self.assertEqual(50, sum(bool(item.variables) for item in items))
-        self.assertEqual(468, sum(bool(item.heat_change) for item in items))
-        self.assertEqual(403, sum(bool(item.release_session) for item in items))
+        self.assertEqual(476, sum(bool(item.heat_change) for item in items))
+        self.assertEqual(411, sum(bool(item.release_session) for item in items))
         self.assertEqual(370, sum(len(item.supplemental_details) for item in items))
 
     def test_headlines_exclude_heat_method_terms(self):
