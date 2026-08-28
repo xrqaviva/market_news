@@ -285,23 +285,25 @@ def build(data, sina, em):
             lines.append("")
 
     # 尾部可选段：其他重要新闻 + 待核验线索 + 来源覆盖（JSON 提供，可为空）
+    other = data.get("other_news")
     lines.append("")
     lines.append("## 其他重要新闻\n")
-    other = data.get("other_news")
     if isinstance(other, list):
-        # 明细模式（2026-08-28）：50 分以下未入主榜事件逐条列出，防"其他在哪里"
-        if other:
-            for entry in other:
-                if isinstance(entry, dict):
-                    lines.append("- **{}**（{}分）：{} 来源：{}。\n".format(
-                        entry.get("title", "—"), entry.get("score", "—"),
-                        entry.get("note", ""), entry.get("source", "—")))
-                else:
-                    lines.append("- {}\n".format(entry))
-        else:
-            lines.append("（本窗口无其他重要新闻。）\n")
+        lines.append("（50 分以下未入主榜候选已移至下方「未入主榜候选明细」逐条列出。）\n")
     else:
         lines.append((other or "（本窗口无评分阈值以上、且未归入任一题材主线的独立达标事件。）") + "\n")
+    if isinstance(other, list) and other:
+        # 明细模式（2026-08-28）：独立标题渲染（"其他重要新闻"段被解析器
+        # 要求为新闻卡格式，明细列表须放非结构段以免被静默丢弃）
+        lines.append("")
+        lines.append("## 未入主榜候选明细\n")
+        for entry in other:
+            if isinstance(entry, dict):
+                lines.append("- **{}**（{}分）：{} 来源：{}。\n".format(
+                    entry.get("title", "—"), entry.get("score", "—"),
+                    entry.get("note", ""), entry.get("source", "—")))
+            else:
+                lines.append("- {}\n".format(entry))
     pending = data.get("pending")
     if pending:
         lines.append("")
