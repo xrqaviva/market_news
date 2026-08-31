@@ -41,6 +41,7 @@ const EXPECTED_REPORT_OUTPUT_BY_INPUT = new Map([
   ["reports/2026-08-26-0800-news-ranking-preview.md", "reports/2026-08-26-0800.html"],
   ["reports/2026-08-27-0800-news-ranking-preview.md", "reports/2026-08-27-0800.html"],
   ["reports/2026-08-28-0800-news-ranking-preview.md", "reports/2026-08-28-0800.html"],
+  ["reports/2026-08-31-0800-news-ranking-preview.md", "reports/2026-08-31-0800.html"],
 ]);
 
 function assertSameStringSet(label, actual, expected) {
@@ -195,7 +196,7 @@ try {
   // catalog deliberately does not build. The browser guard therefore verifies that
   // every build input is tracked in git, not that tracked == build inputs.
   const buildInputs = [...EXPECTED_REPORT_OUTPUT_BY_INPUT.keys()];
-  if (buildInputs.length !== 19) {
+  if (buildInputs.length !== 20) {
     throw new Error(
       `fresh browser build report mapping count mismatch (EXPECTED_REPORT_OUTPUT_BY_INPUT), got ${buildInputs.length}`,
     );
