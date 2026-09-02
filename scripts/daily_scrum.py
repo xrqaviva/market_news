@@ -179,6 +179,25 @@ def main():
     check(last_date == date,
           "晨报已更新至当日 {}（state={}）".format(date, last_date), missing)
 
+    # [6] 晨报空值/不可用检查（2026-09-02 用户裁定：没通过的为什么要发布）
+    # 晨报 "品种 | — | — | —" 空值行或 evidence 中不可用品种必须显式告警，
+    # 阻止发布；降级链穷尽后仍空缺需在此说明。
+    print("[6] 晨报空值检查")
+    brief_gaps = ROOT / ".." / "daily_info" / "scripts" / "check_brief_gaps.py"
+    empty_rows = 0
+    if brief_gaps.is_file():
+        import subprocess
+        proc = subprocess.run(
+            [sys.executable, str(brief_gaps)],
+            capture_output=True, text=True, timeout=60)
+        if proc.returncode != 0:
+            for line in proc.stdout.splitlines():
+                if "[MISS]" in line:
+                    print("    " + line.strip())
+                    empty_rows += 1
+    check(empty_rows == 0,
+          "晨报无空值/不可用品种（{} 处缺口）".format(empty_rows), missing)
+
     if missing:
         print("\n== 缺失 {} 项；在补齐前不要发布报告 ==".format(len(missing)))
         sys.exit(1)
