@@ -1,0 +1,47 @@
+[WebFetch 2026-09-04 采集 @ZeroHedge 公开主页]
+@KobeissiLetter 最近5条帖文（2026-09-04）：
+1. BREAKING: 美国柴油价格创历史新高 5.62美元/加仑，超2022年6月前高 https://x.com/KobeissiLetter/status/2095658347840307593
+2. AI与软件股同步上涨 https://x.com/KobeissiLetter/status/2095646032767885511
+3. Lululemon($LULU)暴跌超-20%：营收骤降+指引疲弱 https://x.com/KobeissiLetter/status/2095619340825661789
+4. 柴油市场面临重大供应短缺 https://x.com/KobeissiLetter/status/2095612631034048687
+
+@ReutersBiz 最近5条帖文（2026-09-04）：
+1. 华尔街反弹：美联储理事沃勒称若通胀压力消退支持维持利率不变，投资者缩减加息押注 https://reut.rs/4xBQnuR
+2. 英伟达以129.3亿美元收购开发者平台Hugging Face https://reut.rs/46L5M05
+3. 德国商业银行回购自有股份12亿欧元 https://reut.rs/4zVOpHs
+4. 优步裁员约3300人（占员工约10%）：投资者担忧Waymo等冲击北美份额 https://reut.rs/4gSfd2H
+
+@aleabitoreddit (Serenity) 最近5条帖文（2026-09-04）：
+1. OpenAI GPT-6 Astra 基准测试发布 https://x.com/aleabitoreddit/status/2095590610967421206
+2. ESMT DDR2/DDR3记忆体：月营收6月$153M→7月$214M→8月$249M（2个月+63%） https://x.com/aleabitoreddit/status/2095580088620449880
+3. $DELL创始人：Dell家族经Trump Accounts向2500万儿童各$250共$6.25B；$HOOD首个券商当日涨 https://x.com/aleabitoreddit/status/2095565402223038651
+4. $SIVE>C100m CW DFB产能披露；Trendforce全球CW/EML年产能608.4M https://x.com/aleabitoreddit/status/2095546138510459218
+5. $NVDA以129.3亿美元收购Hugging Face（18M+开发者、3M+模型、20万+公司） https://x.com/aleabitoreddit/status/2095490725412733092
+
+@ZeroHedge 最近5条帖文（2026-09-04）：
+1. 沃勒言论引发鸽派欢腾：金价重回50% Fib；明日非农疲弱将助其至38.2% Fib https://x.com/zerohedge/status/2095667185158898138
+2. 亚洲LNG价格飙至2022年以来最高（伊朗战争升级） https://x.com/zerohedge/status/2095664414472999214
+3. Michael Burry称LULU为"投资组合中的trickster（最大仓位）" https://x.com/zerohedge/status/2095660294018089450
+
+@WSJmarkets 最近5条帖文（2026-09-04）：
+1. 亚洲早盘油价走高：中东供应中断担忧加剧 https://t.co/WhbYBW9Ysb
+2. 日经涨0.5%（科技/金融领涨，美联储加息预期消退） https://x.com/WSJmarkets/status/2095669436317303081
+3. Oura智能戒指IPO文件公开（高利润率、忠实用户） https://t.co/I46J2h1BKo
+4. 股债双涨：鸽派美联储表态后 https://t.co/J7Cn3n1Fld
+5. 美股上涨：沃勒言论压制收益率、缓解利率担忧 https://t.co/d1J80SIfgK
+
+@SquawkCNBC 最近5条帖文（2026-09-04）：
+1. $NVDA 129亿美元收购Hugging Face：黄仁勋"完全信奉开源模型理念" https://x.com/SquawkCNBC/status/2095525765299245065
+2. HF CEO：向黄仁勋说"我们要把开源AI做大"，他说"做吧" https://x.com/SquawkCNBC/status/2095524297078870201
+3. 黄仁勋：129亿美元"每一分钱都值" https://x.com/SquawkCNBC/status/2095523149341168122
+4. Scale AI CEO：未来会有更多垂直细分模型 https://x.com/SquawkCNBC/status/2095522484103606624
+
+@fundstrat (Tom Lee) 最近5条帖文（2026-09-04）：
+1. "9月强势回报"（引用置顶帖）；看好9月股票表现 https://x.com/fundstrat/status/2095627977212174743
+2. 以太坊发布汇总"Impressive" https://x.com/fundstrat/status/2095662555851010204
+
+@business (Bloomberg) 最近5条帖文（2026-09-04）：
+1. Crusoe融资超30亿美元（估值300亿美元） https://t.co/8EsmVodJnP
+2. Anthropic高管：不愿用降价"买市场份额" https://t.co/aQDPUEygaV
+3. 丰田考虑氢能卡车运输汽车零部件 https://t.co/rMY1ZQ9ewd
+4. 美国关税引发洁食供应链担忧 https://t.co/cB4lKUkapo
