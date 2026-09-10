@@ -1,0 +1,1 @@
+[2026-09-11 WebFetch @business(Bloomberg) 两次超时（60s），本日未采到。

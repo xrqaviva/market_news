@@ -213,3 +213,17 @@ class IndexTagDedupTests(unittest.TestCase):
         md = out.read_text(encoding="utf-8")
         self.assertEqual(md.count("（昨日已定价）（昨日已定价）"), 0)
         self.assertEqual(md.count("（昨日已定价）"), 2)  # 索引+正文各一次
+
+
+class HitsPrefersLinkedRowsTests(unittest.TestCase):
+    """2026-09-11 回归：关键词命中第一条无 url 条目就 break，漏掉同关键词带链接条目。"""
+
+    def test_skips_unlinked_first_hit(self):
+        sina = [
+            ("2026-09-10 04:00:00", "", "美股收盘：三大股指集体收跌（无链接旧条目）"),
+            ("2026-09-11 04:00:00", "https://finance.sina.cn/x", "美股收盘：三大股指集体收跌"),
+        ]
+        em = []
+        out = gen_report.hits(sina, em, ["美股收盘：三大股指集体收跌"])
+        self.assertEqual(len(out), 1)
+        self.assertTrue(out[0][2])  # url 非空

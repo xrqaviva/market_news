@@ -97,14 +97,16 @@ def filter_window(rows, window_str, label=""):
 
 
 def hits(sina, em, keywords):
+    """每个关键词取第一条带链接的命中（2026-09-11 修复：命中无 url 的旧条目
+    就 break 会漏掉同关键词的带链接条目，导致 MISSING SOURCE LINK 误报）。"""
     out = []
     for k in keywords:
         for time, url, t in sina:
-            if k in t:
+            if k in t and url:
                 out.append(("sina", time, url, t))
                 break
         for time, url, t in em:
-            if k in t:
+            if k in t and url:
                 out.append(("em", time, url, t))
                 break
     return out
